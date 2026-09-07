@@ -1,0 +1,112 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Trenéři";
+}
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="infobox">
+        <i class="fa-solid fa-circle-check fa-fw"></i> @Model.StatusMessage
+    </div>
+}
+
+<form method="get" class="filter-form">
+    <div class="filter-row">
+        <div class="field">
+            <label asp-for="Filter.Search"></label>
+            <input asp-for="Filter.Search" type="search" placeholder="Jméno, e-mail nebo osobní číslo…" />
+        </div>
+        <div class="field">
+            <label asp-for="Filter.SeasonId"></label>
+            <select asp-for="Filter.SeasonId" asp-items="Model.SeasonSelectList"></select>
+        </div>
+        <div class="field">
+            <label class="checkbox-label">
+                <input asp-for="Filter.ActiveContractOnly" />
+                @Html.DisplayNameFor(m => m.Filter.ActiveContractOnly)
+            </label>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="button">
+                <i class="fa-solid fa-magnifying-glass fa-fw"></i> Hledat
+            </button>
+            <a class="button secondary" asp-page="Index">
+                <i class="fa-solid fa-filter-circle-xmark fa-fw"></i> Vymazat filtr
+            </a>
+        </div>
+    </div>
+</form>
+
+<p>
+    <a class="button" asp-page="Edit">
+        <i class="fa-solid fa-plus fa-fw"></i> Nový trenér
+    </a>
+</p>
+
+@if (Model.Coaches.Count == 0)
+{
+    <p class="text-muted">Žádní trenéři nebyli nalezeni.</p>
+}
+else
+{
+    <table class="grid">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Trenér</th>
+                <th>Osobní číslo</th>
+                <th>Aktuální licence</th>
+                <th>Aktivní smlouvy</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var coach in Model.Coaches)
+            {
+                var photoUrl = coach.HasPhoto
+                    ? Url.Page("Edit", "Photo", new { id = coach.CoachId })
+                    : Url.Content("~/images/default-avatar.svg");
+                <tr>
+                    <td>
+                        <img class="coach-avatar" src="@photoUrl" alt="" />
+                    </td>
+                    <td>
+                        <strong>@coach.DisplayName</strong><br />
+                        <span class="text-muted">@coach.Email</span>
+                    </td>
+                    <td>@coach.PersonalNumber</td>
+                    <td>
+                        <div class="coach-tags">
+                            @foreach (var license in coach.CurrentLicenseNames)
+                            {
+                                <span class="coach-tag">@license</span>
+                            }
+                            @if (coach.CurrentLicenseNames.Count == 0)
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </div>
+                    </td>
+                    <td>
+                        <div class="coach-tags">
+                            @foreach (var contract in coach.ActiveContractNames)
+                            {
+                                <span class="coach-tag">@contract</span>
+                            }
+                            @if (coach.ActiveContractNames.Count == 0)
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </div>
+                    </td>
+                    <td class="buttons">
+                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@coach.CoachId" title="Upravit">
+                            <i class="fa-solid fa-pen fa-fw"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -45,11 +45,36 @@
 
 | Schéma | Obsah |
 |---|---|
-| `dbo` | Sdílené entity (IceRink, Opponent, Manufacturer, Location, Coach, Season…) |
+| `dbo` | Zbývající sdílené entity mimo doménová schémata |
 | `sport` | Tréninky, zápasy, SportEvent sekvence, lookup tabulky sport modulu |
 | `identity` | ASP.NET Core Identity (User, Role, UserRole…) bez AspNet prefixu |
 | `inventory` | Skladové hospodářství (Equipment, Asset, Loan, InventorySession…) |
+| `hr` | Trenéři, personální nastavení, licence a smlouvy |
 | `plan` | **Read-only** — modely externího rezervačního systému (Block, Task) |
+
+## Datový model — personalistika trenérů
+
+`hr.Coach` zachovává původní číselný primární klíč používaný sportovními
+tabulkami, ale identitu osoby přebírá z povinné vazby 1:1 na
+`identity.User`. Uživatelský účet proto může být propojen nejvýše s jedním
+trenérem.
+
+```
+identity.User
+      │ 1:0..1
+      ▼
+hr.Coach
+  ├── hr.CoachSetting       (časově platné personální a platební údaje)
+  ├── hr.CoachLicense       (časově platná licence + hr.CoachLicenseType)
+  └── hr.CoachContract      (smlouva pro sport.Season)
+
+sport.CoachTraining
+sport.CoachTrainingEntitlement ──► hr.Coach.Id
+sport.CoachTrainingPlan
+```
+
+Rodné číslo a fotografie jsou personální údaje. Nejsou součástí seznamových
+projekcí a fotografie se načítá samostatným autorizovaným endpointem.
 
 ## Datový model — SportEvent (TPC)
 
@@ -97,7 +122,7 @@ Modely v `SportSys.Database/Models/Emr/`, namespace `Emr`, schéma `plan`:
 | Logický celek | Cesta |
 |---|---|
 | Registrace servisů | `src/SportSys.Contract/ServiceCollectionExtensions.cs` |
-| DbContext | `src/SportSys.Database/SportSysDbContext.cs` |
+| DbContext | `src/SportSys.Database/Context/SportSysDbContext.cs` |
 | DB schémata (konstanty) | `src/SportSys.Database/Models/Schemas.cs` |
 | EF Core modely | `src/SportSys.Database/Models/{dbo\|sport\|identity\|inventory}/` |
 | EF Core konfigurace | `src/SportSys.Database/Configurations/{schema}/` |
@@ -121,3 +146,4 @@ Modely v `SportSys.Database/Models/Emr/`, namespace `Emr`, schéma `plan`:
 - `docs/modules/auth.md` — autentizace a autorizace
 - `docs/modules/frontend.md` — SCSS struktura, barevné schéma
 - `docs/inventory.md` — modul skladového hospodářství
+- `docs/modules/hr.md` — personalistika trenérů

@@ -45,7 +45,7 @@ Názvy DB schémat jsou `const string` v `Models/Schemas.cs`. Nikdy string liter
 
 ```csharp
 [Table(nameof(Training), Schema = Schemas.Sport)]
-[Table(nameof(Coach),    Schema = Schemas.Dbo)]
+[Table(nameof(Coach),    Schema = Schemas.Hr)]
 ```
 
 > **Proč `const`, ne `static readonly`?** Atributy vyžadují compile-time konstanty.

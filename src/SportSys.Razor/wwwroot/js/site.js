@@ -66,3 +66,63 @@
         form.submit();
     });
 })();
+
+// ── Multivýběr ────────────────────────────────────────────────────────────────
+
+(function () {
+    var multiselects = Array.from(document.querySelectorAll('[data-multiselect]'));
+    if (multiselects.length === 0) return;
+
+    function updateSummary(multiselect) {
+        var checked = Array.from(
+            multiselect.querySelectorAll('input[type="checkbox"]:checked')
+        );
+        var summary = multiselect.querySelector('[data-multiselect-summary]');
+        var clear = multiselect.querySelector('[data-multiselect-clear]');
+
+        if (!summary || !clear) return;
+
+        if (checked.length === 0) {
+            summary.textContent = multiselect.dataset.emptyLabel || '';
+        } else if (checked.length === 1) {
+            var label = checked[0]
+                .closest('label')
+                ?.querySelector('[data-multiselect-option-label]');
+            summary.textContent = label?.textContent.trim() || '';
+        } else {
+            summary.textContent = 'Vybráno: ' + checked.length;
+        }
+
+        clear.hidden = checked.length === 0;
+    }
+
+    multiselects.forEach(function (multiselect) {
+        multiselect
+            .querySelectorAll('input[type="checkbox"]')
+            .forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    updateSummary(multiselect);
+                });
+            });
+
+        var clear = multiselect.querySelector('[data-multiselect-clear]');
+        clear?.addEventListener('click', function () {
+            multiselect
+                .querySelectorAll('input[type="checkbox"]:checked')
+                .forEach(function (checkbox) {
+                    checkbox.checked = false;
+                });
+            updateSummary(multiselect);
+        });
+
+        updateSummary(multiselect);
+    });
+
+    document.addEventListener('click', function (e) {
+        multiselects.forEach(function (multiselect) {
+            if (multiselect.open && !multiselect.contains(e.target)) {
+                multiselect.open = false;
+            }
+        });
+    });
+})();

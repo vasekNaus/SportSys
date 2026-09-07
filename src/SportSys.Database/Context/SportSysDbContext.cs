@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using SportSys.Database.Models;
 using SportSys.Database.Models.dbo;
+using SportSys.Database.Models.hr;
 using SportSys.Database.Models.sport;
 using SportSys.Database.Models.inventory;
 
@@ -22,6 +23,14 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
   }
 
   public virtual DbSet<Coach> Coaches { get; set; }
+
+  public virtual DbSet<CoachSetting> CoachSettings { get; set; }
+
+  public virtual DbSet<CoachLicenseType> CoachLicenseTypes { get; set; }
+
+  public virtual DbSet<CoachLicense> CoachLicenses { get; set; }
+
+  public virtual DbSet<CoachContract> CoachContracts { get; set; }
 
   public virtual DbSet<CoachRole> CoachRoles { get; set; }
 

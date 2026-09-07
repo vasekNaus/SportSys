@@ -1,0 +1,67 @@
+@model SportSys.Razor.Areas.hr.Pages.Coach.EditModel
+
+@if (Model.IsNew)
+{
+    <p>Nejprve uložte základní údaje trenéra.</p>
+}
+else
+{
+    var today = DateOnly.FromDateTime(DateTime.Today);
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Licence</th>
+                <th>Platnost</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var license in Model.Coach.Licenses)
+            {
+                var isCurrent = license.ValidFrom <= today && (!license.ValidTo.HasValue || license.ValidTo >= today);
+                <tr class="@(isCurrent ? "current-record" : null)">
+                    <td>@license.CoachLicenseTypeName</td>
+                    <td>@license.ValidFrom.ToString("d.M.yyyy") – @(license.ValidTo?.ToString("d.M.yyyy") ?? "dosud")</td>
+                    <td class="buttons">
+                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@Model.Coach.CoachId"
+                           asp-route-activeTab="licenses" asp-route-licenseId="@license.Id" title="Upravit">
+                            <i class="fa-solid fa-pen fa-fw"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>@(Model.LicenseInput.Id == 0 ? "Nová licence" : "Upravit licenci")</h2>
+    <form method="post" asp-page-handler="SaveLicense">
+        <input type="hidden" asp-for="LicenseInput.Id" />
+        <input type="hidden" asp-for="LicenseInput.CoachId" />
+        <p>
+            <label asp-for="LicenseInput.CoachLicenseTypeId"></label>
+            <select asp-for="LicenseInput.CoachLicenseTypeId" asp-items="Model.LicenseTypeSelectList"></select>
+            <span asp-validation-for="LicenseInput.CoachLicenseTypeId" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="LicenseInput.ValidFrom"></label>
+            <input asp-for="LicenseInput.ValidFrom" type="date" />
+            <span asp-validation-for="LicenseInput.ValidFrom" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="LicenseInput.ValidTo"></label>
+            <input asp-for="LicenseInput.ValidTo" type="date" />
+            <span asp-validation-for="LicenseInput.ValidTo" class="field-validation-error"></span>
+        </p>
+        <footer>
+            <button type="submit" class="button">
+                <i class="fa-solid fa-floppy-disk fa-fw"></i> Uložit licenci
+            </button>
+            @if (Model.LicenseInput.Id != 0)
+            {
+                <a class="button secondary" asp-page="Edit" asp-route-id="@Model.Coach.CoachId" asp-route-activeTab="licenses">
+                    <i class="fa-solid fa-xmark fa-fw"></i> Zrušit editaci
+                </a>
+            }
+        </footer>
+    </form>
+}

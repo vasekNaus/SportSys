@@ -8,11 +8,11 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Apollo\MultiTarget\Apollo.HttpService\Apollo.HttpService.csproj" />
+    <ProjectReference Include="..\External\Apollo\MultiTarget\Apollo.HttpService\Apollo.HttpService.csproj" />
     <ProjectReference Include="..\SportSys.Database\SportSys.Database.csproj" />
     <ProjectReference Include="..\SportSys.Model\SportSys.Model.csproj" />
   </ItemGroup>

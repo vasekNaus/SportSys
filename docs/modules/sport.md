@@ -74,7 +74,7 @@ víkendovým zvýrazněním.
 
 - aktivní sezóna,
 - jedna nebo více aktivních kategorií,
-- jeden typ tréninku,
+- nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
 - jedna fáze tréninku.
 
 Plan vždy vykreslí pondělí až neděli včetně prázdných dnů. Zobrazuje všechny

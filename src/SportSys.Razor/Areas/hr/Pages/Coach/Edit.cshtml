@@ -1,0 +1,70 @@
+@page
+@model EditModel
+@{
+    ViewData["Title"] = Model.IsNew
+        ? "Nový trenér"
+        : $"Trenér — {Model.Coach.DisplayName}";
+}
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="infobox">
+        <i class="fa-solid fa-circle-check fa-fw"></i> @Model.StatusMessage
+    </div>
+}
+
+<div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+<div class="tabs" id="coach-tabs" data-active-tab="@Model.ActiveTab">
+    <nav class="tab-nav" role="tablist" aria-label="Údaje trenéra">
+        <button type="button" class="tab-btn" data-tab="tab-basic" role="tab" aria-controls="tab-basic">Základní údaje</button>
+        <button type="button" class="tab-btn" data-tab="tab-contracts" role="tab" aria-controls="tab-contracts" disabled="@Model.IsNew">Smlouvy</button>
+        <button type="button" class="tab-btn" data-tab="tab-settings" role="tab" aria-controls="tab-settings" disabled="@Model.IsNew">Nastavení</button>
+        <button type="button" class="tab-btn" data-tab="tab-licenses" role="tab" aria-controls="tab-licenses" disabled="@Model.IsNew">Licence</button>
+    </nav>
+
+    <div class="tab-panel" id="tab-basic" role="tabpanel">
+        <partial name="_Basic" model="Model" />
+    </div>
+    <div class="tab-panel" id="tab-contracts" role="tabpanel">
+        <partial name="_Contracts" model="Model" />
+    </div>
+    <div class="tab-panel" id="tab-settings" role="tabpanel">
+        <partial name="_Settings" model="Model" />
+    </div>
+    <div class="tab-panel" id="tab-licenses" role="tabpanel">
+        <partial name="_Licenses" model="Model" />
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var root = document.getElementById('coach-tabs');
+            var buttons = root.querySelectorAll('.tab-btn:not([disabled])');
+            var panels = root.querySelectorAll('.tab-panel');
+
+            function activateTab(tabName) {
+                var targetId = 'tab-' + tabName;
+                buttons.forEach(function (button) {
+                    var active = button.dataset.tab === targetId;
+                    button.classList.toggle('active', active);
+                    button.setAttribute('aria-selected', String(active));
+                    button.setAttribute('tabindex', active ? '0' : '-1');
+                });
+                panels.forEach(function (panel) {
+                    panel.classList.toggle('active', panel.id === targetId);
+                });
+            }
+
+            buttons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    activateTab(button.dataset.tab.substring(4));
+                });
+            });
+
+            activateTab(root.dataset.activeTab || 'basic');
+        })();
+    </script>
+}

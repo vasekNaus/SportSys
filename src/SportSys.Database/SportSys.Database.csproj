@@ -38,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Apollo\Core\Apollo.Data.Core\Apollo.Data.Core.csproj" />
+    <ProjectReference Include="..\External\Apollo\Core\Apollo.Data.Core\Apollo.Data.Core.csproj" />
   </ItemGroup>
 
 </Project>

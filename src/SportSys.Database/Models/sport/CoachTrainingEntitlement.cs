@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SportSys.Database.Models.dbo;
+using SportSys.Database.Models.hr;
 using SportSys.Database.Models.dboSchema;
 
 

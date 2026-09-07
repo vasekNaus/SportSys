@@ -38,7 +38,7 @@ public class PlanModel : PageModel
     public List<string> SelectedCategories { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
-    public int? TrainingTypeId { get; set; }
+    public List<int> SelectedTrainingTypeIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? TrainingPhaseId { get; set; }
@@ -57,8 +57,11 @@ public class PlanModel : PageModel
             SelectedCategories = [];
         }
 
-        if (TrainingTypeId.HasValue && TrainingTypes.All(t => t.Id != TrainingTypeId.Value))
-            TrainingTypeId = null;
+        var requestedTrainingTypeIds = SelectedTrainingTypeIds.ToHashSet();
+        SelectedTrainingTypeIds = TrainingTypes
+            .Where(t => requestedTrainingTypeIds.Contains(t.Id))
+            .Select(t => t.Id)
+            .ToList();
 
         if (TrainingPhaseId.HasValue && TrainingPhases.All(p => p.Id != TrainingPhaseId.Value))
             TrainingPhaseId = null;
@@ -75,7 +78,6 @@ public class PlanModel : PageModel
 
         if (!SeasonId.HasValue ||
             SelectedCategories.Count == 0 ||
-            !TrainingTypeId.HasValue ||
             !TrainingPhaseId.HasValue)
         {
             return;
@@ -84,7 +86,7 @@ public class PlanModel : PageModel
         var plans = await _service.GetTrainingPlansAsync(
             SeasonId.Value,
             SelectedCategories,
-            TrainingTypeId.Value,
+            SelectedTrainingTypeIds,
             TrainingPhaseId.Value,
             ct);
 

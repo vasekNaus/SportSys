@@ -110,6 +110,21 @@
                     </li>
                 </ul>
             </li>
+            @if (User.IsInRole("SystemAdmin"))
+            {
+                <li>
+                    <a asp-area="hr" asp-page="/Coach/Index">
+                        <i class="fa-solid fa-user-tie fa-fw"></i> Personalistika
+                    </a>
+                    <ul>
+                        <li>
+                            <a asp-area="hr" asp-page="/Coach/Index">
+                                <i class="fa-solid fa-people-group fa-fw"></i> Trenéři
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            }
             <li><a asp-area="" asp-page="/Privacy"><i class="fa-solid fa-shield fa-fw"></i> Ochrana soukromí</a></li>
         </ul>
     </nav>

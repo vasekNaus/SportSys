@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using SportSys.Database.Models.hr;
 
 namespace SportSys.Database.Models.identity;
 

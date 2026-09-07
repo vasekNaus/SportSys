@@ -104,15 +104,19 @@ public class TrainingScheduleService
     public async Task<List<TrainingPlanScheduleItemDto>> GetTrainingPlansAsync(
         int seasonId,
         IReadOnlyCollection<string> categoryNames,
-        int trainingTypeId,
+        IReadOnlyCollection<int> trainingTypeIds,
         int trainingPhaseId,
         CancellationToken ct = default)
     {
-        var plans = await _db.TrainingPlans
+        var query = _db.TrainingPlans
             .Where(p => p.SeasonId == seasonId
                 && categoryNames.Contains(p.SeasonCategoryName)
-                && p.TrainingTypeId == trainingTypeId
-                && p.TrainingPhaseId == trainingPhaseId)
+                && p.TrainingPhaseId == trainingPhaseId);
+
+        if (trainingTypeIds.Count > 0)
+            query = query.Where(p => trainingTypeIds.Contains(p.TrainingTypeId));
+
+        var plans = await query
             .OrderBy(p => p.TimeFrom)
             .ThenBy(p => p.From)
             .Select(p => new TrainingPlanScheduleItemDto
