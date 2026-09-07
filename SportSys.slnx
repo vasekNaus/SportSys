@@ -1,8 +1,8 @@
 <Solution>
   <Folder Name="/Apollo/">
-    <Project Path="src/Apollo/Core/Apollo.Data.Core/Apollo.Data.Core.csproj" />
-    <Project Path="src/Apollo/MultiTarget/Apollo.HttpService/Apollo.HttpService.csproj" />
-    <Project Path="src/Apollo/Standard/Apollo.Utils/Apollo.Utils.csproj" />
+    <Project Path="src/External/Apollo/Core/Apollo.Data.Core/Apollo.Data.Core.csproj" />
+    <Project Path="src/External/Apollo/MultiTarget/Apollo.HttpService/Apollo.HttpService.csproj" />
+    <Project Path="src/External/Apollo/Standard/Apollo.Utils/Apollo.Utils.csproj" />
   </Folder>
   <Folder Name="/DB/">
     <File Path="src/DB Model/Localhost.scmp" />
