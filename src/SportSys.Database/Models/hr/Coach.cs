@@ -12,40 +12,44 @@ namespace SportSys.Database.Models.hr;
 //[Index(nameof(BirthNumber), IsUnique = true, Name = "UX_Coach_BirthNumber")]
 public class Coach
 {
-    [Key]
-    public int Id { get; set; }
+  [Key]
+  public int Id { get; set; }
 
-    //public int UserId { get; set; }
+  //public int UserId { get; set; }
 
-    [StringLength(20)]
-    [Unicode(false)]
-    public required string PersonalNumber { get; set; }
+  [StringLength(20)]
+  [Unicode(false)]
+  public required string PersonalNumber { get; set; }
 
-    //[StringLength(10)]
-    //[Unicode(false)]
-    //public required string BirthNumber { get; set; }
+  [StringLength(100)]
+  [Unicode(false)]
+  public string DisplayName { get; set; }
 
-    public byte[]? Photo { get; set; }
+  //[StringLength(10)]
+  //[Unicode(false)]
+  //public required string BirthNumber { get; set; }
 
-    [StringLength(100)]
-    [Unicode(false)]
-    public string? PhotoContentType { get; set; }
+  public byte[]? Photo { get; set; }
 
-    [StringLength(255)]
-    public string? PhotoFileName { get; set; }
+  [StringLength(100)]
+  [Unicode(false)]
+  public string? PhotoContentType { get; set; }
 
-    //[DeleteBehavior(DeleteBehavior.Restrict)]
-    //public User User { get; set; } = null!;
+  [StringLength(255)]
+  public string? PhotoFileName { get; set; }
 
-    public ICollection<CoachSetting> Settings { get; set; } = [];
+  //[DeleteBehavior(DeleteBehavior.Restrict)]
+  //public User User { get; set; } = null!;
 
-    public ICollection<CoachLicense> Licenses { get; set; } = [];
+  public ICollection<CoachSetting> Settings { get; set; } = [];
 
-    public ICollection<CoachContract> Contracts { get; set; } = [];
+  public ICollection<CoachLicense> Licenses { get; set; } = [];
 
-    public ICollection<CoachTrainingEntitlement> CoachTrainingEntitlementCoaches { get; set; } = [];
+  public ICollection<CoachContract> Contracts { get; set; } = [];
 
-    public ICollection<CoachTrainingPlan> CoachTrainingPlans { get; set; } = [];
+  public ICollection<CoachTrainingEntitlement> CoachTrainingEntitlementCoaches { get; set; } = [];
 
-    public ICollection<CoachTraining> CoachTrainings { get; set; } = [];
+  public ICollection<CoachTrainingPlan> CoachTrainingPlans { get; set; } = [];
+
+  public ICollection<CoachTraining> CoachTrainings { get; set; } = [];
 }

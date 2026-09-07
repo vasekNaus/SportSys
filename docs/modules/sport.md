@@ -52,6 +52,18 @@ společného bloku. Barvu určuje první kategorie a tooltip zachovává informa
 o všech členech oddělené ` | `. Nepropojené kolidující bloky zůstávají
 v samostatných lanes.
 
+Legenda se sestavuje z výsledných bloků, nikoliv přímo ze seznamu vybraných
+kategorií. Spojený blok se proto v legendě zobrazí pod stejným názvem jako
+v rozvrhu, například `U12 + U14`, a každá kombinace je uvedena pouze jednou.
+
+Každý blok zobrazuje čtyři řádky: kategorie, čas, unikátní typy tréninku a
+unikátní osobní čísla přiřazených trenérů. Údaje spojeného bloku se agregují ze
+všech jeho členů a oddělují čárkou. Pokud trénink nemá přiřazeného trenéra,
+zobrazí se `Bez trenéra`. U plánů se zahrnou přiřazení z `CoachTrainingPlan`,
+jejichž interval platnosti se překrývá s intervalem `TrainingPlan.From–To`.
+Osobní číslo je dočasným identifikátorem do zavedení vazby `hr.Coach` na
+`identity.User`.
+
 Při materializaci více reálných tréninků z propojených plánů se pro vzniklé
 tréninky vytvoří nová skupina v `TrainingGroup`. Identifikátor skupiny z
 `TrainingPlanGroup` se mezi tabulkami nekopíruje.
@@ -66,6 +78,7 @@ víkendovým zvýrazněním.
 
 - aktivní sezóna,
 - jedna nebo více aktivních kategorií,
+- nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
 - datum od a do.
 
 Řádky odpovídají konkrétním datům z vybraného intervalu, včetně dnů bez tréninku.

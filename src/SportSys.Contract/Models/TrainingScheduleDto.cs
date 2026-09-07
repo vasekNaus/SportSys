@@ -25,6 +25,7 @@ public interface ITrainingScheduleItem
     string Location { get; }
     string TrainingTypeName { get; }
     string TrainingPhaseName { get; }
+    IReadOnlyList<string> CoachFullNames { get; }
     string Note { get; }
 }
 
@@ -43,6 +44,7 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public string Location { get; set; } = string.Empty;
     public string TrainingTypeName { get; set; } = string.Empty;
     public string TrainingPhaseName { get; set; } = string.Empty;
+    public IReadOnlyList<string> CoachFullNames { get; set; } = [];
     public string Note { get; set; } = string.Empty;
 
     public DayOfWeek DayOfWeek

@@ -18,12 +18,16 @@ public class ScheduleModel : PageModel
 
     public List<SeasonDto> Seasons { get; private set; } = [];
     public List<SeasonCategoryDto> SeasonCategories { get; private set; } = [];
+    public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? SeasonId { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public List<string> SelectedCategories { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public List<int> SelectedTrainingTypeIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public DateOnly? DateFrom { get; set; }
@@ -36,12 +40,19 @@ public class ScheduleModel : PageModel
     public async Task OnGetAsync(CancellationToken ct)
     {
         Seasons = await _service.GetSeasonsAsync(ct);
+        TrainingTypes = await _service.GetTrainingTypesAsync(ct);
 
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
         {
             SeasonId = null;
             SelectedCategories = [];
         }
+
+        var requestedTrainingTypeIds = SelectedTrainingTypeIds.ToHashSet();
+        SelectedTrainingTypeIds = TrainingTypes
+            .Where(t => requestedTrainingTypeIds.Contains(t.Id))
+            .Select(t => t.Id)
+            .ToList();
 
         if (SeasonId.HasValue)
         {
@@ -65,6 +76,7 @@ public class ScheduleModel : PageModel
         var trainings = await _service.GetTrainingsAsync(
             SeasonId.Value,
             SelectedCategories,
+            SelectedTrainingTypeIds,
             DateFrom.Value,
             DateTo.Value,
             ct);

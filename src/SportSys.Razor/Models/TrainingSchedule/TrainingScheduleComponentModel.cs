@@ -26,6 +26,22 @@ public class TrainingScheduleComponentModel
                 Lanes = CreateLanes(row.Items),
             })
             .ToList();
+        LegendItems = Rows
+            .SelectMany(row => row.Lanes)
+            .SelectMany(lane => lane)
+            .GroupBy(block => block.Title, StringComparer.Ordinal)
+            .Select(group => group
+                .OrderBy(block => block.SeasonCategoryOrder)
+                .ThenBy(block => block.MinimumItemId)
+                .First())
+            .OrderBy(block => block.SeasonCategoryOrder)
+            .ThenBy(block => block.Title, StringComparer.CurrentCulture)
+            .Select(block => new TrainingScheduleLegendItem
+            {
+                Label = block.Title,
+                Color = block.Color,
+            })
+            .ToList();
     }
 
     public IReadOnlyDictionary<string, string> CategoryColors { get; }
@@ -33,6 +49,7 @@ public class TrainingScheduleComponentModel
     public TimeOnly TimelineEnd { get; }
     public IReadOnlyList<TrainingScheduleMarker> Markers { get; }
     public IReadOnlyList<TrainingScheduleComponentRow> Rows { get; }
+    public IReadOnlyList<TrainingScheduleLegendItem> LegendItems { get; }
 
     public static TrainingScheduleComponentModel Create(ITrainingScheduleViewModel source)
         => new(source);
@@ -109,11 +126,25 @@ public class TrainingScheduleComponentModel
         var primaryItem = items[0];
         var timeFrom = items.Min(item => item.TimeFrom);
         var timeTo = items.Max(item => item.TimeTo);
+        var trainingTypeSummary = string.Join(
+            ", ",
+            items.Select(item => item.TrainingTypeName)
+                .Distinct(StringComparer.CurrentCulture)
+                .OrderBy(name => name, StringComparer.CurrentCulture));
+        var coachPersonalNumbers = items
+            .SelectMany(item => item.CoachFullNames)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(personalNumber => personalNumber, StringComparer.Ordinal)
+            .ToList();
 
         return new TrainingScheduleBlock
         {
             Items = items,
             Title = string.Join(" + ", items.Select(item => item.SeasonCategoryName)),
+            TrainingTypeSummary = trainingTypeSummary,
+            CoachSummary = coachPersonalNumbers.Count == 0
+                ? "Bez trenéra"
+                : string.Join(", ", coachPersonalNumbers),
             TimeFrom = timeFrom,
             TimeTo = timeTo,
             SeasonCategoryOrder = primaryItem.SeasonCategoryOrder,
@@ -160,6 +191,9 @@ public class TrainingScheduleComponentModel
         if (!string.IsNullOrWhiteSpace(item.Note))
             parts.Add(item.Note);
 
+        if (item.CoachFullNames.Count > 0)
+            parts.Add($"Trenéři: {string.Join(", ", item.CoachFullNames)}");
+
         return string.Join(" · ", parts);
     }
 }
@@ -177,6 +211,8 @@ public class TrainingScheduleBlock
 {
     public required IReadOnlyList<ITrainingScheduleItem> Items { get; init; }
     public required string Title { get; init; }
+    public required string TrainingTypeSummary { get; init; }
+    public required string CoachSummary { get; init; }
     public TimeOnly TimeFrom { get; init; }
     public TimeOnly TimeTo { get; init; }
     public int SeasonCategoryOrder { get; init; }
@@ -191,4 +227,10 @@ public class TrainingScheduleMarker
 {
     public required string Label { get; init; }
     public double Left { get; init; }
+}
+
+public class TrainingScheduleLegendItem
+{
+    public required string Label { get; init; }
+    public required string Color { get; init; }
 }

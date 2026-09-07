@@ -4,11 +4,11 @@
 }
 
 <div class="schedule-legend">
-    @foreach (var (category, color) in Model.CategoryColors)
+    @foreach (var item in Model.LegendItems)
     {
         <div class="schedule-legend-item">
-            <span class="schedule-legend-swatch" style="background-color: @color"></span>
-            <span>@category</span>
+            <span class="schedule-legend-swatch" style="background-color: @item.Color"></span>
+            <span>@item.Label</span>
         </div>
     }
 </div>
@@ -69,6 +69,8 @@
                                 <span class="schedule-block-time">
                                     @block.TimeFrom.ToString("H:mm")–@block.TimeTo.ToString("H:mm")
                                 </span>
+                                <span class="schedule-block-type">@block.TrainingTypeSummary</span>
+                                <span class="schedule-block-coaches">@block.CoachSummary</span>
                             </div>
                         }
                     </div>

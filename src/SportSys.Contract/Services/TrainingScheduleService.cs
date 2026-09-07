@@ -63,15 +63,21 @@ public class TrainingScheduleService
     public async Task<List<TrainingScheduleItemDto>> GetTrainingsAsync(
         int seasonId,
         IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<int> trainingTypeIds,
         DateOnly dateFrom,
         DateOnly dateTo,
         CancellationToken ct = default)
     {
-        var trainings = await _db.Training
+        var query = _db.Training
             .Where(t => t.SeasonId == seasonId
                 && categoryNames.Contains(t.SeasonCategoryName)
                 && t.Date >= dateFrom
-                && t.Date <= dateTo)
+                && t.Date <= dateTo);
+
+        if (trainingTypeIds.Count > 0)
+            query = query.Where(t => trainingTypeIds.Contains(t.TrainingTypeId));
+
+        var trainings = await query
             .OrderBy(t => t.Date)
             .ThenBy(t => t.TimeFrom)
             .Select(t => new TrainingScheduleItemDto
@@ -91,6 +97,11 @@ public class TrainingScheduleService
                 Location = t.Location,
                 TrainingTypeName = t.TrainingType.Name,
                 TrainingPhaseName = t.TrainingPhase.Name,
+                CoachFullNames = t.CoachTrainings
+                    .Select(c => c.Coach.DisplayName)
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToList(),
                 Note = t.Note,
             })
             .ToListAsync(ct);
@@ -136,6 +147,12 @@ public class TrainingScheduleService
                 Location = p.Location,
                 TrainingTypeName = p.TrainingType.Name,
                 TrainingPhaseName = p.TrainingPhase.Name,
+                CoachFullNames = p.CoachTrainingPlans
+                    .Where(c => c.ValidFrom <= p.To && c.ValidTo >= p.From)
+                    .Select(c => c.Coach.DisplayName)
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToList(),
                 Note = string.Empty,
             })
             .ToListAsync(ct);
