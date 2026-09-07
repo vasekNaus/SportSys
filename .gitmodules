@@ -1,3 +1,6 @@
 [submodule "src/Apollo"]
 	path = src/Apollo
 	url = ssh://gituser@n/volume1/git/Apollo.git
+[submodule "src/External/Apollo"]
+	path = src/External/Apollo
+	url = https://github.com/Apollo-IT-Data/Apollo.git
