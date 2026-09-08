@@ -13,4 +13,7 @@
   <Project Path="src/SportSys.Database/SportSys.Database.csproj" Id="3566e93e-2b8c-44b7-893a-1cef309cd633" />
   <Project Path="src/SportSys.Razor/SportSys.Razor.csproj" Id="96e521d2-1030-4ccd-8711-7128b963acfe" />
   <Project Path="src/SportSys.Web/SportSys.Web.csproj" Id="c92835f5-a888-49ae-ae89-fdac4fd06bca" />
+  <Folder Name="/Tests/">
+    <Project Path="tests/SportSys.Razor.Tests/SportSys.Razor.Tests.csproj" />
+  </Folder>
 </Solution>

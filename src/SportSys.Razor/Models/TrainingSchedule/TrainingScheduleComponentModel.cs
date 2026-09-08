@@ -78,11 +78,8 @@ public class TrainingScheduleComponentModel
     {
         var lanes = new List<List<TrainingScheduleBlock>>();
 
-        var blocks = CreateBlocks(items)
-            .OrderBy(block => block.TimeFrom)
-            .ThenBy(block => block.TimeTo)
-            .ThenBy(block => block.SeasonCategoryOrder)
-            .ThenBy(block => block.MinimumItemId);
+        var blocks = TrainingScheduleBlockFactory.CreateBlocks(items)
+            .Select(CreateBlock);
 
         foreach (var block in blocks)
         {
@@ -101,60 +98,29 @@ public class TrainingScheduleComponentModel
         return lanes;
     }
 
-    private IEnumerable<TrainingScheduleBlock> CreateBlocks(
-        IReadOnlyList<ITrainingScheduleItem> items)
+    private TrainingScheduleBlock CreateBlock(TrainingScheduleBlockData block)
     {
-        foreach (var item in items.Where(item => item.GroupId is null))
-            yield return CreateBlock([item]);
-
-        foreach (var group in items
-            .Where(item => item.GroupId is not null)
-            .GroupBy(item => item.GroupId!.Value))
-        {
-            yield return CreateBlock(group);
-        }
-    }
-
-    private TrainingScheduleBlock CreateBlock(IEnumerable<ITrainingScheduleItem> sourceItems)
-    {
-        var items = sourceItems
-            .OrderBy(item => item.SeasonCategoryOrder)
-            .ThenBy(item => item.SeasonCategoryName, StringComparer.Ordinal)
-            .ThenBy(item => item.Id)
-            .ToList();
-
-        var primaryItem = items[0];
-        var timeFrom = items.Min(item => item.TimeFrom);
-        var timeTo = items.Max(item => item.TimeTo);
-        var trainingTypeSummary = string.Join(
-            ", ",
-            items.Select(item => item.TrainingTypeName)
-                .Distinct(StringComparer.CurrentCulture)
-                .OrderBy(name => name, StringComparer.CurrentCulture));
-        var coachPersonalNumbers = items
-            .SelectMany(item => item.CoachFullNames)
-            .Distinct(StringComparer.Ordinal)
-            .OrderBy(personalNumber => personalNumber, StringComparer.Ordinal)
-            .ToList();
+        var primaryItem = block.Items[0];
 
         return new TrainingScheduleBlock
         {
-            Items = items,
-            Title = string.Join(" + ", items.Select(item => item.SeasonCategoryName)),
-            TrainingTypeSummary = trainingTypeSummary,
-            CoachSummary = coachPersonalNumbers.Count == 0
-                ? "Bez trenéra"
-                : string.Join(", ", coachPersonalNumbers),
-            TimeFrom = timeFrom,
-            TimeTo = timeTo,
-            SeasonCategoryOrder = primaryItem.SeasonCategoryOrder,
-            MinimumItemId = items.Min(item => item.Id),
-            Left = GetLeft(timeFrom),
-            Width = GetWidth(timeFrom, timeTo),
+            Items = block.Items,
+            Title = block.Title,
+            TrainingTypeSummary = block.TrainingTypeLocationSummary,
+            CoachSummary = block.CoachSummary,
+            TimeFrom = block.TimeFrom,
+            TimeTo = block.TimeTo,
+            SeasonCategoryOrder = block.SeasonCategoryOrder,
+            MinimumItemId = block.MinimumItemId,
+            EditItemId = block.Items.All(item => item is TrainingScheduleItemDto)
+                ? block.MinimumItemId
+                : null,
+            Left = GetLeft(block.TimeFrom),
+            Width = GetWidth(block.TimeFrom, block.TimeTo),
             Color = CategoryColors.TryGetValue(primaryItem.SeasonCategoryName, out var color)
                 ? color
                 : "var(--color-text-muted)",
-            Tooltip = string.Join(" | ", items.Select(CreateTooltip)),
+            Tooltip = string.Join(" | ", block.Items.Select(CreateTooltip)),
         };
     }
 
@@ -217,6 +183,7 @@ public class TrainingScheduleBlock
     public TimeOnly TimeTo { get; init; }
     public int SeasonCategoryOrder { get; init; }
     public int MinimumItemId { get; init; }
+    public int? EditItemId { get; init; }
     public required string Color { get; init; }
     public required string Tooltip { get; init; }
     public double Left { get; init; }

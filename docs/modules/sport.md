@@ -79,9 +79,33 @@ víkendovým zvýrazněním.
 - aktivní sezóna,
 - jedna nebo více aktivních kategorií,
 - nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
+- nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality,
 - datum od a do.
 
 Řádky odpovídají konkrétním datům z vybraného intervalu, včetně dnů bez tréninku.
+
+Pokud rozvrh obsahuje alespoň jeden blok, lze aktuálně vyfiltrovaná data
+exportovat do souboru `.xlsx`. Export obsahuje sloupce Kategorie, Datum, Čas od,
+Čas do, Typ tréninku, Lokalita a Trenéři. Tréninky propojené přes
+`sport.TrainingGroup` se exportují jako jeden řádek se stejným časovým rozsahem
+a agregovanými hodnotami jako zobrazený blok. Při prázdném výsledku není
+exportní akce dostupná.
+
+### Editace tréninku
+
+Kliknutím na blok reálného tréninku v `/sport/Training/Schedule` se v novém
+panelu otevře `/sport/Training/Edit?id={id}`. Bloky obecných plánů na
+`/sport/Training/Plan` editační odkaz nemají.
+
+Formulář umožňuje měnit pouze datum, čas od, čas do, lokalitu a poznámku.
+Kategorie a typ tréninku jsou pouze informativní; fáze, stav, trenéři, vazba na
+plán a členství ve skupině se nemění.
+
+U spojených tréninků stránka zobrazí tabulku všech členů. Pokud mají všichni
+členové shodné editovatelné hodnoty, uloží se změny atomicky celé skupině.
+Pokud se alespoň jedna hodnota liší, stránka rozdíly zobrazí a editaci zablokuje
+v UI i v Contract službě. `DurationMinutes` se při editaci nenastavuje v C#;
+zůstává databázovým persisted computed sloupcem.
 
 ### Filtry Plan
 

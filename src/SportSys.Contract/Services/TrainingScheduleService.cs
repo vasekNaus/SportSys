@@ -60,10 +60,31 @@ public class TrainingScheduleService
             .ToListAsync(ct);
     }
 
+    public async Task<List<string>> GetTrainingLocationsAsync(CancellationToken ct = default)
+    {
+        return await _db.Training
+            .Where(t => t.Location != string.Empty)
+            .Select(t => t.Location)
+            .Distinct()
+            .OrderBy(location => location)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<string>> GetTrainingPlanLocationsAsync(CancellationToken ct = default)
+    {
+        return await _db.TrainingPlans
+            .Where(p => p.Location != string.Empty)
+            .Select(p => p.Location)
+            .Distinct()
+            .OrderBy(location => location)
+            .ToListAsync(ct);
+    }
+
     public async Task<List<TrainingScheduleItemDto>> GetTrainingsAsync(
         int seasonId,
         IReadOnlyCollection<string> categoryNames,
         IReadOnlyCollection<int> trainingTypeIds,
+        IReadOnlyCollection<string> locations,
         DateOnly dateFrom,
         DateOnly dateTo,
         CancellationToken ct = default)
@@ -76,6 +97,9 @@ public class TrainingScheduleService
 
         if (trainingTypeIds.Count > 0)
             query = query.Where(t => trainingTypeIds.Contains(t.TrainingTypeId));
+
+        if (locations.Count > 0)
+            query = query.Where(t => locations.Contains(t.Location));
 
         var trainings = await query
             .OrderBy(t => t.Date)
@@ -116,6 +140,7 @@ public class TrainingScheduleService
         int seasonId,
         IReadOnlyCollection<string> categoryNames,
         IReadOnlyCollection<int> trainingTypeIds,
+        IReadOnlyCollection<string> locations,
         int trainingPhaseId,
         CancellationToken ct = default)
     {
@@ -126,6 +151,9 @@ public class TrainingScheduleService
 
         if (trainingTypeIds.Count > 0)
             query = query.Where(p => trainingTypeIds.Contains(p.TrainingTypeId));
+
+        if (locations.Count > 0)
+            query = query.Where(p => locations.Contains(p.Location));
 
         var plans = await query
             .OrderBy(p => p.TimeFrom)

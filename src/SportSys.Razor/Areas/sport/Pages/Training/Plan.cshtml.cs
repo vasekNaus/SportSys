@@ -30,6 +30,7 @@ public class PlanModel : PageModel
     public List<SeasonCategoryDto> SeasonCategories { get; private set; } = [];
     public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
     public List<LookupSelectItem> TrainingPhases { get; private set; } = [];
+    public List<string> Locations { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? SeasonId { get; set; }
@@ -41,7 +42,13 @@ public class PlanModel : PageModel
     public List<int> SelectedTrainingTypeIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
+    public List<string> SelectedLocations { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
     public int? TrainingPhaseId { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public bool ShowEmptyRows { get; set; } = true;
 
     public ITrainingScheduleViewModel? ScheduleView { get; private set; }
 
@@ -50,6 +57,7 @@ public class PlanModel : PageModel
         Seasons = await _service.GetSeasonsAsync(ct);
         TrainingTypes = await _service.GetTrainingTypesAsync(ct);
         TrainingPhases = await _service.GetTrainingPhasesAsync(ct);
+        Locations = await _service.GetTrainingPlanLocationsAsync(ct);
 
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
         {
@@ -61,6 +69,11 @@ public class PlanModel : PageModel
         SelectedTrainingTypeIds = TrainingTypes
             .Where(t => requestedTrainingTypeIds.Contains(t.Id))
             .Select(t => t.Id)
+            .ToList();
+
+        var requestedLocations = SelectedLocations.ToHashSet();
+        SelectedLocations = Locations
+            .Where(requestedLocations.Contains)
             .ToList();
 
         if (TrainingPhaseId.HasValue && TrainingPhases.All(p => p.Id != TrainingPhaseId.Value))
@@ -76,17 +89,20 @@ public class PlanModel : PageModel
                 .ToList();
         }
 
-        if (!SeasonId.HasValue ||
-            SelectedCategories.Count == 0 ||
-            !TrainingPhaseId.HasValue)
+        if (!SeasonId.HasValue || !TrainingPhaseId.HasValue)
         {
             return;
         }
 
+        var categories = SelectedCategories.Count > 0
+            ? SelectedCategories
+            : SeasonCategories.Select(c => c.Name).ToList();
+
         var plans = await _service.GetTrainingPlansAsync(
             SeasonId.Value,
-            SelectedCategories,
+            categories,
             SelectedTrainingTypeIds,
+            SelectedLocations,
             TrainingPhaseId.Value,
             ct);
 
@@ -104,10 +120,11 @@ public class PlanModel : PageModel
                 IsWeekend = day is DayOfWeek.Saturday or DayOfWeek.Sunday,
                 Items = byDay.GetValueOrDefault(day) ?? [],
             })
+            .Where(row => ShowEmptyRows || row.Items.Count > 0)
             .ToList();
 
         var categoryOrder = SeasonCategories
-            .Where(c => SelectedCategories.Contains(c.Name))
+            .Where(c => SelectedCategories.Count == 0 || SelectedCategories.Contains(c.Name))
             .Select(c => c.Name)
             .ToList();
 

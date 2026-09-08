@@ -81,3 +81,4 @@ Solution: formát `.slnx`. Závislost: **Razor → Contract → Database → SQL
 | Přidání EF Core entity | `.github/skills/new-ef-entity/SKILL.md` |
 | Scaffolding Identity stránek | `.github/skills/identity-scaffold-cleanup/SKILL.md` |
 | Optimalizace MD dokumentace | `.github/skills/optimalizace-instrukci/SKILL.md` |
+| Implementační plán z GitHub issue | `.github/skills/github-issue-implementation-plan/SKILL.md` |

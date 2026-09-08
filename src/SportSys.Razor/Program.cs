@@ -3,6 +3,7 @@ using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Serilog;
 using SportSys.Contract;
+using SportSys.Razor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,7 @@ builder.Services.AddRazorPages(options =>
 
 // Registrace SportSysDbContext, Identity, Claims transformation, Contract servisů a authorization policies
 builder.Services.AddSportSysServices(builder.Configuration);
+builder.Services.AddSingleton<TrainingScheduleExcelExporter>();
 
 var app = builder.Build();
 

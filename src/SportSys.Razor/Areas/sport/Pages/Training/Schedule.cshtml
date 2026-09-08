@@ -12,6 +12,12 @@
         1 => selectedTrainingTypeNames[0],
         _ => $"Vybráno: {selectedTrainingTypeNames.Count}",
     };
+    var locationSummary = Model.SelectedLocations.Count switch
+    {
+        0 => "Všechny lokality",
+        1 => Model.SelectedLocations[0],
+        _ => $"Vybráno: {Model.SelectedLocations.Count}",
+    };
 }
 
 <form method="get" class="schedule-filter">
@@ -65,6 +71,38 @@
         </div>
 
         <div class="field">
+            <span class="schedule-filter-label" id="LocationLabel">Lokalita</span>
+            <details class="schedule-multiselect"
+                     data-multiselect
+                     data-empty-label="Všechny lokality">
+                <summary aria-labelledby="LocationLabel">
+                    <span data-multiselect-summary>@locationSummary</span>
+                </summary>
+                <div class="schedule-multiselect-menu">
+                    <div class="schedule-multiselect-options">
+                        @foreach (var location in Model.Locations)
+                        {
+                            <label class="schedule-multiselect-option">
+                                <input type="checkbox"
+                                       name="SelectedLocations"
+                                       value="@location"
+                                       checked="@Model.SelectedLocations.Contains(location)" />
+                                <span data-multiselect-option-label>@location</span>
+                            </label>
+                        }
+                    </div>
+                    <button type="button"
+                            class="schedule-multiselect-clear"
+                            data-multiselect-clear
+                            hidden>
+                        <i class="fa-solid fa-filter-circle-xmark fa-fw"></i>
+                        Vymazat výběr
+                    </button>
+                </div>
+            </details>
+        </div>
+
+        <div class="field">
             <label for="DateFrom">Od</label>
             <input type="date"
                    id="DateFrom"
@@ -99,6 +137,12 @@
                     </label>
                 }
             </div>
+            <div class="schedule-filter-options">
+                <label class="checkbox-label">
+                    <input asp-for="ShowEmptyRows" />
+                    Zobrazovat prázdné řádky
+                </label>
+            </div>
         </fieldset>
     }
     else if (Model.SeasonId.HasValue)
@@ -112,9 +156,23 @@
             <button type="submit" class="button">
                 <i class="fa-solid fa-calendar-days fa-fw"></i> Zobrazit rozvrh
             </button>
+            @if (Model.ScheduleView?.HasItems == true)
+            {
+                <button type="submit"
+                        name="handler"
+                        value="Export"
+                        class="button secondary">
+                    <i class="fa-solid fa-file-excel fa-fw"></i> Export do Excelu
+                </button>
+            }
         </div>
     }
 </form>
+
+@if (Model.ExportErrorMessage is not null)
+{
+    <p class="text-muted">@Model.ExportErrorMessage</p>
+}
 
 @if (Model.ScheduleView is not null)
 {
