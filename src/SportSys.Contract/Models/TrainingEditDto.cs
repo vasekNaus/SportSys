@@ -31,7 +31,7 @@ public class TrainingEditDto : IValidatableObject
     [StringLength(50, ErrorMessage = "Poznámka nesmí přesáhnout 50 znaků.")]
     [DataType(DataType.MultilineText)]
     [Display(Name = "Poznámka")]
-    public string Note { get; set; } = string.Empty;
+    public string? Note { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

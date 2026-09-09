@@ -21,7 +21,7 @@ public partial class TrainingPhase
 
     public virtual ICollection<Training> Training { get; set; } = new List<Training>();
 
-    public virtual ICollection<TrainingEntitlement> TrainingEntitlements { get; set; } = new List<TrainingEntitlement>();
+    public virtual ICollection<TrainingRequirement> TrainingRequirements { get; set; } = new List<TrainingRequirement>();
 
     public virtual ICollection<TrainingPlan> TrainingPlans { get; set; } = new List<TrainingPlan>();
 }

@@ -17,7 +17,7 @@ Entra ID nebo ASP.NET Core Identity.
 Stávající `Coach.Id` zůstává zachováno, protože na něj odkazují tabulky:
 
 - `sport.CoachTraining`,
-- `sport.CoachTrainingEntitlement`,
+- `sport.CoachTrainingRequirement`,
 - `sport.CoachTrainingPlan`.
 
 Zobrazované jméno, e-mail a telefon pocházejí z `identity.User`. `hr.Coach`

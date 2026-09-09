@@ -10,8 +10,8 @@ using SportSys.Database.Models.sportSchema;
 
 namespace SportSys.Database.Models.sport;
 
-[Table(nameof(TrainingEntitlement), Schema = Schemas.Sport)]
-public partial class TrainingEntitlement
+[Table(nameof(TrainingRequirement), Schema = Schemas.Sport)]
+public partial class TrainingRequirement
 {
     [Key]
     public int Id { get; set; }
@@ -33,7 +33,7 @@ public partial class TrainingEntitlement
     [Column(TypeName = "decimal(5, 2)")]
     public decimal DurationHours { get; set; }
 
-    public virtual ICollection<CoachTrainingEntitlement> CoachTrainingEntitlements { get; set; } = new List<CoachTrainingEntitlement>();
+    public virtual ICollection<CoachTrainingRequirement> CoachTrainingRequirements { get; set; } = new List<CoachTrainingRequirement>();
 
     [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryName))]
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]

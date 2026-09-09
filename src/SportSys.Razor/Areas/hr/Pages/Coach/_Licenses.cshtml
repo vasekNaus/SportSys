@@ -21,7 +21,7 @@ else
                 var isCurrent = license.ValidFrom <= today && (!license.ValidTo.HasValue || license.ValidTo >= today);
                 <tr class="@(isCurrent ? "current-record" : null)">
                     <td>@license.CoachLicenseTypeName</td>
-                    <td>@license.ValidFrom.ToString("d.M.yyyy") – @(license.ValidTo?.ToString("d.M.yyyy") ?? "dosud")</td>
+                    <td>@license.ValidFrom.ToString("d") – @(license.ValidTo?.ToString("d") ?? "dosud")</td>
                     <td class="buttons">
                         <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@Model.Coach.CoachId"
                            asp-route-activeTab="licenses" asp-route-licenseId="@license.Id" title="Upravit">

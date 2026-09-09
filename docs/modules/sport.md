@@ -59,7 +59,7 @@ v rozvrhu, například `U12 + U14`, a každá kombinace je uvedena pouze jednou.
 Každý blok zobrazuje čtyři řádky: kategorie, čas, unikátní typy tréninku a
 unikátní osobní čísla přiřazených trenérů. Údaje spojeného bloku se agregují ze
 všech jeho členů a oddělují čárkou. Pokud trénink nemá přiřazeného trenéra,
-zobrazí se `Bez trenéra`. U plánů se zahrnou přiřazení z `CoachTrainingPlan`,
+zobrazí se `-`. U plánů se zahrnou přiřazení z `CoachTrainingPlan`,
 jejichž interval platnosti se překrývá s intervalem `TrainingPlan.From–To`.
 Osobní číslo je dočasným identifikátorem do zavedení vazby `hr.Coach` na
 `identity.User`.

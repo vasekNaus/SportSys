@@ -69,7 +69,7 @@ hr.Coach
   └── hr.CoachContract      (smlouva pro sport.Season)
 
 sport.CoachTraining
-sport.CoachTrainingEntitlement ──► hr.Coach.Id
+sport.CoachTrainingRequirement ──► hr.Coach.Id
 sport.CoachTrainingPlan
 ```
 

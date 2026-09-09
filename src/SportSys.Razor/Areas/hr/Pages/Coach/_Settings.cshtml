@@ -25,7 +25,7 @@ else
                     ? $"{setting.BankAccountNumber}/{setting.BankCode}"
                     : $"{setting.BankAccountPrefix}-{setting.BankAccountNumber}/{setting.BankCode}";
                 <tr class="@(isCurrent ? "current-record" : null)">
-                    <td>@setting.ValidFrom.ToString("d.M.yyyy") – @(setting.ValidTo?.ToString("d.M.yyyy") ?? "dosud")</td>
+                    <td>@setting.ValidFrom.ToString("d") – @(setting.ValidTo?.ToString("d") ?? "dosud")</td>
                     <td>@account</td>
                     <td>@setting.Street, @setting.ZipCode @setting.City</td>
                     <td>@setting.HealthInsuranceCode</td>

@@ -31,6 +31,19 @@ public class TrainingEditDtoTests
         Assert.Empty(results);
     }
 
+    [Fact]
+    public void Validate_AcceptsEmptyNote()
+    {
+        var dto = CreateDto(
+            new TimeOnly(17, 0),
+            new TimeOnly(18, 0));
+        dto.Note = null;
+
+        var results = Validate(dto);
+
+        Assert.Empty(results);
+    }
+
     private static TrainingEditDto CreateDto(TimeOnly timeFrom, TimeOnly timeTo)
         => new()
         {

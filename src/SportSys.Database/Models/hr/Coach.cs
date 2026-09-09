@@ -47,7 +47,7 @@ public class Coach
 
   public ICollection<CoachContract> Contracts { get; set; } = [];
 
-  public ICollection<CoachTrainingEntitlement> CoachTrainingEntitlementCoaches { get; set; } = [];
+  public ICollection<CoachTrainingRequirement> CoachTrainingRequirementCoaches { get; set; } = [];
 
   public ICollection<CoachTrainingPlan> CoachTrainingPlans { get; set; } = [];
 

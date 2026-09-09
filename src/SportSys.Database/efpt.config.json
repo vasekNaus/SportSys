@@ -31,7 +31,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "[sport].[CoachTrainingEntitlement]",
+         "Name": "[sport].[CoachTrainingRequirement]",
          "ObjectType": 0
       },
       {
@@ -71,7 +71,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "[sport].[TrainingEntitlement]",
+         "Name": "[sport].[TrainingRequirement]",
          "ObjectType": 0
       },
       {
