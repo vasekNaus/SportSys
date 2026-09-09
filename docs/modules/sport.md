@@ -12,8 +12,28 @@ projektu `SportSys.Contract`.
 |---|---|---|
 | Reálný rozvrh | `/sport/Training/Schedule` | `sport.Training` |
 | Obecný týdenní plán | `/sport/Training/Plan` | `sport.TrainingPlan` |
+| Požadavky na tréninky | `/sport/Training/Requirement` | `sport.TrainingRequirement` |
 
 Původní route `/sport/Schedule` není zachována.
+
+## Požadavky na tréninky
+
+Stránka `/sport/Training/Requirement` je read-only přehled požadavků pro
+plánování sezóny. Zobrazuje sezónu, kategorii, typ a fázi tréninku, interval
+platnosti, požadovaný rozsah v hodinách a přiřazené trenéry včetně jejich rolí.
+Trenér bez zobrazovaného jména je identifikován osobním číslem; požadavek bez
+trenéra zobrazuje `-`.
+
+Přehled používá GET filtry:
+
+- aktivní sezóna; výchozí je nejnovější aktivní sezóna,
+- nula, jedna nebo více aktivních kategorií vybrané sezóny,
+- nula, jeden nebo více typů tréninku,
+- nula, jedna nebo více fází tréninku.
+
+Prázdný výběr kategorií, typů nebo fází znamená všechny hodnoty. Neplatné
+hodnoty z URL se před načtením dat odstraní. Stránka data pouze čte a nemění
+databázové schéma ani obsah tabulek.
 
 ### Společný datový kontrakt
 

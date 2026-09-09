@@ -72,10 +72,26 @@ fyzickým smazáním.
 |---|---|
 | `/hr/Coach/Index` | hledání, filtr sezony a aktivní smlouvy |
 | `/hr/Coach/Edit` | základní údaje, fotografie, smlouvy, nastavení a licence |
+| `/hr/Attendance/Index` | upload, historie, filtrování a stažení měsíčních docházek |
 
 Detail používá samostatný formulář a POST handler pro každou záložku, takže
 validace skrytých částí neblokuje právě ukládaný formulář. U nového trenéra
 jsou podřízené záložky dostupné až po uložení základních údajů.
+
+## Evidence docházky
+
+`hr.CoachAttendance` uchovává původní XLSX soubor docházky jednoho trenéra za
+konkrétní měsíc. Pro kombinaci trenéra, roku a měsíce lze uložit pouze jeden
+soubor. Záznam dále obsahuje UTC čas nahrání a povinnou vazbu na
+`identity.User`, který upload provedl.
+
+Upload přijímá pouze soubory `.xlsx` do 10 MiB. Contract vrstva ověřuje
+bezpečný název, MIME typ, ZIP formát a základní strukturu Open XML balíčku.
+Binární obsah se nenačítá v seznamovém dotazu; načte se až při stažení
+konkrétního záznamu. Odpověď ke stažení používá privátní `no-store` cache.
+
+První etapa soubor pouze archivuje. Nečte buňky, nevyhodnocuje účast a
+nezapisuje do `sport.Training` ani `sport.CoachTraining`.
 
 ## Nasazení změny existujících trenérů
 

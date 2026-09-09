@@ -57,6 +57,11 @@
                         </a>
                     </li>
                     <li>
+                        <a asp-area="sport" asp-page="/Training/Requirement">
+                            <i class="fa-solid fa-list-check fa-fw"></i> Požadavky
+                        </a>
+                    </li>
+                    <li>
                         <a asp-area="sport" asp-page="/IceRink/Index">
                             <i class="fa-solid fa-warehouse fa-fw"></i> Zimní stadiony
                         </a>
@@ -110,21 +115,23 @@
                     </li>
                 </ul>
             </li>
-            @if (User.IsInRole("SystemAdmin"))
-            {
-                <li>
-                    <a asp-area="hr" asp-page="/Coach/Index">
-                        <i class="fa-solid fa-user-tie fa-fw"></i> Personalistika
-                    </a>
-                    <ul>
-                        <li>
-                            <a asp-area="hr" asp-page="/Coach/Index">
-                                <i class="fa-solid fa-people-group fa-fw"></i> Trenéři
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-            }
+            <li>
+                <a asp-area="hr" asp-page="/Coach/Index">
+                    <i class="fa-solid fa-user-tie fa-fw"></i> Personalistika
+                </a>
+                <ul>
+                    <li>
+                        <a asp-area="hr" asp-page="/Coach/Index">
+                            <i class="fa-solid fa-people-group fa-fw"></i> Trenéři
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="hr" asp-page="/Attendance/Index">
+                            <i class="fa-solid fa-file-excel fa-fw"></i> Docházka
+                        </a>
+                    </li>
+                </ul>
+            </li>
             <li><a asp-area="" asp-page="/Privacy"><i class="fa-solid fa-shield fa-fw"></i> Ochrana soukromí</a></li>
         </ul>
     </nav>

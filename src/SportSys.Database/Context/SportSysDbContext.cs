@@ -32,6 +32,8 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
 
   public virtual DbSet<CoachContract> CoachContracts { get; set; }
 
+  public virtual DbSet<CoachAttendance> CoachAttendances { get; set; }
+
   public virtual DbSet<CoachRole> CoachRoles { get; set; }
 
   public virtual DbSet<CoachTraining> CoachTrainings { get; set; }

@@ -1,0 +1,156 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Docházka trenérů";
+}
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="infobox">
+        <i class="fa-solid fa-circle-check fa-fw"></i> @Model.StatusMessage
+    </div>
+}
+
+<section class="attendance-upload">
+    <h2>Nahrát docházku</h2>
+
+    <form method="post" enctype="multipart/form-data" asp-page-handler="Upload">
+        <input type="hidden" asp-for="Filter.CoachId" />
+        <input type="hidden" asp-for="Filter.PeriodFromYear" />
+        <input type="hidden" asp-for="Filter.PeriodFromMonth" />
+        <input type="hidden" asp-for="Filter.PeriodToYear" />
+        <input type="hidden" asp-for="Filter.PeriodToMonth" />
+
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="filter-row">
+            <div class="field">
+                <label asp-for="Upload.CoachId"></label>
+                <select asp-for="Upload.CoachId" asp-items="Model.UploadCoachSelectList"></select>
+                <span asp-validation-for="Upload.CoachId" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Upload.PeriodMonth"></label>
+                <select asp-for="Upload.PeriodMonth" asp-items="Model.MonthSelectList"></select>
+                <span asp-validation-for="Upload.PeriodMonth" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Upload.PeriodYear"></label>
+                <input asp-for="Upload.PeriodYear" type="number" min="1" max="9999" class="short" />
+                <span asp-validation-for="Upload.PeriodYear" class="field-validation-error"></span>
+            </div>
+            <div class="field attendance-file-field">
+                <label asp-for="AttendanceFile">Soubor XLSX</label>
+                <input asp-for="AttendanceFile"
+                       type="file"
+                       accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <span class="description">Soubor XLSX, maximálně 10 MiB.</span>
+                <span asp-validation-for="AttendanceFile" class="field-validation-error"></span>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="button">
+                    <i class="fa-solid fa-upload fa-fw"></i> Nahrát
+                </button>
+            </div>
+        </div>
+    </form>
+</section>
+
+<section>
+    <h2>Historie nahraných docházek</h2>
+
+    <form method="get" class="filter-form">
+        <div class="filter-row">
+            <div class="field">
+                <label asp-for="Filter.CoachId"></label>
+                <select asp-for="Filter.CoachId" asp-items="Model.FilterCoachSelectList"></select>
+            </div>
+            <fieldset class="period-filter">
+                <legend>Období od</legend>
+                <div class="period-fields">
+                    <div class="field">
+                        <label asp-for="Filter.PeriodFromMonth"></label>
+                        <select asp-for="Filter.PeriodFromMonth" asp-items="Model.MonthSelectList">
+                            <option value="">— měsíc —</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label asp-for="Filter.PeriodFromYear"></label>
+                        <input asp-for="Filter.PeriodFromYear" type="number" min="1" max="9999" class="short" />
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="period-filter">
+                <legend>Období do</legend>
+                <div class="period-fields">
+                    <div class="field">
+                        <label asp-for="Filter.PeriodToMonth"></label>
+                        <select asp-for="Filter.PeriodToMonth" asp-items="Model.MonthSelectList">
+                            <option value="">— měsíc —</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label asp-for="Filter.PeriodToYear"></label>
+                        <input asp-for="Filter.PeriodToYear" type="number" min="1" max="9999" class="short" />
+                    </div>
+                </div>
+            </fieldset>
+            <div class="filter-actions">
+                <button type="submit" class="button">
+                    <i class="fa-solid fa-magnifying-glass fa-fw"></i> Filtrovat
+                </button>
+                <a class="button secondary" asp-page="Index">
+                    <i class="fa-solid fa-filter-circle-xmark fa-fw"></i> Vymazat filtr
+                </a>
+            </div>
+        </div>
+        <div asp-validation-summary="All" class="validation-summary-errors"></div>
+    </form>
+
+    @if (Model.Attendances.Count == 0)
+    {
+        <p class="text-muted">Žádné docházky nebyly nalezeny.</p>
+    }
+    else
+    {
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Období</th>
+                    <th>Trenér</th>
+                    <th>Soubor</th>
+                    <th>Nahráno</th>
+                    <th>Nahrál</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var attendance in Model.Attendances)
+                {
+                    <tr>
+                        <td>@attendance.PeriodMonth.ToString("00")/@attendance.PeriodYear</td>
+                        <td>
+                            <strong>@attendance.CoachDisplayName</strong><br />
+                            <span class="text-muted">@attendance.CoachPersonalNumber</span>
+                        </td>
+                        <td>@attendance.FileName</td>
+                        <td>@attendance.UploadedAtLocal.ToString("g")</td>
+                        <td>@attendance.UploadedByDisplayName</td>
+                        <td class="buttons">
+                            <a class="button secondary icon-btn"
+                               asp-page-handler="Download"
+                               asp-route-id="@attendance.Id"
+                               title="Stáhnout">
+                                <i class="fa-solid fa-download fa-fw"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

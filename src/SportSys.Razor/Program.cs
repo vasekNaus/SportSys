@@ -19,8 +19,7 @@ builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configurati
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
 
-builder.Services.AddRazorPages(options =>
-    options.Conventions.AuthorizeAreaFolder("hr", "/Coach", "SystemAdmin"))
+builder.Services.AddRazorPages()  //options => options.Conventions.AuthorizeAreaFolder("hr", "/Coach", "SystemAdmin")
     .AddMicrosoftIdentityUI();
 
 // Registrace SportSysDbContext, Identity, Claims transformation, Contract servisů a authorization policies

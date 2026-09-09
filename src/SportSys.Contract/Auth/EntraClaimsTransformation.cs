@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
@@ -52,6 +53,14 @@ public class EntraClaimsTransformation : IClaimsTransformation
     {
       await SyncUserFieldsAsync(user, principal);
     }
+
+    var userId = user.Id.ToString(CultureInfo.InvariantCulture);
+    if (!principal.HasClaim(SportSysClaimTypes.UserId, userId))
+    {
+      var userIdIdentity = new ClaimsIdentity();
+      userIdIdentity.AddClaim(new Claim(SportSysClaimTypes.UserId, userId));
+      principal.AddIdentity(userIdIdentity);
+    }
     /*
     // Načíst business permissions a role z DB
     var permissionsAndRoles = await _db.UserBusinessRoles
@@ -73,10 +82,6 @@ public class EntraClaimsTransformation : IClaimsTransformation
     foreach (var permission in permissionsAndRoles.Select(p => p.PermCode).Distinct())
       identity.AddClaim(new Claim(PermissionClaimTypes.Permission, permission));
     */
-    // Vytvořit novou identitu s doplněnými claims
-    var identity = new ClaimsIdentity();
-
-    principal.AddIdentity(identity);
     return principal;
   }
 

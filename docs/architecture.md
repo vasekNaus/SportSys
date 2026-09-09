@@ -66,7 +66,8 @@ identity.User
 hr.Coach
   ├── hr.CoachSetting       (časově platné personální a platební údaje)
   ├── hr.CoachLicense       (časově platná licence + hr.CoachLicenseType)
-  └── hr.CoachContract      (smlouva pro sport.Season)
+  ├── hr.CoachContract      (smlouva pro sport.Season)
+  └── hr.CoachAttendance    (měsíční zdrojový XLSX dokument)
 
 sport.CoachTraining
 sport.CoachTrainingRequirement ──► hr.Coach.Id
