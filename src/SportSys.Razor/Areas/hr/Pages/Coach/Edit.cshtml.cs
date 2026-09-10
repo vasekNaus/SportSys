@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -20,6 +21,11 @@ public class EditModel : PageModel
     public CoachDetailDto BasicInput { get; set; } = new();
 
     [BindProperty]
+    [Range(1, int.MaxValue, ErrorMessage = "Uživatel je povinný.")]
+    [Display(Name = "Uživatel")]
+    public int? SelectedUserId { get; set; }
+
+    [BindProperty]
     public CoachContractDto ContractInput { get; set; } = new() { IsActive = true };
 
     [BindProperty]
@@ -40,7 +46,7 @@ public class EditModel : PageModel
     public List<SelectListItem> LicenseTypeSelectList { get; set; } = [];
     public List<SelectListItem> ContractTypeSelectList { get; set; } = [];
     public string ActiveTab { get; set; } = "basic";
-    public bool IsNew => BasicInput.CoachId == 0;
+    public bool IsNew => BasicInput.Id == 0;
 
     public async Task<IActionResult> OnGetAsync(
         int? id,
@@ -91,16 +97,19 @@ public class EditModel : PageModel
     public async Task<IActionResult> OnPostSaveBasicAsync(CancellationToken ct)
     {
         RetainModelState(nameof(BasicInput));
+        if (IsNew && SelectedUserId.GetValueOrDefault() <= 0)
+            ModelState.AddModelError(nameof(SelectedUserId), "Uživatel je povinný.");
+
         if (!ModelState.IsValid)
-            return await ReloadPageAsync(BasicInput.CoachId, "basic", ct, preserveBasicInput: true);
+            return await ReloadPageAsync(BasicInput.Id, "basic", ct, preserveBasicInput: true);
 
         try
         {
-            var coachId = BasicInput.CoachId == 0
-                ? await _service.CreateAsync(BasicInput, ct)
-                : BasicInput.CoachId;
+            var coachId = IsNew
+                ? await _service.CreateAsync(SelectedUserId!.Value, BasicInput, ct)
+                : BasicInput.Id;
 
-            if (BasicInput.CoachId != 0)
+            if (!IsNew)
                 await _service.UpdateBasicAsync(BasicInput, ct);
 
             TempData["StatusMessage"] = "Základní údaje trenéra byly uloženy.";
@@ -109,7 +118,7 @@ public class EditModel : PageModel
         catch (CoachValidationException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
-            return await ReloadPageAsync(BasicInput.CoachId, "basic", ct, preserveBasicInput: true);
+            return await ReloadPageAsync(BasicInput.Id, "basic", ct, preserveBasicInput: true);
         }
     }
 
@@ -255,14 +264,14 @@ public class EditModel : PageModel
     private async Task LoadSelectListsAsync(CancellationToken ct)
     {
         var users = await _service.GetAvailableUsersAsync(
-            BasicInput.UserId == 0 ? null : BasicInput.UserId,
+            BasicInput.Id == 0 ? SelectedUserId : BasicInput.Id,
             ct);
         UserSelectList =
         [
             new("— vyberte uživatele —", ""),
             .. users.Select(u => new SelectListItem(
                 string.IsNullOrWhiteSpace(u.Email) ? u.DisplayName : $"{u.DisplayName} ({u.Email})",
-                u.UserId.ToString())),
+                u.Id.ToString())),
         ];
 
         var seasons = await _service.GetSeasonsAsync(ct);

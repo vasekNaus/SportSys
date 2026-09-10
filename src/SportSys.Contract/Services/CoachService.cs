@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Models;
 using SportSys.Contract.Models.hr;
@@ -43,11 +44,11 @@ public class CoachService
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            //query = query.Where(c =>
-            //    (c.User.DisplayName != null && c.User.DisplayName.Contains(search)) ||
-            //    (c.User.UserName != null && c.User.UserName.Contains(search)) ||
-            //    (c.User.Email != null && c.User.Email.Contains(search)) ||
-            //    c.PersonalNumber.Contains(search));
+            query = query.Where(c =>
+                (c.DisplayName != null && c.DisplayName.Contains(search)) ||
+                (c.UserName != null && c.UserName.Contains(search)) ||
+                (c.Email != null && c.Email.Contains(search)) ||
+                c.PersonalNumber.Contains(search));
         }
 
         if (filter.SeasonId.HasValue)
@@ -61,12 +62,12 @@ public class CoachService
         }
 
         return await query
-            //.OrderBy(c => c.User.DisplayName ?? c.User.UserName ?? c.User.Email)
+            .OrderBy(c => c.DisplayName ?? c.UserName ?? c.Email)
             .Select(c => new CoachListItem
             {
-                CoachId = c.Id,
-                //DisplayName = c.User.DisplayName ?? c.User.UserName ?? c.User.Email ?? string.Empty,
-                //Email = c.User.Email,
+                Id = c.Id,
+                DisplayName = c.DisplayName ?? c.UserName ?? c.Email ?? c.Id.ToString(),
+                Email = c.Email,
                 PersonalNumber = c.PersonalNumber,
                 HasPhoto = c.Photo != null,
                 CurrentLicenseNames = c.Licenses
@@ -92,12 +93,11 @@ public class CoachService
             .Where(c => c.Id == id)
             .Select(c => new CoachDetailDto
             {
-                CoachId = c.Id,
-                //UserId = c.UserId,
-                //UserName = c.User.UserName,
-                //DisplayName = c.User.DisplayName,
-                //Email = c.User.Email,
-                //PhoneNumber = c.User.PhoneNumber,
+                Id = c.Id,
+                UserName = c.UserName,
+                DisplayName = c.DisplayName,
+                Email = c.Email,
+                PhoneNumber = c.PhoneNumber,
                 PersonalNumber = c.PersonalNumber,
                 //BirthNumber = c.BirthNumber,
                 HasPhoto = c.Photo != null,
@@ -155,67 +155,80 @@ public class CoachService
     {
         return await _db.Users
             .AsNoTracking()
-            //.Where(u => u.Coach == null || u.Id == includeUserId)
+            .Where(u => !_db.Coaches.Any(c => c.Id == u.Id) || u.Id == includeUserId)
             .OrderBy(u => u.DisplayName ?? u.UserName ?? u.Email)
             .Select(u => new UserSelectItem
             {
-                UserId = u.Id,
+                Id = u.Id,
                 DisplayName = u.DisplayName ?? u.UserName ?? u.Email ?? u.Id.ToString(),
                 Email = u.Email,
             })
             .ToListAsync(ct);
     }
 
-    public async Task<int> CreateAsync(CoachDetailDto dto, CancellationToken ct = default)
+    public async Task<int> CreateAsync(
+        int userId,
+        CoachDetailDto dto,
+        CancellationToken ct = default)
     {
+        if (userId <= 0)
+            throw new CoachValidationException("Vybraný uživatel není platný.");
+
         Validate(dto);
         dto.PersonalNumber = NormalizeRequired(dto.PersonalNumber, "Osobní číslo");
-        dto.BirthNumber = NormalizeBirthNumber(dto.BirthNumber);
+        dto.IdentificationNumber = NormalizeBirthNumber(dto.IdentificationNumber);
 
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
-        var user = await _db.Users.FindAsync([dto.UserId], ct)
+        var user = await _db.Users.SingleOrDefaultAsync(u => u.Id == userId, ct)
             ?? throw new CoachValidationException("Vybraný uživatel nebyl nalezen.");
 
-        //if (await _db.Coaches.AnyAsync(c => c.UserId == dto.UserId, ct))
-        //    throw new CoachValidationException("Vybraný uživatel je již propojen s trenérem.");
+        if (await _db.Coaches.AnyAsync(c => c.Id == userId, ct))
+            throw new CoachValidationException("Vybraný uživatel již je trenérem.");
 
-        await EnsureUniqueBasicDataAsync(dto.PersonalNumber, dto.BirthNumber, null, ct);
-        UpdateUser(user, dto);
+        await EnsureUniqueBasicDataAsync(dto.PersonalNumber, dto.IdentificationNumber, null, ct);
+        UpdateUserForPromotion(user, dto);
+        await SaveChangesAsync("Údaje uživatele se nepodařilo uložit.", ct);
 
-        var coach = new DbCoach
+        try
         {
-           // UserId = user.Id,
-            PersonalNumber = dto.PersonalNumber,
-            //BirthNumber = dto.BirthNumber,
-        };
+            // EF neumí přidat derived řádek k již existující instanci základního typu.
+            var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                INSERT INTO [hr].[Coach] ([Id], [PersonalNumber], [BirthNumber])
+                VALUES ({user.Id}, {dto.PersonalNumber}, {dto.IdentificationNumber})
+                """,
+                ct);
 
-        _db.Coaches.Add(coach);
-        await SaveChangesAsync("Trenéra se nepodařilo vytvořit kvůli konfliktu uložených údajů.", ct);
+            if (affectedRows != 1)
+                throw new CoachValidationException("Trenérský profil se nepodařilo vytvořit.");
+        }
+        catch (SqlException exception) when (exception.Number is 2601 or 2627)
+        {
+            throw new CoachValidationException(GetCoachDuplicateMessage(exception), exception);
+        }
+
         await transaction.CommitAsync(ct);
-        return coach.Id;
+        _db.Entry(user).State = EntityState.Detached;
+        return user.Id;
     }
 
     public async Task UpdateBasicAsync(CoachDetailDto dto, CancellationToken ct = default)
     {
         Validate(dto);
         dto.PersonalNumber = NormalizeRequired(dto.PersonalNumber, "Osobní číslo");
-        dto.BirthNumber = NormalizeBirthNumber(dto.BirthNumber);
+        dto.IdentificationNumber = NormalizeBirthNumber(dto.IdentificationNumber);
 
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
         var coach = await _db.Coaches
-            //.Include(c => c.User)
-            .SingleOrDefaultAsync(c => c.Id == dto.CoachId, ct)
+            .SingleOrDefaultAsync(c => c.Id == dto.Id, ct)
             ?? throw new CoachValidationException("Trenér nebyl nalezen.");
 
-        //if (dto.UserId != 0 && dto.UserId != coach.UserId)
-        //    throw new CoachValidationException("U existujícího trenéra nelze změnit propojeného uživatele.");
-
-        await EnsureUniqueBasicDataAsync(dto.PersonalNumber, dto.BirthNumber, coach.Id, ct);
-        //UpdateUser(coach.User, dto);
+        await EnsureUniqueBasicDataAsync(dto.PersonalNumber, dto.IdentificationNumber, coach.Id, ct);
+        UpdateUser(coach, dto);
         coach.PersonalNumber = dto.PersonalNumber;
-        //coach.BirthNumber = dto.BirthNumber;
+        coach.IdentificationNumber = dto.IdentificationNumber;
 
         await SaveChangesAsync("Základní údaje se nepodařilo uložit kvůli konfliktu uložených údajů.", ct);
         await transaction.CommitAsync(ct);
@@ -492,6 +505,21 @@ public class CoachService
         user.PhoneNumber = NullIfWhiteSpace(dto.PhoneNumber);
     }
 
+    private void UpdateUserForPromotion(
+        SportSys.Database.Models.identity.User user,
+        UserDto dto)
+    {
+        if (!string.IsNullOrWhiteSpace(dto.DisplayName))
+            user.DisplayName = dto.DisplayName.Trim();
+        if (!string.IsNullOrWhiteSpace(dto.Email))
+        {
+            user.Email = dto.Email.Trim();
+            user.NormalizedEmail = _normalizer.NormalizeEmail(user.Email);
+        }
+        if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+            user.PhoneNumber = dto.PhoneNumber.Trim();
+    }
+
     private async Task EnsureUniqueBasicDataAsync(
         string personalNumber,
         string birthNumber,
@@ -502,9 +530,9 @@ public class CoachService
                 c => c.Id != excludedCoachId && c.PersonalNumber == personalNumber, ct))
             throw new CoachValidationException("Osobní číslo již používá jiný trenér.");
 
-        //if (await _db.Coaches.AnyAsync(
-        //        c => c.Id != excludedCoachId && c.BirthNumber == birthNumber, ct))
-        //    throw new CoachValidationException("Rodné číslo již používá jiný trenér.");
+        if (await _db.Coaches.AnyAsync(
+                c => c.Id != excludedCoachId && c.IdentificationNumber == birthNumber, ct))
+            throw new CoachValidationException("Rodné číslo již používá jiný trenér.");
     }
 
     private async Task<DbCoach> GetCoachAsync(int coachId, CancellationToken ct)
@@ -619,6 +647,18 @@ public class CoachService
         {
             throw new CoachValidationException(conflictMessage, exception);
         }
+    }
+
+    private static string GetCoachDuplicateMessage(SqlException exception)
+    {
+        if (exception.Message.Contains("UX_Coach_PersonalNumber", StringComparison.Ordinal))
+            return "Osobní číslo již používá jiný trenér.";
+        if (exception.Message.Contains("UX_Coach_BirthNumber", StringComparison.Ordinal))
+            return "Rodné číslo již používá jiný trenér.";
+        if (exception.Message.Contains("PK_Coach", StringComparison.Ordinal))
+            return "Vybraný uživatel již je trenérem.";
+
+        return "Trenérský profil se nepodařilo vytvořit kvůli konfliktu uložených údajů.";
     }
 
     private static string? NullIfWhiteSpace(string? value)

@@ -6,6 +6,23 @@ Modul Sport spravuje sportovní číselníky a zobrazuje rozpisy tréninků. Adm
 stránky jsou v Razor Area `sport` a přistupují k databázi výhradně přes služby
 projektu `SportSys.Contract`.
 
+## Odpovědnosti
+
+- Zobrazení reálného rozvrhu a obecného týdenního plánu.
+- Read-only přehled požadavků na tréninky.
+- Export filtrovaného rozvrhu do XLSX.
+- Omezená editace reálných tréninků.
+- Správa stadionů, týmů, sezon a kategorií sezon.
+
+## Datový model
+
+`Training` a `Match` jsou TPC potomci `SportEvent` se sdílenou sekvencí.
+`TrainingPlan` popisuje obecný týdenní plán a `TrainingRequirement` požadovaný
+rozsah. Vazební tabulky trenérů odkazují na stabilní `hr.Coach.Id`.
+
+`TrainingGroup` a `TrainingPlanGroup` jsou nezávislé; jejich ID se mezi
+reálnými tréninky a plány nekopíruje.
+
 ## Rozvrhy tréninků
 
 | Stránka | Route | Zdroj dat |
@@ -215,8 +232,58 @@ klíče povinné; při editaci jsou neměnné. Formulář dále spravuje `Order`
 Změna aktivity se provádí explicitní metodou `SetActiveAsync`. Služby nikdy
 nevracejí databázové entity do Razor vrstvy.
 
-## Databázové změny
+## Tok zpracování
+
+1. PageModel normalizuje GET filtry.
+2. Contract služba načte projekci bez předání EF entit do UI.
+3. Prezentační model seskupí propojené položky a vypočítá lanes.
+4. Sdílená ViewComponent vykreslí časovou osu.
+5. Editace nebo export znovu načtou data v Contract vrstvě a ověří invarianty.
+
+## Klíčové komponenty
+
+| Komponenta | Cesta |
+|---|---|
+| Schedule služba | `src/SportSys.Contract/Services/TrainingScheduleService.cs` |
+| Editace tréninku | `src/SportSys.Contract/Services/TrainingService.cs` |
+| Požadavky | `src/SportSys.Contract/Services/TrainingRequirementService.cs` |
+| ViewComponent | `src/SportSys.Razor/ViewComponents/TrainingScheduleViewComponent.cs` |
+| Prezentační model | `src/SportSys.Razor/Models/TrainingSchedule/` |
+| Razor Area | `src/SportSys.Razor/Areas/sport/Pages/` |
+
+## Rozhraní
+
+Veřejné routes jsou uvedeny v tabulce „Rozvrhy tréninků“. Administrační
+číselníky používají dvojici `Index` a `Edit`; editace tréninku je dostupná na
+`/sport/Training/Edit?id={id}`.
+
+## Integrační vazby
+
+- Vazby na trenéry používají `hr.Coach.Id`.
+- XLSX export vytváří Razor služba nad DTO z Contract vrstvy.
+
+## Závislosti
+
+- Sportovní entity používají SQL Server computed columns a sdílené sekvence.
+- Administrační formuláře používají sdílené Razor EditorTemplates.
+
+## Omezení a pravidla
 
 Agent upravuje modely a EF Core konfigurace, ale nikdy nevytváří ani neupravuje
 migrace nebo model snapshot. Vytvoření a aplikaci migrace provádí výhradně
 uživatel.
+
+Neplatné hodnoty `TrainingPlan.DayName` nesmí být tiše ignorovány.
+`DurationMinutes` se nikdy nenastavuje v C#.
+
+## Příklady
+
+Příkladem agregace je blok `U12 + U14`, který spojí kategorie, typy a trenéry
+v rámci jedné skupiny, ale zachová bezpečně enkódovaný tooltip.
+
+## Odkazovaná dokumentace
+
+- `docs/architecture.md`
+- `docs/conventions.md`
+- `docs/modules/hr.md`
+- `.github/skills/editor-template/SKILL.md`

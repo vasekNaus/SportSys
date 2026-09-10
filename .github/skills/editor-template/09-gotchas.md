@@ -1,6 +1,6 @@
 # 09 – Gotchas – časté problémy a řešení
 
-> **Navigace:** [← Validace](08-validation.md) | [README](README.md)
+> **Navigace:** [← Validace](08-validation.md) | [Skill](SKILL.md)
 
 ---
 

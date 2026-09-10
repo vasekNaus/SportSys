@@ -1,19 +1,18 @@
 @model SportSys.Razor.Areas.hr.Pages.Coach.EditModel
 
 <form method="post" asp-page-handler="SaveBasic">
-    <input type="hidden" asp-for="BasicInput.CoachId" />
+    <input type="hidden" asp-for="BasicInput.Id" />
 
     @if (Model.IsNew)
     {
         <p>
-            <label asp-for="BasicInput.UserId"></label>
-            <select asp-for="BasicInput.UserId" asp-items="Model.UserSelectList"></select>
-            <span asp-validation-for="BasicInput.UserId" class="field-validation-error"></span>
+            <label asp-for="SelectedUserId"></label>
+            <select asp-for="SelectedUserId" asp-items="Model.UserSelectList"></select>
+            <span asp-validation-for="SelectedUserId" class="field-validation-error"></span>
         </p>
     }
     else
     {
-        <input type="hidden" asp-for="BasicInput.UserId" />
         <p>
             <label>Uživatel</label>
             <strong>@Model.BasicInput.UserName</strong>
@@ -21,30 +20,33 @@
         </p>
     }
 
-    <p>
-        <label asp-for="BasicInput.DisplayName"></label>
-        <input asp-for="BasicInput.DisplayName" />
-        <span asp-validation-for="BasicInput.DisplayName" class="field-validation-error"></span>
-    </p>
-    <p>
-        <label asp-for="BasicInput.Email"></label>
-        <input asp-for="BasicInput.Email" type="email" />
-        <span asp-validation-for="BasicInput.Email" class="field-validation-error"></span>
-    </p>
-    <p>
-        <label asp-for="BasicInput.PhoneNumber"></label>
-        <input asp-for="BasicInput.PhoneNumber" type="tel" />
-        <span asp-validation-for="BasicInput.PhoneNumber" class="field-validation-error"></span>
-    </p>
+    @if (!Model.IsNew)
+    {
+        <p>
+            <label asp-for="BasicInput.DisplayName"></label>
+            <input asp-for="BasicInput.DisplayName" />
+            <span asp-validation-for="BasicInput.DisplayName" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="BasicInput.Email"></label>
+            <input asp-for="BasicInput.Email" type="email" />
+            <span asp-validation-for="BasicInput.Email" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="BasicInput.PhoneNumber"></label>
+            <input asp-for="BasicInput.PhoneNumber" type="tel" />
+            <span asp-validation-for="BasicInput.PhoneNumber" class="field-validation-error"></span>
+        </p>
+    }
     <p>
         <label asp-for="BasicInput.PersonalNumber"></label>
         <input asp-for="BasicInput.PersonalNumber" />
         <span asp-validation-for="BasicInput.PersonalNumber" class="field-validation-error"></span>
     </p>
     <p>
-        <label asp-for="BasicInput.BirthNumber"></label>
-        <input asp-for="BasicInput.BirthNumber" autocomplete="off" />
-        <span asp-validation-for="BasicInput.BirthNumber" class="field-validation-error"></span>
+        <label asp-for="BasicInput.IdentificationNumber"></label>
+        <input asp-for="BasicInput.IdentificationNumber" autocomplete="off" />
+        <span asp-validation-for="BasicInput.IdentificationNumber" class="field-validation-error"></span>
     </p>
 
     <footer>
@@ -60,14 +62,14 @@
 @if (!Model.IsNew)
 {
     var photoUrl = Model.Coach.HasPhoto
-        ? Url.Page("Edit", "Photo", new { id = Model.Coach.CoachId, v = DateTime.UtcNow.Ticks })
+        ? Url.Page("Edit", "Photo", new { id = Model.Coach.Id, v = DateTime.UtcNow.Ticks })
         : Url.Content("~/images/default-avatar.svg");
 
     <div class="coach-photo-editor">
         <img class="coach-avatar large" src="@photoUrl" alt="Fotografie trenéra @Model.Coach.DisplayName" />
         <div class="coach-photo-actions">
             <form method="post" enctype="multipart/form-data" asp-page-handler="SavePhoto">
-                <input type="hidden" name="id" value="@Model.Coach.CoachId" />
+                <input type="hidden" name="id" value="@Model.Coach.Id" />
                 <p>
                     <label asp-for="Photo">Fotografie</label>
                     <input asp-for="Photo" type="file" accept="image/jpeg,image/png,image/webp" />
@@ -82,7 +84,7 @@
             @if (Model.Coach.HasPhoto)
             {
                 <form method="post" asp-page-handler="DeletePhoto">
-                    <input type="hidden" name="id" value="@Model.Coach.CoachId" />
+                    <input type="hidden" name="id" value="@Model.Coach.Id" />
                     <button type="submit" class="button tertiary" onclick="return confirm('Opravdu chcete fotografii odstranit?')">
                         <i class="fa-solid fa-trash fa-fw"></i> Odstranit fotografii
                     </button>

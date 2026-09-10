@@ -1,6 +1,6 @@
 # 08 – Validace a client-side scripty
 
-> **Navigace:** [← Admin vzory](07-admin-patterns.md) | [Gotchas →](09-gotchas.md) | [README](README.md)
+> **Navigace:** [← Admin vzory](07-admin-patterns.md) | [Gotchas →](09-gotchas.md) | [Skill](SKILL.md)
 
 ---
 

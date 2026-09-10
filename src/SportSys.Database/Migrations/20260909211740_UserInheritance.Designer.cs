@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using SportSys.Database.Context;
@@ -12,9 +13,11 @@ using SportSys.Database.Context;
 namespace SportSys.Database.Migrations
 {
     [DbContext(typeof(SportSysDbContext))]
-    partial class SportSysDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260909211740_UserInheritance")]
+    partial class UserInheritance
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1775,6 +1778,14 @@ namespace SportSys.Database.Migrations
                     b.Property<string>("PhotoFileName")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.HasIndex(new[] { "IdentificationNumber" }, "UX_Coach_IdentificationNumber")
+                        .IsUnique()
+                        .HasFilter("[IdentificationNumber] IS NOT NULL");
+
+                    b.HasIndex(new[] { "PersonalNumber" }, "UX_Coach_PersonalNumber")
+                        .IsUnique()
+                        .HasFilter("[PersonalNumber] IS NOT NULL");
 
                     b.ToTable("Coach", "hr");
                 });

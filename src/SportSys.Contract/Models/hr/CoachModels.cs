@@ -4,8 +4,7 @@ namespace SportSys.Contract.Models.hr;
 
 public class UserDto
 {
-    [Range(1, int.MaxValue, ErrorMessage = "Uživatel je povinný.")]
-    public int UserId { get; set; }
+    public int Id { get; set; }
 
     [Display(Name = "Uživatelské jméno")]
     public string? UserName { get; set; }
@@ -27,8 +26,6 @@ public class UserDto
 
 public class CoachDetailDto : UserDto, IValidatableObject
 {
-    public int CoachId { get; set; }
-
     [Required(ErrorMessage = "Osobní číslo je povinné.")]
     [StringLength(20, ErrorMessage = "Osobní číslo nesmí přesáhnout 20 znaků.")]
     [Display(Name = "Osobní číslo")]
@@ -37,7 +34,7 @@ public class CoachDetailDto : UserDto, IValidatableObject
     [Required(ErrorMessage = "Rodné číslo je povinné.")]
     [StringLength(20, ErrorMessage = "Rodné číslo nesmí přesáhnout 20 znaků.")]
     [Display(Name = "Rodné číslo")]
-    public string BirthNumber { get; set; } = string.Empty;
+    public string IdentificationNumber { get; set; } = string.Empty;
 
     public bool HasPhoto { get; set; }
 
@@ -51,14 +48,14 @@ public class CoachDetailDto : UserDto, IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        var normalized = (BirthNumber ?? string.Empty)
+        var normalized = (IdentificationNumber ?? string.Empty)
             .Replace("/", string.Empty)
             .Replace(" ", string.Empty);
         if ((normalized.Length is not 9 and not 10) || normalized.Any(c => !char.IsDigit(c)))
         {
             yield return new ValidationResult(
                 "Rodné číslo musí po odstranění lomítka a mezer obsahovat 9 nebo 10 číslic.",
-                [nameof(BirthNumber)]);
+                [nameof(IdentificationNumber)]);
         }
     }
 }
@@ -75,11 +72,15 @@ public class CoachFilter
     public bool ActiveContractOnly { get; set; }
 }
 
-public class CoachListItem
+public class UserListItem
 {
-    public int CoachId { get; set; }
+    public int Id { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string? Email { get; set; }
+}
+
+public class CoachListItem : UserListItem
+{
     public string PersonalNumber { get; set; } = string.Empty;
     public bool HasPhoto { get; set; }
     public List<string> CurrentLicenseNames { get; set; } = [];
@@ -220,7 +221,7 @@ public class CoachLicenseTypeSelectItem
 
 public class UserSelectItem
 {
-    public int UserId { get; set; }
+    public int Id { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string? Email { get; set; }
 }

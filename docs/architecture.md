@@ -1,150 +1,155 @@
-﻿# Architektura systému
+# Architektura systému
 
-## Vrstvová architektura
+## Účel systému
 
-```
-┌─────────────────────────────────────────────────────┐
-│  SportSys.Razor  (Razor Pages)                      │
-│  – UI, závisí VÝHRADNĚ na SportSys.Contract         │
-└──────────────────────┬──────────────────────────────┘
-                       │ závisí na
-┌──────────────────────▼──────────────────────────────┐
-│  SportSys.Contract                                  │
-│  – aplikační servisy, business logika               │
-│  – mapování DB entit → SportSys.Model               │
-└──────────┬───────────────────────────┬──────────────┘
-           │ závisí na                 │ vrací
-┌──────────▼──────────┐   ┌───────────▼──────────────┐
-│  SportSys.Database  │   │  SportSys.Model           │
-│  – EF Core modely   │   │  – doménové objekty / DTO │
-│  – SportSysDbContext│   │  – sdílené napříč vrstvami│
-│  – migrace          │   └──────────────────────────┘
-└──────────┬──────────┘
-           │ MSSQL
-┌──────────▼──────────────────────────────────────────┐
-│  SQL Server                                         │
-│  – databáze SportSys                                │
-│  – databáze externího rezervačního systému          │
-└─────────────────────────────────────────────────────┘
+SportSys je interní informační systém hokejového klubu. Aktivní aplikace
+centralizuje sportovní agendu, personalistiku trenérů, archiv docházky a
+skladové hospodářství. Nenahrazuje rezervační ani účetní systém; integrace s
+nimi musí být explicitně navržena a nesmí umožnit zápis do externích dat.
+
+## Architektonické vrstvy
+
+```text
+SportSys.Razor
+      |
+      v
+SportSys.Contract ---> SportSys.Model
+      |
+      v
+SportSys.Database ---> SQL Server
 ```
 
-> ❌ `SportSys.Razor` nesmí referencovat `SportSys.Database` — vše přes servisy v Contract.
-
-## Projekty
-
-| Projekt | Typ | Role |
+| Vrstva | Projekt nebo složka | Role |
 |---|---|---|
-| `SportSys.Database` | Class Library | EF Core modely, `SportSysDbContext`, migrace |
-| `SportSys.Model` | Class Library | Doménové objekty a DTO (vrácené servisy) |
-| `SportSys.Contract` | Class Library | Aplikační servisy; závisí na Database, vrací Model |
-| `SportSys.Razor` | ASP.NET Core Web App | Razor Pages; závisí výhradně na Contract |
-| `SportSys.ConsoleApp` | Console App | Import dat z Excelu do DB |
-| `src/Apollo/` | Git submodul | Sdílená knihovna (IdConvention, InitDatetime2, HttpService) |
+| Prezentace | `src/SportSys.Razor/` | Razor Pages, HTTP handlery, mapování vstupu a výstupu |
+| Aplikace | `src/SportSys.Contract/` | Business pravidla, validace, DTO, autorizační helpery a DI |
+| Data | `src/SportSys.Database/` | EF Core entity, DbContext, mapování a migrační historie |
+| Sdílené modely | `src/SportSys.Model/` | Typy sdílené napříč vrstvami |
+| Dávkové operace | `src/SportSys.ConsoleApp/` | Importy a jednorázové zpracování |
+| Sdílené knihovny | `src/External/Apollo/` | `IdConvention`, DB inicializace a HTTP utility |
 
-## DB schémata
+`SportSys.Razor` smí referencovat pouze `SportSys.Contract`. Contract
+zapouzdřuje databázové entity a do prezentace vrací DTO nebo modely. Toto
+pravidlo brání úniku EF entit do UI a udržuje business logiku testovatelnou.
 
-| Schéma | Obsah |
+### Izolovaný prototyp
+
+`src/SportSys.Web/` je trackovaný scaffoldovaný Blazor/Identity prototyp s
+vlastním `ApplicationDbContext` a migrací. Není součástí aktivního datového ani
+autentizačního toku SportSys a nesmí sloužit jako implementační vzor pro
+`SportSys.Razor`. Mění se pouze na explicitní zadání.
+
+## Databázová schémata
+
+| Schéma | Odpovědnost |
 |---|---|
-| `dbo` | Zbývající sdílené entity mimo doménová schémata |
-| `sport` | Tréninky, zápasy, SportEvent sekvence, lookup tabulky sport modulu |
-| `identity` | ASP.NET Core Identity (User, Role, UserRole…) bez AspNet prefixu |
-| `inventory` | Skladové hospodářství (Equipment, Asset, Loan, InventorySession…) |
-| `hr` | Trenéři, personální nastavení, licence a smlouvy |
-| `plan` | **Read-only** — modely externího rezervačního systému (Block, Task) |
+| `dbo` | Sdílené entity a číselníky mimo doménová schémata |
+| `sport` | Tréninky, zápasy, plány, požadavky a sportovní číselníky |
+| `identity` | ASP.NET Core Identity bez prefixu `AspNet` |
+| `inventory` | Majetek, výstroj, pohyby, zápůjčky a inventury |
+| `hr` | Trenéři, personální nastavení, licence, smlouvy a docházka |
+| `plan` | Rezervováno pro read-only integraci s externím rezervačním systémem |
 
-## Datový model — personalistika trenérů
+Aktuální `SportSysDbContext` nemá modely `plan.*`; jde o integrační hranici,
+nikoli o implementovanou zápisovou část systému.
 
-`hr.Coach` zachovává původní číselný primární klíč používaný sportovními
-tabulkami, ale identitu osoby přebírá z povinné vazby 1:1 na
-`identity.User`. Uživatelský účet proto může být propojen nejvýše s jedním
-trenérem.
+## Klíčové datové struktury
 
+### Sportovní události
+
+`Training` a `Match` používají TPC a sdílenou sekvenci
+`sport.SportEventSeq`. ID je unikátní napříč oběma tabulkami.
+`DurationMinutes` je persisted computed sloupec a nepočítá se v C#.
+
+```text
+sport.SportEventSeq
+  +-- sport.Training
+  +-- sport.Match
 ```
+
+`TrainingGroup` sdružuje konkrétní tréninky, zatímco `TrainingPlanGroup`
+sdružuje obecné plány. Shodné `GroupId` mezi těmito tabulkami nevyjadřuje
+vztah.
+
+### Personalistika
+
+```text
 identity.User
-      │ 1:0..1
-      ▼
-hr.Coach
-  ├── hr.CoachSetting       (časově platné personální a platební údaje)
-  ├── hr.CoachLicense       (časově platná licence + hr.CoachLicenseType)
-  ├── hr.CoachContract      (smlouva pro sport.Season)
-  └── hr.CoachAttendance    (měsíční zdrojový XLSX dokument)
+  +-- hr.Coach (TPT, sdílený PK)
+        |
+  +-- hr.CoachSetting
+  +-- hr.CoachLicense --> hr.CoachLicenseType
+  +-- hr.CoachContract --> sport.Season
+  +-- hr.CoachAttendance --> identity.User (uživatel uploadu)
 
 sport.CoachTraining
-sport.CoachTrainingRequirement ──► hr.Coach.Id
 sport.CoachTrainingPlan
+sport.CoachTrainingRequirement --> hr.Coach.Id
 ```
 
-Rodné číslo a fotografie jsou personální údaje. Nejsou součástí seznamových
-projekcí a fotografie se načítá samostatným autorizovaným endpointem.
+`Coach : User` používá TPT. `hr.Coach.Id` je PK i FK na
+`identity.User.Id`; jméno, e-mail a telefon jsou uloženy pouze v základní
+Identity tabulce. Trenérská tabulka obsahuje osobní číslo, rodné číslo a
+fotografii. Stejné ID používají všechny HR a Sport vazby. Docházka je unikátní
+pro trenéra, rok a měsíc.
 
-## Datový model — SportEvent (TPC)
+TPC zůstává preferovanou strategií běžných doménových hierarchií. TPT nad
+Identity je zdokumentovaná výjimka, protože trenér musí sdílet fyzický
+uživatelský řádek a současně být cílem databázových FK.
 
-`Training` a `Match` jsou konkrétní tabulky sdílející sekvenci `sport.SportEventSeq` — ID jsou unikátní napříč oběma entitami.
+### Sklad
 
-```
-sport.SportEventSeq (SEQUENCE)
-       ├── sport.Training  (Season_Id, IceRink_Id, TrainingType_Id, …, DurationMinutes*)
-       └── sport.Match     (Season_Id, IceRink_Id, Opponent_Id, …, DurationMinutes*)
+`InventoryItem` je abstraktní TPC základ pro `Equipment` a `Asset`. Sdílená
+sekvence `inventory.InventoryItemSeq` zajišťuje unikátní ID. Vazby z
+`Loan`, `InventoryTransaction`, `InventoryItemPurchase`,
+`ItemLocationHistory` a `InventoryCheck` na abstraktní položku nelze v SQL
+vyjádřit jedním FK; integritu proto vynucuje Contract vrstva.
 
-VIEW sport.SportEvent → UNION ALL Training + Match (sloupec EventType)
+Podrobnosti jsou v `docs/modules/inventory.md`.
 
-* DurationMinutes = persisted computed column DATEDIFF(minute, TimeFrom, TimeTo)
-  → nikdy nepočítat v C# kódu
-```
+## Integrace s externími systémy
 
-## Datový model — Inventory (TPC)
-
-```
-inventory.InventoryItemSeq (SEQUENCE)
-       ├── inventory.Equipment  (výstroj: Size, …)
-       └── inventory.Asset      (majetek: SerialNumber, WarrantyUntil, …)
-
-Sdílené entity v dbo: Manufacturer, Location (AssignedLocation + CurrentLocation)
-TPC omezení: Loan, InventoryTransaction, InventoryItemPurchase, ItemLocationHistory,
-             InventoryCheck nemají DB-level FK constraint na InventoryItemId
-             → integrita vynucována v Contract servisech
-```
-
-Podrobnosti: `docs/inventory.md`
-
-## Integrační modely — ext. rezervační systém
-
-Modely v `SportSys.Database/Models/Emr/`, namespace `Emr`, schéma `plan`:
-
-| Model | Tabulka | Popis |
+| Integrace | Stav | Hranice |
 |---|---|---|
-| `Block` | `plan.Block` | Blok rezervovaného ledového času |
-| `Task` | `plan.Task` | Konkrétní rezervace v rámci bloku |
+| Microsoft Entra ID | Aktivní | OIDC přihlášení, provisioning do `identity.User` |
+| Lokální ASP.NET Core Identity | Aktivní fallback | Stejný user store, vlastní cookie schémata |
+| SQL Server | Aktivní | Vlastní schémata SportSys |
+| Rezervační systém `plan.*` | Produktový požadavek | Výhradně read-only; modely nejsou v aktuálním DbContext |
+| Excel/XLSX | Aktivní | Export rozvrhu a archivace docházky; importy v ConsoleApp |
 
-> ❌ Do tabulek `plan.*` se nikdy nezapisuje.
+## Architektonická omezení
+
+- Hranice `Razor -> Contract -> Database` a jediný composition root jsou
+  závazné podle `docs/decisions/adr-001-vrstvy-a-composition-root.md`.
+- Autentizace sdílí Entra OIDC a lokální Identity store podle
+  `docs/decisions/adr-002-hybridni-identita.md`.
+- TPC hierarchie a aplikační integrita abstraktních FK se řídí
+  `docs/decisions/adr-003-tpc-se-sdilenymi-sekvencemi.md`.
+- TPT hierarchie `User -> Coach` je výjimka popsaná v
+  `docs/decisions/adr-004-coach-jako-tpt-potomek-user.md`.
+- Detailní implementační zákazy pro EF Core a frontend jsou pouze v
+  `.github/copilot-instructions.md` a `docs/conventions.md`.
 
 ## Klíčové soubory
 
 | Logický celek | Cesta |
 |---|---|
-| Registrace servisů | `src/SportSys.Contract/ServiceCollectionExtensions.cs` |
+| Composition root aplikačních služeb | `src/SportSys.Contract/ServiceCollectionExtensions.cs` |
+| HTTP pipeline aktivní aplikace | `src/SportSys.Razor/Program.cs` |
 | DbContext | `src/SportSys.Database/Context/SportSysDbContext.cs` |
-| DB schémata (konstanty) | `src/SportSys.Database/Models/Schemas.cs` |
-| EF Core modely | `src/SportSys.Database/Models/{dbo\|sport\|identity\|inventory}/` |
+| Konstanty schémat | `src/SportSys.Database/Models/Schemas.cs` |
+| EF Core entity | `src/SportSys.Database/Models/{schema}/` |
 | EF Core konfigurace | `src/SportSys.Database/Configurations/{schema}/` |
-| Migrace | `src/SportSys.Database/Migrations/` |
-| Razor Pages | `src/SportSys.Razor/Pages/` |
-| SCSS styly | `src/SportSys.Razor/Styles/` |
+| Razor Areas | `src/SportSys.Razor/Areas/` |
+| SCSS | `src/SportSys.Razor/Styles/` |
+| Testy | `tests/SportSys.Razor.Tests/` |
 
-## Architektonická omezení
+## Odkazovaná dokumentace
 
-| Pravidlo | Důvod |
-|---|---|
-| Razor → Contract (nikoli Database) | Izolace vrstev, testovatelnost |
-| Registrace jen v `AddSportSysServices()` | Zabrání duplikacím a kolizím schémat |
-| `AddIdentityCore` (ne `AddIdentity`) | `AddIdentity` přebije OIDC schéma → Entra ID login selže |
-| Žádné automatické FK indexy | `ForeignKeyIndexConvention` odstraněna — indexy přidávat explicitně |
-| `[Table]` na každém modelu | `TableNameFromDbSetConvention` odstraněna — bez atributu EF tabulku nenajde |
-
-## Reference
-
-- `docs/conventions.md` — EF Core konvence, SCSS, ikony
-- `docs/modules/auth.md` — autentizace a autorizace
-- `docs/modules/frontend.md` — SCSS struktura, barevné schéma
-- `docs/inventory.md` — modul skladového hospodářství
-- `docs/modules/hr.md` — personalistika trenérů
+- `docs/conventions.md`
+- `docs/modules/auth.md`
+- `docs/modules/frontend.md`
+- `docs/modules/hr.md`
+- `docs/modules/inventory.md`
+- `docs/modules/sport.md`
+- `docs/decisions/README.md`

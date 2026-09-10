@@ -1,6 +1,6 @@
 # 05 – Vlastní šablony a DataType atributy
 
-> **Navigace:** [← Property templates](04-property-templates.md) | [Project setup →](06-project-setup.md) | [README](README.md)
+> **Navigace:** [← Property templates](04-property-templates.md) | [Project setup →](06-project-setup.md) | [Skill](SKILL.md)
 
 Jak vytvořit vlastní EditorTemplates pro specifické typy polí: Markdown, barevný picker, dropdown ze seznamu, slider, nebo šablonu pojmenovanou přímo po CLR typu.
 

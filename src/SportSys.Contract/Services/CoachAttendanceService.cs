@@ -53,7 +53,11 @@ public class CoachAttendanceService
             {
                 Id = e.Id,
                 CoachId = e.CoachId,
-                CoachDisplayName = e.Coach.DisplayName,
+                CoachDisplayName =
+                    e.Coach.DisplayName
+                    ?? e.Coach.UserName
+                    ?? e.Coach.Email
+                    ?? e.Coach.Id.ToString(),
                 CoachPersonalNumber = e.Coach.PersonalNumber,
                 PeriodYear = e.PeriodYear,
                 PeriodMonth = e.PeriodMonth,
@@ -72,12 +76,13 @@ public class CoachAttendanceService
     {
         return _db.Coaches
             .AsNoTracking()
-            .OrderBy(e => e.DisplayName)
+            .OrderBy(e => e.DisplayName ?? e.UserName ?? e.Email)
             .ThenBy(e => e.PersonalNumber)
             .Select(e => new CoachSelectItem
             {
-                CoachId = e.Id,
-                DisplayName = e.DisplayName,
+                Id = e.Id,
+                DisplayName = e.DisplayName ?? e.UserName ?? e.Email ?? e.Id.ToString(),
+                Email = e.Email,
                 PersonalNumber = e.PersonalNumber,
             })
             .ToListAsync(ct);

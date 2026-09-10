@@ -4,18 +4,15 @@
 
 Modul eviduje majetek a výstroj hokejového klubu. Zajišťuje úplnou dohledatelnost životního cyklu každé položky – od pořízení přes pohyby, zápůjčky a opravy až po vyřazení. Slouží také jako podpora pro pravidelné inventury.
 
-## Rozsah evidence
+## Odpovědnosti
 
 - Hokejová výstroj (dresy, helmy, rukavice, hokejky, brusle, …)
 - Sportovní oblečení a doplňky
 - Dlouhodobý majetek (notebooky, monitory, tiskárny, …)
 - Vybavení tělocvičny (spinningová kola, posilovací stroje, …)
 - Elektronika a kancelářské vybavení
-
-## Klíčové funkce
-
 - Evidence jednotlivých kusů majetku s unikátním inventárním číslem
-- QR kódy pro rychlou identifikaci při inventurách
+- Uložení volitelné hodnoty `QRCodeValue` na položce
 - Sledování stavů položek (Ve skladu / Přidělena / Zapůjčena / V servisu / Ztracena / Vyřazena)
 - Evidence zápůjček členům klubu s historií vydání a vrácení
 - Automatický audit trail – každá operace nad položkou vytváří záznam pohybu
@@ -26,21 +23,23 @@ Modul eviduje majetek a výstroj hokejového klubu. Zajišťuje úplnou dohledat
 
 ---
 
-## Databázová architektura
+## Datový model
+
+### Databázová architektura
 
 ### Schémata
 
 | Schéma | Obsah |
 |---|---|
-| `inventory` | Entity skladového hospodářství |
-| `dbo` | Sdílené entity: `Manufacturer`, `Location` |
+| `inventory` | Entity skladového hospodářství včetně `Location` |
+| `dbo` | Sdílená entita `Manufacturer` |
 
 ### Namespace
 
 | Typ entit | Namespace |
 |---|---|
-| Abstraktní základ TPC + konkrétní typy + lookup tabulky | `SportSys.Database.Models.inventory` |
-| Sdílené entity dbo (Manufacturer, Location) | `SportSys.Database.Models.dbo` |
+| TPC typy, lookup tabulky, transakční entity a `Location` | `SportSys.Database.Models.inventory` |
+| Sdílené entity dbo (`Manufacturer`) | `SportSys.Database.Models.dbo` |
 
 ### Konfigurace EF Core
 
@@ -78,17 +77,17 @@ Společné vlastnosti sdílené oběma konkrétními typy. Fyzická tabulka neex
 | `Description` | `nvarchar(max)?` | Volná poznámka |
 | `CategoryId` | `int` | FK → `inventory.Category` |
 | `ManufacturerId` | `int?` | FK → `dbo.Manufacturer` |
-| `AssignedLocationId` | `int?` | FK → `dbo.Location` (organizační příslušnost) |
-| `CurrentLocationId` | `int?` | FK → `dbo.Location` (skutečné aktuální umístění) |
+| `AssignedLocationId` | `int?` | FK → `inventory.Location` (organizační příslušnost) |
+| `CurrentLocationId` | `int?` | FK → `inventory.Location` (skutečné aktuální umístění) |
 | `ItemStatus` | `int` | Stav položky dle `EItemStatus` |
 | `AcquisitionDate` | `date?` | Datum pořízení |
 | `AcquisitionPrice` | `decimal(10,2)?` | Pořizovací cena |
 | `QRCodeValue` | `varchar(500)?` | Hodnota QR kódu (inventární číslo nebo URL) |
 | `IsActive` | `bit` | Aktivní / archivováno |
 | `CreatedAt` | `datetime2` | Datum a čas vytvoření záznamu |
-| `CreatedByUserId` | `int?` | FK → `dbo.User` (kdo vytvořil) |
+| `CreatedByUserId` | `int?` | FK → `identity.User` (kdo vytvořil) |
 | `ModifiedAt` | `datetime2?` | Datum a čas poslední změny |
-| `ModifiedByUserId` | `int?` | FK → `dbo.User` (kdo naposledy upravil) |
+| `ModifiedByUserId` | `int?` | FK → `identity.User` (kdo naposledy upravil) |
 
 ### Equipment (výstroj)
 
@@ -208,12 +207,12 @@ Majetek
 
 ### Location
 
-`dbo.Location` – stromová struktura umístění (self-referencing). Sdílená entita, může být využita i dalšími moduly.
+`inventory.Location` – stromová struktura umístění (self-referencing).
 
 | Vlastnost | SQL typ | Popis |
 |---|---|---|
 | `Id` | `int` | PK |
-| `ParentLocationId` | `int?` | FK → `dbo.Location` (rodičovské umístění) |
+| `ParentLocationId` | `int?` | FK → `inventory.Location` (rodičovské umístění) |
 | `Name` | `nvarchar(200)` | Název |
 | `Description` | `nvarchar(500)?` | Popis |
 | `IsActive` | `bit` | Aktivní |
@@ -239,7 +238,7 @@ Každá položka skladu má dvě vazby na `Location`:
 |---|---|---|
 | `Id` | `int` | PK |
 | `InventoryItemId` | `int` | Odkaz na zapůjčenou položku (Equipment nebo Asset) |
-| `MemberId` | `int` | FK → `dbo.User` (člen, jemuž je zapůjčeno) |
+| `MemberId` | `int` | FK → `identity.User` (člen, jemuž je zapůjčeno) |
 | `LoanDate` | `date` | Datum vydání |
 | `ExpectedReturnDate` | `date?` | Plánované datum vrácení |
 | `ReturnedDate` | `date?` | Skutečné datum vrácení |
@@ -263,7 +262,7 @@ Každá položka skladu má dvě vazby na `Location`:
 | `TransactionTypeId` | `int` | FK → `inventory.TransactionType` |
 | `TransactionDate` | `datetime2` | Datum a čas operace |
 | `Quantity` | `int` | Počet kusů (standardně 1) |
-| `UserId` | `int?` | FK → `dbo.User` (kdo provedl operaci) |
+| `UserId` | `int?` | FK → `identity.User` (kdo provedl operaci) |
 | `Note` | `nvarchar(500)?` | Poznámka |
 
 ### TransactionType
@@ -322,10 +321,10 @@ Každá položka skladu má dvě vazby na `Location`:
 |---|---|---|
 | `Id` | `int` | PK |
 | `InventoryItemId` | `int` | Odkaz na položku |
-| `PreviousLocationId` | `int?` | FK → `dbo.Location` (odkud) |
-| `NewLocationId` | `int` | FK → `dbo.Location` (kam) |
+| `PreviousLocationId` | `int?` | FK → `inventory.Location` (odkud) |
+| `NewLocationId` | `int` | FK → `inventory.Location` (kam) |
 | `ChangedAt` | `datetime2` | Čas změny |
-| `ChangedByUserId` | `int?` | FK → `dbo.User` |
+| `ChangedByUserId` | `int?` | FK → `identity.User` |
 | `Note` | `nvarchar(500)?` | Poznámka |
 
 ---
@@ -334,7 +333,7 @@ Každá položka skladu má dvě vazby na `Location`:
 
 ### InventorySession
 
-`inventory.InventorySession` – jeden inventurní běh (prováděný minimálně jednou ročně).
+`inventory.InventorySession` – datový model jednoho inventurního běhu.
 
 | Vlastnost | SQL typ | Popis |
 |---|---|---|
@@ -354,9 +353,9 @@ Každá položka skladu má dvě vazby na `Location`:
 | `InventorySessionId` | `int` | FK → `inventory.InventorySession` |
 | `InventoryItemId` | `int` | Odkaz na kontrolovanou položku |
 | `CheckedAt` | `datetime2` | Čas provedení kontroly |
-| `CheckedByUserId` | `int?` | FK → `dbo.User` |
+| `CheckedByUserId` | `int?` | FK → `identity.User` |
 | `Found` | `bit` | Položka nalezena (`true`) / nenalezena (`false`) |
-| `ActualLocationId` | `int?` | FK → `dbo.Location` (skutečné umístění při kontrole) |
+| `ActualLocationId` | `int?` | FK → `inventory.Location` (skutečné umístění při kontrole) |
 | `Note` | `nvarchar(500)?` | Poznámka |
 
 ---
@@ -373,24 +372,7 @@ INV-2026-000002
 INV-2026-000003
 ```
 
-Inventární číslo je přirozeným obsahem QR kódu a slouží jako lidsky čitelný identifikátor při inventurách.
-
----
-
-## QR kódy
-
-QR kód slouží jako primární identifikační mechanismus při skenování mobilním zařízením. Do databáze (`QRCodeValue`) se ukládá pouze textová hodnota; obrázek QR kódu se generuje aplikačně (na vyžádání, nikdy perzistovaně).
-
-**Doporučený obsah:**
-```
-INV-2026-000001
-```
-nebo přímá URL:
-```
-https://app.domain.cz/inventory/item/12345
-```
-
----
+Inventární číslo slouží jako lidsky čitelný identifikátor položky.
 
 ## Enumerace
 
@@ -411,40 +393,44 @@ Seeduje tabulku `inventory.TransactionType`. Hodnoty viz sekce [TransactionType]
 
 ---
 
+## Tok zpracování
+
+1. Contract služba načte položku přes společný identifikátor TPC hierarchie.
+2. Ověří existenci konkrétního `Equipment` nebo `Asset` a pravidla operace.
+3. Provede změnu položky, zápůjčky nebo umístění v jedné databázové transakci.
+4. Vytvoří odpovídající `InventoryTransaction` a případně
+   `ItemLocationHistory`.
+5. Razor stránka pracuje pouze s Contract DTO; databázové entity nevrací.
+
 ## Audit
 
-Všechny entity modulu nesou auditní sloupce:
+Auditní vlastnosti položek a transakčních záznamů odkazují na
+`identity.User`. Konkrétní sloupce závisí na typu entity:
 
 | Sloupec | Typ | Popis |
 |---|---|---|
 | `CreatedAt` | `datetime2` | Čas vytvoření záznamu |
-| `CreatedByUserId` | `int?` | FK → `dbo.User` – kdo vytvořil |
+| `CreatedByUserId` | `int?` | FK → `identity.User` – kdo vytvořil |
 | `ModifiedAt` | `datetime2?` | Čas poslední úpravy |
-| `ModifiedByUserId` | `int?` | FK → `dbo.User` – kdo naposledy upravil |
+| `ModifiedByUserId` | `int?` | FK → `identity.User` – kdo naposledy upravil |
 
 Hodnoty se plní v aplikační vrstvě (Contract servisy). `CreatedAt` se nastaví při vložení, `ModifiedAt` při každé aktualizaci.
 
 ---
 
-## Budoucí rozšíření
+## Klíčové komponenty
 
-Datový model je navržen s výhledem na tato rozšíření (dosud neimplementována):
+| Komponenta | Cesta |
+|---|---|
+| Item služba | `src/SportSys.Contract/Services/InventoryItemService.cs` |
+| Loan služba | `src/SportSys.Contract/Services/LoanService.cs` |
+| Kategorie | `src/SportSys.Contract/Services/CategoryService.cs` |
+| Umístění | `src/SportSys.Contract/Services/LocationService.cs` |
+| Výrobci | `src/SportSys.Contract/Services/ManufacturerService.cs` |
+| Datové entity | `src/SportSys.Database/Models/inventory/` |
+| Razor Area | `src/SportSys.Razor/Areas/Inventory/` |
 
-- Sezónní přidělení výstroje konkrétnímu hráči
-- Vratné zálohy za vydané vybavení
-- Schvalování výdeje majetku (workflow schválení)
-- Evidence servisních zásahů a plán údržby
-- Fotodokumentace položek (přílohy)
-- Elektronické podpisy při fyzickém převzetí
-- Mobilní inventura s QR / RFID skenerem
-- Podpora více skladů s odděleným přístupem
-- Automatické generování inventurních štítků (PDF)
-- Hromadný import z Excelu
-- Export inventurních sestav
-
----
-
-## UI vrstva
+## Rozhraní
 
 ### URL struktura
 
@@ -457,21 +443,13 @@ Všechny stránky modulu jsou umístěny pod cestou `/Inventory` v Areas:
 /Inventory/Locations/Edit         – Nové / editace umístění
 /Inventory/Categories             – Správa kategorií
 /Inventory/Categories/Edit        – Nová / editace kategorie
-/Inventory/Loans                  – Přehled výpůjček
-/Inventory/Loans/Create           – Nová výpůjčka (QR skener)
-/Inventory/Loans/Edit/{id}        – Detail + vrácení položek
-```
-
-### Navigace
-
-Navigační sekce modulu:
-
-```
-Sklad
-├─ Výrobci
-├─ Umístění
-├─ Kategorie
-└─ Výpůjčky
+/Inventory/Items               – Společný přehled položek
+/Inventory/Items/Equipment     – Přehled výstroje
+/Inventory/Items/Assets        – Přehled majetku
+/Inventory/Items/Edit          – Nová / editace položky
+/Inventory/Loans               – Přehled výpůjček
+/Inventory/Loans/Create        – Nová výpůjčka
+/Inventory/Loans/Edit/{id}     – Detail + vrácení položek
 ```
 
 ### Aplikační servisy (SportSys.Contract)
@@ -481,6 +459,8 @@ Sklad
 | `ManufacturerService` | CRUD výrobců; filtrování podle názvu |
 | `LocationService` | CRUD umístění; stromová struktura; dropdown pro formuláře |
 | `CategoryService` | CRUD kategorií; správa `AvailableSizesJson`; stromová struktura |
+| `ItemKindService` | Číselník typů položek pro filtry a formuláře |
+| `InventoryItemService` | CRUD položek; seznam Equipment a Asset; generování inventárního čísla |
 | `LoanService` | Správa výpůjček; vrácení položek; vyhledávání položek dle inventárního čísla |
 
 Registrace: `AddSportSysServices()` v `ServiceCollectionExtensions.cs`.
@@ -502,7 +482,7 @@ Modely jsou odděleny od databázových entit a patří do namespace `SportSys.C
 | `LoanDetail` | Hlavička detailu výpůjčky (jen čtení) |
 | `LoanDetailItem` | Řádek v tabulce položek výpůjčky |
 | `CreateLoan` | Vstup pro vytvoření výpůjčky |
-| `InventoryItemLookup` | Výsledek vyhledání položky dle inventárního čísla (QR sken) |
+| `InventoryItemLookup` | Výsledek vyhledání položky dle inventárního čísla |
 | `MemberSelectItem` | Položka výběru člena ve formuláři výpůjčky |
 
 ### Výpůjčky – datový model UI vs. datová vrstva
@@ -527,6 +507,12 @@ Vypočítaný stav výpůjčky:
 - `Index` – tabulka s filtrem (Name); sloupce Název, Nadřazená, Pořadí, Velikosti (✓/—), Aktivní
 - `Edit` – formulář: Název, Nadřazená kategorie (dropdown), Pořadí, Aktivní, Povolené velikosti (textarea – jeden řádek = jedna velikost)
 
+**Items:**
+- `Index` – společný přehled položek s filtry
+- `Equipment` – seznam výstroje
+- `Assets` – seznam majetku
+- `Edit` – vytvoření nebo úprava konkrétní položky
+
 **Manufactures:**
 - `Index` – tabulka s filtrem (Name, tlačítka Hledat / Vymazat filtr), řazení dle názvu
 - `Edit` – sdílený formulář pro Create i Edit; `IsNew` určuje nadpis
@@ -537,17 +523,43 @@ Vypočítaný stav výpůjčky:
 
 **Loans:**
 - `Index` – tabulka s filtrem (Člen, Aktivní výpůjčka, Datum od/do); zobrazuje skupiny
-- `Create` – vícekrokový formulář: (1) výběr člena ze selectu, (2) přidávání položek přes inventární číslo / QR skener s inline validací pomocí vanilla JS fetch, (3) tlačítko Vytvořit výpůjčku
+- `Create` – vícekrokový formulář: (1) výběr člena ze selectu, (2) přidávání položek přes inventární číslo s inline validací pomocí vanilla JS fetch, (3) tlačítko Vytvořit výpůjčku
 - `Edit` – detail skupiny (jen čtení: hlavička) + tabulka položek s tlačítky Potvrdit vrácení + hromadné Vrátit vše
 
 ---
 
-## Diagram vztahů (zjednodušený)
+## Integrační vazby
+
+- `identity.User` identifikuje členy, vypůjčitele a uživatele provádějící
+  auditované operace.
+- TPC integrita odkazů na `InventoryItem` je odpovědností Contract služeb,
+  protože abstraktní tabulka v SQL neexistuje.
+- `QRCodeValue`, `InventorySession`, `InventoryCheck` a
+  `ItemLocationHistory` jsou součástí datového modelu, ale aktuálně nemají
+  samostatný aplikační workflow ani Razor UI.
+
+## Závislosti
+
+- `SportSys.Razor` používá výhradně služby a DTO z `SportSys.Contract`.
+- Datová vrstva používá SQL Server sekvenci a TPC mapování EF Core.
+- Uživatelské vazby směřují do schématu `identity`.
+
+## Omezení a pravidla
+
+- Inventární číslo je po vytvoření neměnné.
+- Každá stavová operace musí vytvořit auditní transakci.
+- Kategorie položky musí odpovídat větvi `Equipment` nebo `Asset`.
+- Fyzické mazání položek nenahrazuje archivaci přes `IsActive`.
+- Databázové entity nesmí být předávány do Razor vrstvy.
+
+## Příklady
+
+### Diagram vztahů
 
 ```
 dbo.Manufacturer ──────────────────┐
-dbo.Location (×2) ─────────────────┤
-dbo.User ──────────────────────────┤
+inventory.Location (×2) ───────────┤
+identity.User ─────────────────────┤
                                    │
 inventory.Category ────────────────┤
                                    ▼
@@ -570,9 +582,9 @@ InventoryItem │
 
 ---
 
-## Související dokumenty
+## Odkazovaná dokumentace
 
-- [features.md](features.md) – přehled všech funkcí systému
-- [architecture.md](architecture.md) – technická architektura
-- [.github/tasks/inventory-data-layer.md](../.github/tasks/inventory-data-layer.md) – implementační plán datové vrstvy
-- [.github/tasks/inventory-ui-layer-impl.md](../.github/tasks/inventory-ui-layer-impl.md) – implementační plán UI vrstvy
+- [features.md](../features.md) – přehled všech funkcí systému
+- [architecture.md](../architecture.md) – technická architektura
+- [historický plán datové vrstvy](../../.github/tasks/inventory-data-layer.md)
+- [historický plán UI vrstvy](../../.github/tasks/inventory-ui-layer-impl.md)

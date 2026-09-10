@@ -125,7 +125,6 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
     base.OnModelCreating(modelBuilder);
 
     //zmnena pojmenovani tabulek s daty Identity
-    modelBuilder.Entity<User>().ToTable(nameof(User), Schemas.Identity);
     modelBuilder.Entity<Role>().ToTable(nameof(Role), Schemas.Identity);
     modelBuilder.Entity<UserRole>().ToTable(nameof(UserRole), Schemas.Identity);
     modelBuilder.Entity<UserClaim>().ToTable(nameof(UserClaim), Schemas.Identity);

@@ -3,7 +3,7 @@
 ## Přehled
 
 Tento dokument popisuje implementaci UI vrstvy modulu Inventory pro projekt SportSys.
-Zadání je v souboru `.github/tasks/inventory-ui-layer.md`, popis modulu v `docs/inventory.md`.
+Zadání je v souboru `.github/tasks/inventory-ui-layer.md`, popis modulu v `docs/modules/inventory.md`.
 
 Rozsah první verze:
 - Správa výrobců (Manufacturers)
@@ -352,7 +352,7 @@ Task ReturnAllAsync(int groupId, CancellationToken ct = default)
   - `IsActive == false`
 
 **Poznámka k TPC:**
-- `Loan.InventoryItemId` nemá DB FK (TPC omezení – viz `docs/inventory.md`)
+- `Loan.InventoryItemId` nemá DB FK (TPC omezení – viz `docs/modules/inventory.md`)
 - Vyhledávat přes `_db.Equipment.Where(e => e.InventoryNumber == n)` UNION `_db.Assets.Where(a => a.InventoryNumber == n)`
 - Nebo: vyhledávat dle `InventoryNumber` na obou DbSetech a slučovat výsledky v paměti
 - Při vytváření Loan: ItemStatus aktualizovat přes `Equipment` nebo `Asset` DbSet dle toho, co bylo nalezeno
@@ -1076,6 +1076,6 @@ src/SportSys.Razor/Pages/Shared/_Layout.cshtml
 
 ## Související dokumenty
 
-- [`docs/inventory.md`](../../docs/inventory.md) – popis modulu (datový model, entit, UI vrstva)
+- [`docs/modules/inventory.md`](../../docs/modules/inventory.md) – popis modulu (datový model, entity, UI vrstva)
 - [`.github/tasks/inventory-ui-layer.md`](inventory-ui-layer.md) – UI zadání (specifikace stránek)
 - [`.github/tasks/inventory-data-layer.md`](inventory-data-layer.md) – implementační plán datové vrstvy

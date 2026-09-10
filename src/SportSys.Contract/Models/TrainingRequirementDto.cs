@@ -1,3 +1,5 @@
+using SportSys.Contract.Models.hr;
+
 namespace SportSys.Contract.Models;
 
 public class TrainingRequirementListItem
@@ -17,11 +19,8 @@ public class TrainingRequirementListItem
     public IReadOnlyList<TrainingRequirementCoachListItem> CoachAssignments { get; set; } = [];
 }
 
-public class TrainingRequirementCoachListItem
+public class TrainingRequirementCoachListItem : CoachSelectItem
 {
-    public int CoachId { get; set; }
-    public string DisplayName { get; set; } = string.Empty;
-    public string PersonalNumber { get; set; } = string.Empty;
     public int CoachRoleId { get; set; }
     public string CoachRoleName { get; set; } = string.Empty;
 

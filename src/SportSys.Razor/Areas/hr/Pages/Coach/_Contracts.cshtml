@@ -25,12 +25,12 @@ else
                     <td>@contract.RewardAmount.ToString("N2") Kč</td>
                     <td>@(contract.IsActive ? "Ano" : "Ne")</td>
                     <td class="buttons">
-                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@Model.Coach.CoachId"
+                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@Model.Coach.Id"
                            asp-route-activeTab="contracts" asp-route-contractId="@contract.Id" title="Upravit">
                             <i class="fa-solid fa-pen fa-fw"></i>
                         </a>
                         <form method="post" asp-page-handler="SetContractActive" class="inline-form">
-                            <input type="hidden" name="coachId" value="@Model.Coach.CoachId" />
+                            <input type="hidden" name="coachId" value="@Model.Coach.Id" />
                             <input type="hidden" name="contractId" value="@contract.Id" />
                             <input type="hidden" name="isActive" value="@(!contract.IsActive)" />
                             <button type="submit" class="button secondary icon-btn" title="@(contract.IsActive ? "Deaktivovat" : "Aktivovat")">
@@ -72,7 +72,7 @@ else
             </button>
             @if (Model.ContractInput.Id != 0)
             {
-                <a class="button secondary" asp-page="Edit" asp-route-id="@Model.Coach.CoachId" asp-route-activeTab="contracts">
+                <a class="button secondary" asp-page="Edit" asp-route-id="@Model.Coach.Id" asp-route-activeTab="contracts">
                     <i class="fa-solid fa-xmark fa-fw"></i> Zrušit editaci
                 </a>
             }

@@ -98,9 +98,7 @@ public class CoachAttendanceFileDto
     public string FileName { get; set; } = string.Empty;
 }
 
-public class CoachSelectItem
+public class CoachSelectItem : UserSelectItem
 {
-    public int CoachId { get; set; }
-    public string DisplayName { get; set; } = string.Empty;
     public string PersonalNumber { get; set; } = string.Empty;
 }

@@ -65,7 +65,7 @@ else
             @foreach (var coach in Model.Coaches)
             {
                 var photoUrl = coach.HasPhoto
-                    ? Url.Page("Edit", "Photo", new { id = coach.CoachId })
+                    ? Url.Page("Edit", "Photo", new { id = coach.Id })
                     : Url.Content("~/images/default-avatar.svg");
                 <tr>
                     <td>
@@ -101,7 +101,7 @@ else
                         </div>
                     </td>
                     <td class="buttons">
-                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@coach.CoachId" title="Upravit">
+                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@coach.Id" title="Upravit">
                             <i class="fa-solid fa-pen fa-fw"></i>
                         </a>
                     </td>

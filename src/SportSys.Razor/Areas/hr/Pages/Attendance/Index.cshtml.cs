@@ -117,14 +117,14 @@ public class IndexModel : PageModel
             new("— vyberte trenéra —", ""),
             .. coaches.Select(coach => new SelectListItem(
                 $"{coach.DisplayName} ({coach.PersonalNumber})",
-                coach.CoachId.ToString())),
+                coach.Id.ToString())),
         ];
         FilterCoachSelectList =
         [
             new("— všichni trenéři —", ""),
             .. coaches.Select(coach => new SelectListItem(
                 $"{coach.DisplayName} ({coach.PersonalNumber})",
-                coach.CoachId.ToString())),
+                coach.Id.ToString())),
         ];
 
         if (loadAttendances)

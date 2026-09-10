@@ -126,15 +126,23 @@ public class TrainingRequirementService
                 To = requirement.To,
                 DurationHours = requirement.DurationHours,
                 CoachAssignments = requirement.CoachTrainingRequirements
-                    .OrderBy(assignment => assignment.Coach.DisplayName)
+                    .OrderBy(assignment =>
+                        assignment.Coach.DisplayName
+                        ?? assignment.Coach.UserName
+                        ?? assignment.Coach.Email)
                     .ThenBy(assignment => assignment.Coach.PersonalNumber)
                     .ThenBy(assignment => assignment.CoachRole.Name)
                     .ThenBy(assignment => assignment.CoachId)
                     .ThenBy(assignment => assignment.CoachRoleId)
                     .Select(assignment => new TrainingRequirementCoachListItem
                     {
-                        CoachId = assignment.CoachId,
-                        DisplayName = assignment.Coach.DisplayName,
+                        Id = assignment.CoachId,
+                        DisplayName =
+                            assignment.Coach.DisplayName
+                            ?? assignment.Coach.UserName
+                            ?? assignment.Coach.Email
+                            ?? assignment.CoachId.ToString(),
+                        Email = assignment.Coach.Email,
                         PersonalNumber = assignment.Coach.PersonalNumber,
                         CoachRoleId = assignment.CoachRoleId,
                         CoachRoleName = assignment.CoachRole.Name,

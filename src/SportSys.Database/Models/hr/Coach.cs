@@ -7,27 +7,17 @@ using SportSys.Database.Models.sport;
 namespace SportSys.Database.Models.hr;
 
 [Table(nameof(Coach), Schema = Schemas.Hr)]
-//[Index(nameof(UserId), IsUnique = true, Name = "UX_Coach_User")]
 //[Index(nameof(PersonalNumber), IsUnique = true, Name = "UX_Coach_PersonalNumber")]
-//[Index(nameof(BirthNumber), IsUnique = true, Name = "UX_Coach_BirthNumber")]
-public class Coach
+//[Index(nameof(IdentificationNumber), IsUnique = true, Name = "UX_Coach_IdentificationNumber")]
+public class Coach : User
 {
-  [Key]
-  public int Id { get; set; }
-
-  //public int UserId { get; set; }
-
   [StringLength(20)]
   [Unicode(false)]
   public required string PersonalNumber { get; set; }
 
-  [StringLength(100)]
+  [StringLength(10)]
   [Unicode(false)]
-  public string DisplayName { get; set; }
-
-  //[StringLength(10)]
-  //[Unicode(false)]
-  //public required string BirthNumber { get; set; }
+  public required string IdentificationNumber { get; set; }
 
   public byte[]? Photo { get; set; }
 
@@ -37,9 +27,6 @@ public class Coach
 
   [StringLength(255)]
   public string? PhotoFileName { get; set; }
-
-  //[DeleteBehavior(DeleteBehavior.Restrict)]
-  //public User User { get; set; } = null!;
 
   public ICollection<CoachSetting> Settings { get; set; } = [];
 

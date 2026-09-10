@@ -30,7 +30,7 @@ else
                     <td>@setting.Street, @setting.ZipCode @setting.City</td>
                     <td>@setting.HealthInsuranceCode</td>
                     <td class="buttons">
-                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@Model.Coach.CoachId"
+                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@Model.Coach.Id"
                            asp-route-activeTab="settings" asp-route-settingId="@setting.Id" title="Upravit">
                             <i class="fa-solid fa-pen fa-fw"></i>
                         </a>
@@ -95,7 +95,7 @@ else
             </button>
             @if (Model.SettingInput.Id != 0)
             {
-                <a class="button secondary" asp-page="Edit" asp-route-id="@Model.Coach.CoachId" asp-route-activeTab="settings">
+                <a class="button secondary" asp-page="Edit" asp-route-id="@Model.Coach.Id" asp-route-activeTab="settings">
                     <i class="fa-solid fa-xmark fa-fw"></i> Zrušit editaci
                 </a>
             }

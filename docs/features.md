@@ -1,85 +1,16 @@
-# Přehled funkcí
+# Přehled aktuálních funkcí
 
-## Modul: Kontrola fakturace
+Tento dokument je produktový rozcestník. Technické invarianty a přesné cesty
+jsou v modulové dokumentaci.
 
-Hlavní motivace vzniku systému. Umožňuje porovnat skutečně využitý ledový čas (čerpáno z rezervačního systému sportoviště) s fakturovanými položkami od externího provozovatele.
+| Modul | Aktuální funkce | Podrobnosti |
+|---|---|---|
+| Sport | Rozvrh reálných tréninků, týdenní plán, požadavky, editace, XLSX export a správa číselníků | [sport.md](modules/sport.md) |
+| Personalistika | Trenéři, fotografie, časová nastavení, licence, smlouvy a měsíční archiv docházky | [hr.md](modules/hr.md) |
+| Sklad | Evidence výstroje a majetku, kategorie, výrobci, umístění, zápůjčky a auditní pohyby | [inventory.md](modules/inventory.md) |
+| Identita | Entra ID, lokální Identity fallback, provisioning a systémové role | [auth.md](modules/auth.md) |
+| Frontend | Razor Pages, vlastní SCSS, design tokeny, EditorTemplates a Font Awesome | [frontend.md](modules/frontend.md) |
+| Dávkové operace | Importní a pomocné příkazy v `SportSys.ConsoleApp` | [architecture.md](architecture.md) |
 
-- Načtení bloků z rezervačního systému (`plan.Block`)
-- Mapování bloků na sezóny a kategorie SportSys
-- Porovnání objemu hodin (rezervace vs. faktura)
-- Zobrazení rozdílů a anomálií
-- Export výsledků kontroly
-
-## Modul: Evidence sportovních událostí
-
-### Tréninky
-- Evidenci tréninků v rámci sezóny a kategorie
-- Typy tréninku (herní, fyzická příprava, …)
-- Fáze tréninku (přípravná, soutěžní, …)
-- Stav tréninku (plánováno, odehráno, zrušeno)
-- Vazba na tréninkový plán
-- Vazba na sportoviště (`IceRink`)
-- Import tréninků z výkazů trenérů (Excel → SQL Server)
-- Detekce duplicitních záznamů při importu
-
-### Zápasy
-- Evidence zápasů v rámci sezóny a kategorie
-- Domácí / venkovní zápas
-- Soupeř a jeho domovské sportoviště
-- Skóre (vstřelené / obdržené góly)
-- Stav zápasu (plánováno, odehráno, kontumace, …)
-- Identifikátor zápasu (`MatchCode`) pro párování s externími systémy
-
-### Unifikovaný pohled (SportEvent)
-- VIEW `dbo.SportEvent` spojující tréninky i zápasy
-- Možnost filtrovat přes celý kalendář bez ohledu na typ události
-- Unikátní ID napříč entitami zajištěno sdílenou DB sekvencí
-
-## Modul: Sportoviště
-
-- Evidence zimních stadionů / sportovišť (`IceRink`)
-- Název, adresa, město, volitelná GPS souřadnice (`geography`)
-- Použití jako cizí klíč v trénincích, zápasech i u soupeřů
-
-## Modul: Správa soupeřů
-
-- Evidence soupeřících klubů (`Opponent`)
-- Vazba na domovské sportoviště
-
-## Modul: Správa trenérů a smluv
-
-- Evidence smluv s trenéry (připravováno)
-- Sledování platnosti smluv
-- Podklad pro generování plateb
-
-## Modul: Platební automatizace
-
-- Generování platebních příkazů na základě smluv a odpracovaných hodin
-- Export do formátu pro internetové bankovnictví (připravováno)
-
-## Modul: Skladové hospodářství
-
-- Evidence hokejové výstroje a majetku klubu
-- Unikátní inventární číslo pro každou položku (formát `INV-YYYY-NNNNNN`) – neměnné po vytvoření
-- QR kódy pro rychlou identifikaci při inventurách a mobilním skenování
-- Sledování stavu položky: Ve skladu / Přidělena / Zapůjčena / V servisu / Ztracena / Vyřazena
-- Evidence zápůjček členům klubu s historií vydání a vrácení
-- Pohyby skladu – každá operace vytváří auditní záznam (`InventoryTransaction`)
-- Stromová kategorizace výstroje (dresy, helmy, brusle, …) a majetku (IT, tělocvična, …)
-- Evidence výrobců (`Manufacturer`) a umístění (`Location`) – sdílené entity v `dbo`
-- Dva typy položek (TPC dědičnost):
-  - `Equipment` – výstroj s vazbou na velikost
-  - `Asset` – majetek se sériovým číslem a zárukou
-- Evidence nákupních dokladů a financování pořízení
-- Historie umístění každé položky
-- Podpora periodických inventur (`InventorySession` + `InventoryCheck`)
-
-Podrobná specifikace: [inventory.md](inventory.md)
-
-## Nástroje a integrace
-
-| Nástroj | Popis |
-|---|---|
-| `SportSys.ConsoleApp` | Import výkazů trenérů z `.xlsx` souborů do DB |
-| EF Core migrace | Správa schématu vlastní databáze SportSys |
-| Read-only napojení na `plan.*` | Čtení dat z externího rezervačního systému bez zásahu do jeho dat |
+Funkce, které nejsou implementované v kódu ani přijaté v ADR, patří do GitHub
+issues, nikoli do tohoto přehledu.

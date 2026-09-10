@@ -1,6 +1,6 @@
 # 07 – Admin vzory (Create / Edit stránky)
 
-> **Navigace:** [← Project setup](06-project-setup.md) | [Validace →](08-validation.md) | [README](README.md)
+> **Navigace:** [← Project setup](06-project-setup.md) | [Validace →](08-validation.md) | [Skill](SKILL.md)
 
 Vzory pro typické administrační CRUD stránky. Vycházejí z projektu [Altairis.ReP](https://github.com/ridercz/ReP).
 
