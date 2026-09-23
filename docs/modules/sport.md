@@ -74,6 +74,18 @@ Komponenta pouze vykresluje předaná data. Zajišťuje časové markery, dynami
 rozsah osy, rozdělení překryvů do lanes, barvy kategorií a bezpečně HTML
 enkódované tooltipy. Data načítají PageModely přes `TrainingScheduleService`.
 
+Obě stránky mají výchozí vypnutý GET filtr **Spojovat tréninky**. Po jeho
+zapnutí `TrainingScheduleService` nad již načtenými DTO spojí položky ve
+stejném datu nebo dni týdne, pokud se jejich časové intervaly překrývají nebo
+se přesně dotýkají. Spojení je tranzitivní, takže řetězec navazujících
+intervalů vytvoří jeden blok. Tato vizualizační skupina je oddělená od
+databázového `GroupId` a nikdy se neukládá.
+
+Při zapnutém filtru nejsou bloky editovatelné, protože jeden vizualizační blok
+může obsahovat několik navzájem nesouvisejících databázových záznamů. Po
+vypnutí filtru se obnoví běžné editační odkazy jednotlivých položek a
+explicitních databázových skupin.
+
 Spojené položky používají dvě nezávislé vazební tabulky. `sport.TrainingGroup`
 sdružuje pouze reálné tréninky a `sport.TrainingPlanGroup` pouze tréninkové
 plány. Více členských řádků se stejným `GroupId` tvoří skupinu; položka bez
@@ -117,7 +129,8 @@ víkendovým zvýrazněním.
 - jedna nebo více aktivních kategorií,
 - nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
 - nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality,
-- datum od a do.
+- datum od a do,
+- volitelné spojování časově překrývajících se nebo navazujících tréninků.
 
 Řádky odpovídají konkrétním datům z vybraného intervalu, včetně dnů bez tréninku.
 
@@ -128,11 +141,17 @@ exportovat do souboru `.xlsx`. Export obsahuje sloupce Kategorie, Datum, Čas od
 a agregovanými hodnotami jako zobrazený blok. Při prázdném výsledku není
 exportní akce dostupná.
 
-### Editace tréninku
+Export respektuje filtr **Spojovat tréninky**. Při jeho zapnutí používá stejné
+dočasné intervalové skupiny jako vizualizace, takže jeden zobrazený blok
+odpovídá jednomu řádku exportu. Při vypnutém filtru zůstává seskupování omezené
+na explicitní `sport.TrainingGroup`.
+
+### Editace tréninku a tréninkového plánu
 
 Kliknutím na blok reálného tréninku v `/sport/Training/Schedule` se v novém
-panelu otevře `/sport/Training/Edit?id={id}`. Bloky obecných plánů na
-`/sport/Training/Plan` editační odkaz nemají.
+panelu otevře `/sport/Training/Schedule/Edit?id={id}`. Kliknutím na blok
+obecného plánu v `/sport/Training/Plan` se obdobně otevře
+`/sport/Training/Plan/Edit?id={id}`.
 
 Formulář umožňuje měnit pouze datum, čas od, čas do, lokalitu a poznámku.
 Kategorie a typ tréninku jsou pouze informativní; fáze, stav, trenéři, vazba na
@@ -144,17 +163,31 @@ Pokud se alespoň jedna hodnota liší, stránka rozdíly zobrazí a editaci zab
 v UI i v Contract službě. `DurationMinutes` se při editaci nenastavuje v C#;
 zůstává databázovým persisted computed sloupcem.
 
+Editace tréninkového plánu používá stejný technický princip, ale mění pouze
+platnost od a do, den týdne, čas od a do a lokalitu. Kategorie a typ jsou
+informativní; fáze, trenéři a členství v `TrainingPlanGroup` se nemění.
+U spojených plánů se kontroluje shoda všech editovatelných hodnot a
+konzistentní skupina se ukládá atomicky. Hodnota `DayName` zůstává přesným
+anglickým názvem dne `Monday` až `Sunday`.
+
 ### Filtry Plan
 
 - aktivní sezóna,
 - jedna nebo více aktivních kategorií,
 - nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
-- jedna fáze tréninku.
+- nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality,
+- jedna fáze tréninku,
+- nepovinné datum platnosti; zobrazí plány, pro které platí
+  `From <= datum <= To`,
+- volitelné spojování časově překrývajících se nebo navazujících plánů.
 
-Plan vždy vykreslí pondělí až neděli včetně prázdných dnů. Zobrazuje všechny
-odpovídající záznamy bez omezení podle `From–To`; překrývající se záznamy a plány
-s různými obdobími platnosti jsou rozděleny do samostatných lanes. Platnost je
-uvedena v tooltipu.
+Plan vždy vykreslí pondělí až neděli včetně prázdných dnů. Při nevyplněném
+datu zobrazuje všechny odpovídající záznamy bez omezení podle `From–To`.
+Při vyplněném datu se hranice platnosti vyhodnocují inkluzivně. Překrývající
+se záznamy a plány s různými obdobími platnosti jsou rozděleny do samostatných
+lanes, pokud není zapnuté spojování tréninků. Při zapnutém spojování se plány
+ve stejném dni týdne seskupují pouze podle času; jejich období platnosti není
+další podmínkou spojení. Platnost je uvedena v tooltipu.
 
 `TrainingPlan.DayName` musí obsahovat přesnou anglickou hodnotu `Monday` až
 `Sunday`. Neplatná hodnota vyvolá explicitní chybu a není tiše přeskočena.
@@ -238,7 +271,8 @@ nevracejí databázové entity do Razor vrstvy.
 2. Contract služba načte projekci bez předání EF entit do UI.
 3. Prezentační model seskupí propojené položky a vypočítá lanes.
 4. Sdílená ViewComponent vykreslí časovou osu.
-5. Editace nebo export znovu načtou data v Contract vrstvě a ověří invarianty.
+5. Editace tréninků, editace tréninkových plánů a export znovu načtou data
+   v Contract vrstvě a ověří invarianty.
 
 ## Klíčové komponenty
 
@@ -246,6 +280,7 @@ nevracejí databázové entity do Razor vrstvy.
 |---|---|
 | Schedule služba | `src/SportSys.Contract/Services/TrainingScheduleService.cs` |
 | Editace tréninku | `src/SportSys.Contract/Services/TrainingService.cs` |
+| Editace tréninkového plánu | `src/SportSys.Contract/Services/TrainingPlanService.cs` |
 | Požadavky | `src/SportSys.Contract/Services/TrainingRequirementService.cs` |
 | ViewComponent | `src/SportSys.Razor/ViewComponents/TrainingScheduleViewComponent.cs` |
 | Prezentační model | `src/SportSys.Razor/Models/TrainingSchedule/` |
@@ -255,7 +290,8 @@ nevracejí databázové entity do Razor vrstvy.
 
 Veřejné routes jsou uvedeny v tabulce „Rozvrhy tréninků“. Administrační
 číselníky používají dvojici `Index` a `Edit`; editace tréninku je dostupná na
-`/sport/Training/Edit?id={id}`.
+`/sport/Training/Schedule/Edit?id={id}` a editace tréninkového plánu na
+`/sport/Training/Plan/Edit?id={id}`.
 
 ## Integrační vazby
 

@@ -1,7 +1,7 @@
 @page
 @model EditModel
 @{
-    ViewData["Title"] = "Upravit trénink";
+    ViewData["Title"] = "Upravit tréninkový plán";
     var categories = string.Join(" + ", Model.Context.CategoryNames);
     var trainingTypes = string.Join(
         ", ",
@@ -35,7 +35,7 @@
     {
         <div class="infobox">
             <i class="fa-solid fa-link fa-fw"></i>
-            Změny budou uloženy pro všechny spojené tréninky:
+            Změny budou uloženy pro všechny spojené tréninkové plány:
             @string.Join(", ", Model.Context.CategoryNames).
         </div>
     }
@@ -43,7 +43,7 @@
     {
         <div class="validation-summary-errors" role="alert">
             <i class="fa-solid fa-triangle-exclamation fa-fw"></i>
-            Spojené tréninky nemají stejné datum, čas, lokalitu nebo poznámku.
+            Spojené tréninkové plány nemají stejnou platnost, den, čas nebo lokalitu.
             Dokud nebudou hodnoty sjednocené, nelze skupinu editovat.
         </div>
     }
@@ -54,11 +54,12 @@
                 <tr>
                     <th>Kategorie</th>
                     <th>Typ</th>
-                    <th>Datum</th>
+                    <th>Platnost od</th>
+                    <th>Platnost do</th>
+                    <th>Den</th>
                     <th>Čas od</th>
                     <th>Čas do</th>
                     <th>Lokalita</th>
-                    <th>Poznámka</th>
                 </tr>
             </thead>
             <tbody>
@@ -67,11 +68,12 @@
                     <tr>
                         <td>@member.SeasonCategoryName</td>
                         <td>@member.TrainingTypeName</td>
-                        <td>@member.Date.ToString("d")</td>
+                        <td>@member.From.ToString("d")</td>
+                        <td>@member.To.ToString("d")</td>
+                        <td>@member.DayDisplayName</td>
                         <td>@member.TimeFrom.ToString("H:mm")</td>
                         <td>@member.TimeTo.ToString("H:mm")</td>
                         <td>@member.Location</td>
-                        <td>@member.Note</td>
                     </tr>
                 }
             </tbody>
@@ -84,13 +86,15 @@
 @if (Model.Context.CanEdit)
 {
     <form method="post">
-        @Html.EditorFor(model => model.Input)
+        @Html.EditorFor(
+            model => model.Input,
+            new { DayNameItems = Model.DayNameItems })
 
         <footer>
             <button type="submit" class="button">
                 <i class="fa-solid fa-floppy-disk fa-fw"></i> Uložit
             </button>
-            <button type="button" class="button secondary" onclick="closeTrainingEdit()">
+            <button type="button" class="button secondary" onclick="closeTrainingPlanEdit()">
                 <i class="fa-solid fa-xmark fa-fw"></i> Zavřít
             </button>
         </footer>
@@ -99,7 +103,7 @@
 else
 {
     <p class="buttons">
-        <button type="button" class="button secondary" onclick="closeTrainingEdit()">
+        <button type="button" class="button secondary" onclick="closeTrainingPlanEdit()">
             <i class="fa-solid fa-xmark fa-fw"></i> Zavřít
         </button>
     </p>
@@ -108,11 +112,11 @@ else
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        function closeTrainingEdit() {
+        function closeTrainingPlanEdit() {
             window.close();
             window.setTimeout(function () {
                 if (!window.closed) {
-                    window.location.href = '@Url.Page("Schedule")';
+                    window.location.href = '@Url.Page("./Index")';
                 }
             }, 100);
         }

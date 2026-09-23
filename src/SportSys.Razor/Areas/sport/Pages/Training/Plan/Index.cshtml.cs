@@ -4,9 +4,9 @@ using SportSys.Contract.Models;
 using SportSys.Contract.Services;
 using SportSys.Razor.Models.TrainingSchedule;
 
-namespace SportSys.Razor.Areas.sport.Pages.Training;
+namespace SportSys.Razor.Areas.sport.Pages.Training.Plan;
 
-public class PlanModel : PageModel
+public class IndexModel : PageModel
 {
     private static readonly DayOfWeek[] WeekDays =
     [
@@ -21,7 +21,7 @@ public class PlanModel : PageModel
 
     private readonly TrainingScheduleService _service;
 
-    public PlanModel(TrainingScheduleService service)
+    public IndexModel(TrainingScheduleService service)
     {
         _service = service;
     }
@@ -48,7 +48,13 @@ public class PlanModel : PageModel
     public int? TrainingPhaseId { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public DateOnly? ValidOn { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public bool ShowEmptyRows { get; set; } = true;
+
+    [BindProperty(SupportsGet = true)]
+    public bool MergeTrainings { get; set; }
 
     public ITrainingScheduleViewModel? ScheduleView { get; private set; }
 
@@ -104,6 +110,8 @@ public class PlanModel : PageModel
             SelectedTrainingTypeIds,
             SelectedLocations,
             TrainingPhaseId.Value,
+            ValidOn,
+            MergeTrainings,
             ct);
 
         var byDay = plans
@@ -128,7 +136,10 @@ public class PlanModel : PageModel
             .Select(c => c.Name)
             .ToList();
 
-        ScheduleView = new TrainingScheduleViewModel(rows, categoryOrder);
+        ScheduleView = new TrainingScheduleViewModel(
+            rows,
+            categoryOrder,
+            allowEditing: !MergeTrainings);
     }
 
     private static string FormatDayOfWeek(DayOfWeek day)

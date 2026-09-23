@@ -1,5 +1,5 @@
 using SportSys.Contract.Models;
-using SportSys.Razor.Areas.sport.Pages.Training;
+using RequirementIndexModel = SportSys.Razor.Areas.sport.Pages.Training.Requirement.IndexModel;
 
 namespace SportSys.Razor.Tests;
 
@@ -40,7 +40,7 @@ public class TrainingRequirementTests
             new LookupSelectItem { Id = 1, Name = "První" },
         };
 
-        var result = RequirementModel.NormalizeIds(
+        var result = RequirementIndexModel.NormalizeIds(
             [1, 3, 1, 2],
             availableItems);
 

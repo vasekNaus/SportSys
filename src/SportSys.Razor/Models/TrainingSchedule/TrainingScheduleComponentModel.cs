@@ -12,6 +12,7 @@ public class TrainingScheduleComponentModel
         CategoryColors = source.CategoryColors;
         TimelineStart = source.TimelineStart;
         TimelineEnd = source.TimelineEnd;
+        AllowEditing = source.AllowEditing;
         _totalTimelineMinutes =
             (TimelineEnd.ToTimeSpan() - TimelineStart.ToTimeSpan()).TotalMinutes;
 
@@ -47,6 +48,7 @@ public class TrainingScheduleComponentModel
     public IReadOnlyDictionary<string, string> CategoryColors { get; }
     public TimeOnly TimelineStart { get; }
     public TimeOnly TimelineEnd { get; }
+    public bool AllowEditing { get; }
     public IReadOnlyList<TrainingScheduleMarker> Markers { get; }
     public IReadOnlyList<TrainingScheduleComponentRow> Rows { get; }
     public IReadOnlyList<TrainingScheduleLegendItem> LegendItems { get; }
@@ -101,6 +103,9 @@ public class TrainingScheduleComponentModel
     private TrainingScheduleBlock CreateBlock(TrainingScheduleBlockData block)
     {
         var primaryItem = block.Items[0];
+        var editPage = AllowEditing
+            ? GetEditPage(block.Items)
+            : null;
 
         return new TrainingScheduleBlock
         {
@@ -112,9 +117,8 @@ public class TrainingScheduleComponentModel
             TimeTo = block.TimeTo,
             SeasonCategoryOrder = block.SeasonCategoryOrder,
             MinimumItemId = block.MinimumItemId,
-            EditItemId = block.Items.All(item => item is TrainingScheduleItemDto)
-                ? block.MinimumItemId
-                : null,
+            EditItemId = editPage is null ? null : block.MinimumItemId,
+            EditPage = editPage,
             Left = GetLeft(block.TimeFrom),
             Width = GetWidth(block.TimeFrom, block.TimeTo),
             Color = CategoryColors.TryGetValue(primaryItem.SeasonCategoryName, out var color)
@@ -122,6 +126,21 @@ public class TrainingScheduleComponentModel
                 : "var(--color-text-muted)",
             Tooltip = string.Join(" | ", block.Items.Select(CreateTooltip)),
         };
+    }
+
+    private static string? GetEditPage(IReadOnlyList<ITrainingScheduleItem> items)
+    {
+        if (items.All(item => item is TrainingScheduleItemDto))
+            return "/Training/Schedule/Edit";
+
+        if (items.All(item =>
+                item is TrainingPlanScheduleItemDto &&
+                item is not TrainingScheduleItemDto))
+        {
+            return "/Training/Plan/Edit";
+        }
+
+        return null;
     }
 
     private double GetLeft(TimeOnly time)
@@ -184,6 +203,7 @@ public class TrainingScheduleBlock
     public int SeasonCategoryOrder { get; init; }
     public int MinimumItemId { get; init; }
     public int? EditItemId { get; init; }
+    public string? EditPage { get; init; }
     public required string Color { get; init; }
     public required string Tooltip { get; init; }
     public double Left { get; init; }

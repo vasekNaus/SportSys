@@ -60,6 +60,35 @@ public class TrainingScheduleBlockFactoryTests
     }
 
     [Fact]
+    public void CreateBlocks_AggregatesVisualizationGroupWithoutPersistedGroup()
+    {
+        var visualizationGroupId = Guid.NewGuid();
+        var items = new ITrainingScheduleItem[]
+        {
+            CreateTraining(
+                2,
+                "U14",
+                2,
+                new TimeOnly(17, 0),
+                new TimeOnly(18, 0),
+                visualizationGroupId: visualizationGroupId),
+            CreateTraining(
+                1,
+                "U12",
+                1,
+                new TimeOnly(16, 0),
+                new TimeOnly(17, 0),
+                visualizationGroupId: visualizationGroupId),
+        };
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks(items));
+
+        Assert.Equal("U12 + U14", block.Title);
+        Assert.Equal(new TimeOnly(16, 0), block.TimeFrom);
+        Assert.Equal(new TimeOnly(18, 0), block.TimeTo);
+    }
+
+    [Fact]
     public void CreateBlocks_UsesDashWhenNoCoachIsAssigned()
     {
         var item = CreateTraining(
@@ -84,7 +113,8 @@ public class TrainingScheduleBlockFactoryTests
         Guid? groupId = null,
         string location = "",
         string trainingType = "Led",
-        IReadOnlyList<string>? coaches = null)
+        IReadOnlyList<string>? coaches = null,
+        Guid? visualizationGroupId = null)
         => new()
         {
             Id = id,
@@ -95,6 +125,7 @@ public class TrainingScheduleBlockFactoryTests
             TimeFrom = timeFrom,
             TimeTo = timeTo,
             GroupId = groupId,
+            VisualizationGroupId = visualizationGroupId,
             SeasonCategoryName = category,
             SeasonCategoryOrder = categoryOrder,
             Location = location,

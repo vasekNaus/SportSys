@@ -1,7 +1,7 @@
 @page
-@model PlanModel
+@model IndexModel
 @{
-    ViewData["Title"] = "Tréninkové plány";
+    ViewData["Title"] = "Rozvrh tréninků";
     var selectedTrainingTypeNames = Model.TrainingTypes
         .Where(type => Model.SelectedTrainingTypeIds.Contains(type.Id))
         .Select(type => type.Name)
@@ -103,16 +103,21 @@
         </div>
 
         <div class="field">
-            <label for="TrainingPhaseId">Fáze tréninku</label>
-            <select id="TrainingPhaseId" name="TrainingPhaseId" class="textbox">
-                <option value="">— vyberte fázi —</option>
-                @foreach (var phase in Model.TrainingPhases)
-                {
-                    <option value="@phase.Id" selected="@(Model.TrainingPhaseId == phase.Id)">
-                        @phase.Name
-                    </option>
-                }
-            </select>
+            <label for="DateFrom">Od</label>
+            <input type="date"
+                   id="DateFrom"
+                   name="DateFrom"
+                   class="textbox"
+                   value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
+        </div>
+
+        <div class="field">
+            <label for="DateTo">Do</label>
+            <input type="date"
+                   id="DateTo"
+                   name="DateTo"
+                   class="textbox"
+                   value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
         </div>
     </div>
 
@@ -137,6 +142,11 @@
                     <input asp-for="ShowEmptyRows" />
                     Zobrazovat prázdné řádky
                 </label>
+                <label class="checkbox-label">
+                    <input asp-for="MergeTrainings"
+                           onchange="this.form.submit()" />
+                    Spojovat tréninky
+                </label>
             </div>
         </fieldset>
     }
@@ -149,17 +159,31 @@
     {
         <div class="schedule-filter-actions">
             <button type="submit" class="button">
-                <i class="fa-solid fa-calendar-week fa-fw"></i> Zobrazit plán
+                <i class="fa-solid fa-calendar-days fa-fw"></i> Zobrazit rozvrh
             </button>
+            @if (Model.ScheduleView?.HasItems == true)
+            {
+                <button type="submit"
+                        name="handler"
+                        value="Export"
+                        class="button secondary">
+                    <i class="fa-solid fa-file-excel fa-fw"></i> Export do Excelu
+                </button>
+            }
         </div>
     }
 </form>
+
+@if (Model.ExportErrorMessage is not null)
+{
+    <p class="text-muted">@Model.ExportErrorMessage</p>
+}
 
 @if (Model.ScheduleView is not null)
 {
     @if (!Model.ScheduleView.HasItems)
     {
-        <p class="text-muted">Pro zadané parametry nebyly nalezeny žádné tréninkové plány.</p>
+        <p class="text-muted">Pro zadané parametry nebyly nalezeny žádné tréninky.</p>
     }
 
     @await Component.InvokeAsync(

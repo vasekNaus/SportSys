@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using SportSys.Contract.Models;
 using SportSys.Contract.Services;
 
-namespace SportSys.Razor.Areas.sport.Pages.Training;
+namespace SportSys.Razor.Areas.sport.Pages.Training.Schedule;
 
 public class EditModel : PageModel
 {

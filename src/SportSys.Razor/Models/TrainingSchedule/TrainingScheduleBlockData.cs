@@ -29,12 +29,12 @@ public static class TrainingScheduleBlockFactory
         var blocks = new List<TrainingScheduleBlockData>();
 
         blocks.AddRange(items
-            .Where(item => item.GroupId is null)
+            .Where(item => GetVisualizationGroupId(item) is null)
             .Select(item => CreateBlock([item])));
 
         blocks.AddRange(items
-            .Where(item => item.GroupId is not null)
-            .GroupBy(item => item.GroupId!.Value)
+            .Where(item => GetVisualizationGroupId(item) is not null)
+            .GroupBy(item => GetVisualizationGroupId(item)!.Value)
             .Select(CreateBlock));
 
         return blocks
@@ -44,6 +44,9 @@ public static class TrainingScheduleBlockFactory
             .ThenBy(block => block.MinimumItemId)
             .ToList();
     }
+
+    private static Guid? GetVisualizationGroupId(ITrainingScheduleItem item)
+        => item.VisualizationGroupId ?? item.GroupId;
 
     private static TrainingScheduleBlockData CreateBlock(
         IEnumerable<ITrainingScheduleItem> sourceItems)

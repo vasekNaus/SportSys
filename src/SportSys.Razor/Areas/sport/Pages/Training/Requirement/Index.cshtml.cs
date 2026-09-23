@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using SportSys.Contract.Models;
 using SportSys.Contract.Services;
 
-namespace SportSys.Razor.Areas.sport.Pages.Training;
+namespace SportSys.Razor.Areas.sport.Pages.Training.Requirement;
 
-public class RequirementModel : PageModel
+public class IndexModel : PageModel
 {
     private readonly TrainingRequirementService _service;
 
-    public RequirementModel(TrainingRequirementService service)
+    public IndexModel(TrainingRequirementService service)
     {
         _service = service;
     }

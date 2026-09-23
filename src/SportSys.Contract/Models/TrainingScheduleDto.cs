@@ -20,6 +20,7 @@ public interface ITrainingScheduleItem
     TimeOnly TimeTo { get; }
     int? DurationMinutes { get; }
     Guid? GroupId { get; }
+    Guid? VisualizationGroupId { get; }
     int SeasonCategoryOrder { get; }
     string SeasonCategoryName { get; }
     string Location { get; }
@@ -39,6 +40,7 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public TimeOnly TimeTo { get; set; }
     public int? DurationMinutes { get; set; }
     public Guid? GroupId { get; set; }
+    public Guid? VisualizationGroupId { get; set; }
     public int SeasonCategoryOrder { get; set; }
     public string SeasonCategoryName { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;

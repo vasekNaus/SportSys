@@ -6,14 +6,14 @@ using SportSys.Razor.Models.TrainingSchedule;
 using SportSys.Razor.Services;
 using System.Globalization;
 
-namespace SportSys.Razor.Areas.sport.Pages.Training;
+namespace SportSys.Razor.Areas.sport.Pages.Training.Schedule;
 
-public class ScheduleModel : PageModel
+public class IndexModel : PageModel
 {
     private readonly TrainingScheduleService _service;
     private readonly TrainingScheduleExcelExporter _excelExporter;
 
-    public ScheduleModel(
+    public IndexModel(
         TrainingScheduleService service,
         TrainingScheduleExcelExporter excelExporter)
     {
@@ -46,6 +46,9 @@ public class ScheduleModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public bool ShowEmptyRows { get; set; } = true;
+
+    [BindProperty(SupportsGet = true)]
+    public bool MergeTrainings { get; set; }
 
     public ITrainingScheduleViewModel? ScheduleView { get; private set; }
     public string? ExportErrorMessage { get; private set; }
@@ -149,6 +152,7 @@ public class ScheduleModel : PageModel
             SelectedLocations,
             filter.DateFrom,
             filter.DateTo,
+            MergeTrainings,
             ct);
 
     private ITrainingScheduleViewModel CreateScheduleView(
@@ -182,7 +186,10 @@ public class ScheduleModel : PageModel
             .Select(c => c.Name)
             .ToList();
 
-        return new TrainingScheduleViewModel(rows, categoryOrder);
+        return new TrainingScheduleViewModel(
+            rows,
+            categoryOrder,
+            allowEditing: !MergeTrainings);
     }
 
     private readonly record struct NormalizedScheduleFilter(
