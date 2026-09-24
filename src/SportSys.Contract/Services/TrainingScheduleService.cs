@@ -49,6 +49,18 @@ public class TrainingScheduleService
             .ToListAsync(ct);
     }
 
+    public async Task<List<LookupSelectItem>> GetTrainingStatesAsync(CancellationToken ct = default)
+    {
+        return await _db.TrainingStates
+            .OrderBy(s => s.Id)
+            .Select(s => new LookupSelectItem
+            {
+                Id = s.Id,
+                Name = s.Name,
+            })
+            .ToListAsync(ct);
+    }
+
     public async Task<List<LookupSelectItem>> GetTrainingPhasesAsync(CancellationToken ct = default)
     {
         return await _db.TrainingPhases
@@ -85,6 +97,7 @@ public class TrainingScheduleService
         int seasonId,
         IReadOnlyCollection<string> categoryNames,
         IReadOnlyCollection<int> trainingTypeIds,
+        IReadOnlyCollection<int> trainingStateIds,
         IReadOnlyCollection<string> locations,
         DateOnly dateFrom,
         DateOnly dateTo,
@@ -99,6 +112,9 @@ public class TrainingScheduleService
 
         if (trainingTypeIds.Count > 0)
             query = query.Where(t => trainingTypeIds.Contains(t.TrainingTypeId));
+
+        if (trainingStateIds.Count > 0)
+            query = query.Where(t => trainingStateIds.Contains(t.TrainingStateId));
 
         if (locations.Count > 0)
             query = query.Where(t => locations.Contains(t.Location));
@@ -123,6 +139,8 @@ public class TrainingScheduleService
                 Location = t.Location,
                 TrainingTypeName = t.TrainingType.Name,
                 TrainingPhaseName = t.TrainingPhase.Name,
+                TrainingStateId = t.TrainingStateId,
+                TrainingStateName = t.TrainingState.Name,
                 CoachFullNames = t.CoachTrainings
                     .Select(c => c.Coach.DisplayName)
                     .Distinct()

@@ -107,6 +107,16 @@ public class TrainingScheduleComponentModel
             ? GetEditPage(block.Items)
             : null;
 
+        var stateIcon = block.HasMixedState
+            ? TrainingStateVisual.UnknownIcon
+            : block.UniformStateIcon;
+        var stateTooltip = block.HasMixedState
+            ? string.Join(
+                "\n",
+                block.CategorySegments.Select(segment =>
+                    $"{segment.StateIcon} {segment.CategoryName}".Trim()))
+            : null;
+
         return new TrainingScheduleBlock
         {
             Items = block.Items,
@@ -125,6 +135,10 @@ public class TrainingScheduleComponentModel
                 ? color
                 : "var(--color-text-muted)",
             Tooltip = string.Join(" | ", block.Items.Select(CreateTooltip)),
+            CategorySegments = block.CategorySegments,
+            IsUniformState = block.IsUniformState,
+            StateIcon = stateIcon,
+            StateTooltip = stateTooltip,
         };
     }
 
@@ -160,10 +174,14 @@ public class TrainingScheduleComponentModel
         var parts = new List<string>
         {
             item.SeasonCategoryName,
-            item.TrainingTypeName,
-            item.TrainingPhaseName,
-            item.Location,
         };
+
+        if (item.TrainingStateName is not null)
+            parts.Add(item.TrainingStateName);
+
+        parts.Add(item.TrainingTypeName);
+        parts.Add(item.TrainingPhaseName);
+        parts.Add(item.Location);
 
         if (item is TrainingPlanScheduleItemDto plan &&
             item is not TrainingScheduleItemDto)
@@ -208,6 +226,10 @@ public class TrainingScheduleBlock
     public required string Tooltip { get; init; }
     public double Left { get; init; }
     public double Width { get; init; }
+    public required IReadOnlyList<TrainingScheduleCategorySegment> CategorySegments { get; init; }
+    public bool IsUniformState { get; init; }
+    public string? StateIcon { get; init; }
+    public string? StateTooltip { get; init; }
 }
 
 public class TrainingScheduleMarker

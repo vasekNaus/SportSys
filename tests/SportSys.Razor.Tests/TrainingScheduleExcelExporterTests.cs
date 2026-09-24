@@ -51,8 +51,9 @@ public class TrainingScheduleExcelExporterTests
                 "Typ tréninku",
                 "Lokalita",
                 "Trenéři",
+                "Stav",
             ],
-            worksheet.Row(1).Cells(1, 7).Select(cell => cell.GetString()));
+            worksheet.Row(1).Cells(1, 8).Select(cell => cell.GetString()));
         Assert.Equal("U12 + U14", worksheet.Cell(2, 1).GetString());
         Assert.Equal(new DateTime(2026, 9, 7), worksheet.Cell(2, 2).GetDateTime());
         Assert.Equal(new TimeSpan(16, 0, 0), worksheet.Cell(2, 3).GetTimeSpan());
@@ -60,9 +61,109 @@ public class TrainingScheduleExcelExporterTests
         Assert.Equal("Led, Suchá", worksheet.Cell(2, 5).GetString());
         Assert.Equal("Tělocvična, Zimní stadion", worksheet.Cell(2, 6).GetString());
         Assert.Equal("Novák, Svoboda", worksheet.Cell(2, 7).GetString());
+        Assert.Equal(string.Empty, worksheet.Cell(2, 8).GetString());
         Assert.Equal("dd.MM.yyyy", worksheet.Cell(2, 2).Style.DateFormat.Format);
         Assert.Equal("hh:mm", worksheet.Cell(2, 3).Style.DateFormat.Format);
         Assert.Equal(2, worksheet.LastRowUsed()!.RowNumber());
+    }
+
+    [Fact]
+    public void Export_WritesStateNameForSingleTraining()
+    {
+        var trainings = new[]
+        {
+            CreateTraining(
+                1,
+                new DateOnly(2026, 9, 7),
+                "U12",
+                1,
+                new TimeOnly(16, 0),
+                new TimeOnly(17, 0),
+                trainingStateId: 2,
+                trainingStateName: "Potvrzený KIS"),
+        };
+
+        var content = new TrainingScheduleExcelExporter().Export(trainings);
+
+        using var stream = new MemoryStream(content);
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheet("Tréninky");
+
+        Assert.Equal("Potvrzený KIS", worksheet.Cell(2, 8).GetString());
+    }
+
+    [Fact]
+    public void Export_WritesStateNameWhenMergedTrainingsShareState()
+    {
+        var groupId = Guid.NewGuid();
+        var trainings = new[]
+        {
+            CreateTraining(
+                1,
+                new DateOnly(2026, 9, 7),
+                "U12",
+                1,
+                new TimeOnly(16, 0),
+                new TimeOnly(17, 0),
+                groupId,
+                trainingStateId: 1,
+                trainingStateName: "Plán"),
+            CreateTraining(
+                2,
+                new DateOnly(2026, 9, 7),
+                "U14",
+                2,
+                new TimeOnly(17, 0),
+                new TimeOnly(18, 0),
+                groupId,
+                trainingStateId: 1,
+                trainingStateName: "Plán"),
+        };
+
+        var content = new TrainingScheduleExcelExporter().Export(trainings);
+
+        using var stream = new MemoryStream(content);
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheet("Tréninky");
+
+        Assert.Equal("Plán", worksheet.Cell(2, 8).GetString());
+    }
+
+    [Fact]
+    public void Export_LeavesStateEmptyWhenMergedTrainingsHaveDifferentStates()
+    {
+        var groupId = Guid.NewGuid();
+        var trainings = new[]
+        {
+            CreateTraining(
+                1,
+                new DateOnly(2026, 9, 7),
+                "U12",
+                1,
+                new TimeOnly(16, 0),
+                new TimeOnly(17, 0),
+                groupId,
+                trainingStateId: 1,
+                trainingStateName: "Plán"),
+            CreateTraining(
+                2,
+                new DateOnly(2026, 9, 7),
+                "U14",
+                2,
+                new TimeOnly(17, 0),
+                new TimeOnly(18, 0),
+                groupId,
+                trainingStateId: 5,
+                trainingStateName: "Zrušený"),
+        };
+
+        var content = new TrainingScheduleExcelExporter().Export(trainings);
+
+        using var stream = new MemoryStream(content);
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheet("Tréninky");
+
+        Assert.Equal(string.Empty, worksheet.Cell(2, 8).GetString());
     }
 
     [Fact]
@@ -144,7 +245,9 @@ public class TrainingScheduleExcelExporterTests
         string location = "",
         string trainingType = "Led",
         IReadOnlyList<string>? coaches = null,
-        Guid? visualizationGroupId = null)
+        Guid? visualizationGroupId = null,
+        int? trainingStateId = null,
+        string? trainingStateName = null)
         => new()
         {
             Id = id,
@@ -162,5 +265,7 @@ public class TrainingScheduleExcelExporterTests
             TrainingTypeName = trainingType,
             TrainingPhaseName = "Season",
             CoachFullNames = coaches ?? [],
+            TrainingStateId = trainingStateId,
+            TrainingStateName = trainingStateName,
         };
 }

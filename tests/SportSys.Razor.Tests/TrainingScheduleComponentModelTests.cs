@@ -122,6 +122,53 @@ public class TrainingScheduleComponentModelTests
         Assert.Equal("/Training/Plan/Edit", block.EditPage);
     }
 
+    [Fact]
+    public void Create_MapsUniformStateIconToBlockWithoutCssClass()
+    {
+        var source = CreateViewModel(
+            new TrainingScheduleItemDto
+            {
+                Id = 7,
+                Date = new DateOnly(2026, 9, 8),
+                TimeFrom = new TimeOnly(17, 0),
+                TimeTo = new TimeOnly(18, 0),
+                SeasonCategoryName = "U12",
+                TrainingTypeName = "Led",
+                TrainingPhaseName = "Sezóna",
+                TrainingStateId = 5,
+                TrainingStateName = "Zrušený",
+            });
+
+        var model = TrainingScheduleComponentModel.Create(source);
+
+        var block = GetSingleBlock(model);
+        Assert.True(block.IsUniformState);
+        Assert.Equal("❌", block.StateIcon);
+        Assert.Null(block.StateTooltip);
+        Assert.Single(block.CategorySegments);
+        Assert.Equal("❌", block.CategorySegments[0].StateIcon);
+    }
+
+    [Fact]
+    public void Create_MixedStatesShowUnknownIconWithTooltip()
+    {
+        var groupId = Guid.NewGuid();
+        var first = CreateTraining(9, "U14", 2, groupId);
+        first.TrainingStateId = 1;
+        first.TrainingStateName = "Plán";
+        var second = CreateTraining(4, "U12", 1, groupId);
+        second.TrainingStateId = 5;
+        second.TrainingStateName = "Zrušený";
+        var source = CreateViewModel(first, second);
+
+        var model = TrainingScheduleComponentModel.Create(source);
+
+        var block = GetSingleBlock(model);
+        Assert.False(block.IsUniformState);
+        Assert.Equal(TrainingStateVisual.UnknownIcon, block.StateIcon);
+        Assert.Equal("❌ U12\n📅 U14", block.StateTooltip);
+    }
+
     private static TrainingScheduleItemDto CreateTraining(
         int id,
         string category,

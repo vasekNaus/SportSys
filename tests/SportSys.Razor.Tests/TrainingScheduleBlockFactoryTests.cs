@@ -104,6 +104,118 @@ public class TrainingScheduleBlockFactoryTests
         Assert.Equal("-", block.CoachSummary);
     }
 
+    [Fact]
+    public void CreateBlocks_SingleTrainingHasUniformStateWithIconAndCssClass()
+    {
+        var item = CreateTraining(
+            1,
+            "U12",
+            1,
+            new TimeOnly(16, 0),
+            new TimeOnly(17, 0),
+            trainingStateId: 2,
+            trainingStateName: "Potvrzený KIS");
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks([item]));
+
+        Assert.True(block.IsUniformState);
+        Assert.Equal("training-state-confirmed", block.UniformStateCssClass);
+        Assert.Equal("✅", block.UniformStateIcon);
+        Assert.Equal("Potvrzený KIS", block.UniformStateName);
+    }
+
+    [Fact]
+    public void CreateBlocks_MergedTrainingsWithSameStateAreUniform()
+    {
+        var groupId = Guid.NewGuid();
+        var items = new ITrainingScheduleItem[]
+        {
+            CreateTraining(
+                2,
+                "U14",
+                2,
+                new TimeOnly(17, 0),
+                new TimeOnly(18, 0),
+                groupId,
+                trainingStateId: 1,
+                trainingStateName: "Plán"),
+            CreateTraining(
+                1,
+                "U12",
+                1,
+                new TimeOnly(16, 0),
+                new TimeOnly(17, 0),
+                groupId,
+                trainingStateId: 1,
+                trainingStateName: "Plán"),
+        };
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks(items));
+
+        Assert.True(block.IsUniformState);
+        Assert.False(block.HasMixedState);
+        Assert.Equal("training-state-plan", block.UniformStateCssClass);
+        Assert.Equal("📅", block.UniformStateIcon);
+        Assert.Equal("Plán", block.UniformStateName);
+    }
+
+    [Fact]
+    public void CreateBlocks_MergedTrainingsWithDifferentStatesAreNotUniform()
+    {
+        var groupId = Guid.NewGuid();
+        var items = new ITrainingScheduleItem[]
+        {
+            CreateTraining(
+                2,
+                "U14",
+                2,
+                new TimeOnly(17, 0),
+                new TimeOnly(18, 0),
+                groupId,
+                trainingStateId: 5,
+                trainingStateName: "Zrušený"),
+            CreateTraining(
+                1,
+                "U12",
+                1,
+                new TimeOnly(16, 0),
+                new TimeOnly(17, 0),
+                groupId,
+                trainingStateId: 1,
+                trainingStateName: "Plán"),
+        };
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks(items));
+
+        Assert.False(block.IsUniformState);
+        Assert.True(block.HasMixedState);
+        Assert.Null(block.UniformStateCssClass);
+        Assert.Null(block.UniformStateIcon);
+        Assert.Null(block.UniformStateName);
+        Assert.Equal(
+            ["📅", "❌"],
+            block.CategorySegments.Select(segment => segment.StateIcon));
+    }
+
+    [Fact]
+    public void CreateBlocks_BlockWithoutAnyStateIsUniformWithoutCssClass()
+    {
+        var item = CreateTraining(
+            1,
+            "U12",
+            1,
+            new TimeOnly(16, 0),
+            new TimeOnly(17, 0));
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks([item]));
+
+        Assert.True(block.IsUniformState);
+        Assert.False(block.HasMixedState);
+        Assert.Null(block.UniformStateCssClass);
+        Assert.Null(block.UniformStateIcon);
+        Assert.Null(block.UniformStateName);
+    }
+
     private static TrainingScheduleItemDto CreateTraining(
         int id,
         string category,
@@ -114,7 +226,9 @@ public class TrainingScheduleBlockFactoryTests
         string location = "",
         string trainingType = "Led",
         IReadOnlyList<string>? coaches = null,
-        Guid? visualizationGroupId = null)
+        Guid? visualizationGroupId = null,
+        int? trainingStateId = null,
+        string? trainingStateName = null)
         => new()
         {
             Id = id,
@@ -132,5 +246,7 @@ public class TrainingScheduleBlockFactoryTests
             TrainingTypeName = trainingType,
             TrainingPhaseName = "Season",
             CoachFullNames = coaches ?? [],
+            TrainingStateId = trainingStateId,
+            TrainingStateName = trainingStateName,
         };
 }

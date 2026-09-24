@@ -78,6 +78,12 @@
                                     </span>
                                     <span class="schedule-block-type">@block.TrainingTypeSummary</span>
                                     <span class="schedule-block-coaches">@block.CoachSummary</span>
+                                    @if (Model.AllowEditing && !string.IsNullOrEmpty(block.StateIcon))
+                                    {
+                                        <span class="schedule-block-state-icon"
+                                              aria-hidden="@(block.StateTooltip is null ? "true" : "false")"
+                                              title="@block.StateTooltip">@block.StateIcon</span>
+                                    }
                                 </a>
                             }
                             else
@@ -91,6 +97,12 @@
                                     </span>
                                     <span class="schedule-block-type">@block.TrainingTypeSummary</span>
                                     <span class="schedule-block-coaches">@block.CoachSummary</span>
+                                    @if (Model.AllowEditing && !string.IsNullOrEmpty(block.StateIcon))
+                                    {
+                                        <span class="schedule-block-state-icon"
+                                              aria-hidden="@(block.StateTooltip is null ? "true" : "false")"
+                                              title="@block.StateTooltip">@block.StateIcon</span>
+                                    }
                                 </div>
                             }
                         }

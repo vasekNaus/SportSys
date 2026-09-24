@@ -1,5 +1,6 @@
 @page
 @model IndexModel
+@using SportSys.Razor.Models.TrainingSchedule
 @{
     ViewData["Title"] = "Rozvrh tréninků";
     var selectedTrainingTypeNames = Model.TrainingTypes
@@ -153,6 +154,25 @@
     else if (Model.SeasonId.HasValue)
     {
         <p class="text-muted">Pro zvolenou sezónu nejsou definovány žádné aktivní kategorie.</p>
+    }
+
+    @if (Model.TrainingStates.Count > 0)
+    {
+        <fieldset class="schedule-filter-categories">
+            <legend>Stavy tréninku</legend>
+            <div class="schedule-filter-checkboxes">
+                @foreach (var state in Model.TrainingStates)
+                {
+                    <label class="checkbox-label">
+                        <input type="checkbox"
+                               name="SelectedTrainingStateIds"
+                               value="@state.Id"
+                               checked="@Model.SelectedTrainingStateIds.Contains(state.Id)" />
+                        @TrainingStateVisual.Get(state.Id)?.Icon @state.Name
+                    </label>
+                }
+            </div>
+        </fieldset>
     }
 
     @if (Model.SeasonId.HasValue && Model.SeasonCategories.Count > 0)

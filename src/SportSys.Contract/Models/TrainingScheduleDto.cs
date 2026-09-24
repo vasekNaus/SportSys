@@ -28,6 +28,8 @@ public interface ITrainingScheduleItem
     string TrainingPhaseName { get; }
     IReadOnlyList<string> CoachFullNames { get; }
     string Note { get; }
+    int? TrainingStateId { get; }
+    string? TrainingStateName { get; }
 }
 
 public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
@@ -48,6 +50,8 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public string TrainingPhaseName { get; set; } = string.Empty;
     public IReadOnlyList<string> CoachFullNames { get; set; } = [];
     public string Note { get; set; } = string.Empty;
+    public int? TrainingStateId { get; set; }
+    public string? TrainingStateName { get; set; }
 
     public DayOfWeek DayOfWeek
     {

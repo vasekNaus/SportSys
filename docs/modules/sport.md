@@ -117,6 +117,23 @@ Při materializaci více reálných tréninků z propojených plánů se pro vzn
 tréninky vytvoří nová skupina v `TrainingGroup`. Identifikátor skupiny z
 `TrainingPlanGroup` se mezi tabulkami nekopíruje.
 
+Reálný trénink navíc nese stav (`sport.TrainingState`). Kategorie se nikdy
+nebarví podle stavu; vizualizace je omezena na ikonu v pravém dolním rohu
+bloku. Mapování `TrainingStateId → ikona` je v
+`src/SportSys.Razor/Models/TrainingSchedule/TrainingStateVisual.cs`. Pokud
+blok obsahuje jediný trénink nebo spojené tréninky se shodným stavem, zobrazí
+se ikona tohoto stavu bez tooltipu. Pokud mají spojené tréninky rozdílné
+stavy, zobrazí se místo toho sentinel „Stav neznámý“ (`TrainingStateVisual.UnknownIcon`,
+❓); po najetí myší na tuto ikonu se zobrazí tooltip s rozpisem `ikona + název
+kategorie` pro každý dílčí trénink, seřazený podle `SeasonCategory.Order`.
+Plán (`TrainingPlan`) stav nemá, takže stránka `/sport/Training/Plan` ikonu
+nikdy nezobrazuje.
+
+Při aktivním GET filtru **Spojovat tréninky** (`MergeTrainings`, tedy
+`AllowEditing == false`) se stavová ikona ani tooltip nezobrazují na žádné
+stránce (Schedule i Plan), protože takový blok reprezentuje jen časově
+spojený interval, ne skutečný společně evidovaný trénink.
+
 PageModel určuje typovanou paritu každého řádku. Schedule ji odvozuje z čísla
 dne v měsíci, takže zůstává stabilní i při změně začátku intervalu. Plan ji
 odvozuje z pořadí pondělí až neděle, kde pondělí je liché a úterý sudé.
@@ -128,6 +145,7 @@ víkendovým zvýrazněním.
 - aktivní sezóna,
 - jedna nebo více aktivních kategorií,
 - nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
+- nula, jeden nebo více stavů tréninku; prázdný výběr znamená všechny stavy,
 - nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality,
 - datum od a do,
 - volitelné spojování časově překrývajících se nebo navazujících tréninků.
@@ -136,10 +154,12 @@ víkendovým zvýrazněním.
 
 Pokud rozvrh obsahuje alespoň jeden blok, lze aktuálně vyfiltrovaná data
 exportovat do souboru `.xlsx`. Export obsahuje sloupce Kategorie, Datum, Čas od,
-Čas do, Typ tréninku, Lokalita a Trenéři. Tréninky propojené přes
+Čas do, Typ tréninku, Lokalita, Trenéři a Stav. Tréninky propojené přes
 `sport.TrainingGroup` se exportují jako jeden řádek se stejným časovým rozsahem
-a agregovanými hodnotami jako zobrazený blok. Při prázdném výsledku není
-exportní akce dostupná.
+a agregovanými hodnotami jako zobrazený blok. Sloupec Stav obsahuje název stavu
+pouze u samostatného tréninku nebo u spojených tréninků se shodným stavem;
+pokud mají spojené tréninky rozdílné stavy, zůstává buňka prázdná. Při
+prázdném výsledku není exportní akce dostupná.
 
 Export respektuje filtr **Spojovat tréninky**. Při jeho zapnutí používá stejné
 dočasné intervalové skupiny jako vizualizace, takže jeden zobrazený blok

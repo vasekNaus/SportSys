@@ -24,6 +24,7 @@ public class IndexModel : PageModel
     public List<SeasonDto> Seasons { get; private set; } = [];
     public List<SeasonCategoryDto> SeasonCategories { get; private set; } = [];
     public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
+    public List<LookupSelectItem> TrainingStates { get; private set; } = [];
     public List<string> Locations { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
@@ -34,6 +35,9 @@ public class IndexModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public List<int> SelectedTrainingTypeIds { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public List<int> SelectedTrainingStateIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public List<string> SelectedLocations { get; set; } = [];
@@ -94,6 +98,7 @@ public class IndexModel : PageModel
     {
         Seasons = await _service.GetSeasonsAsync(ct);
         TrainingTypes = await _service.GetTrainingTypesAsync(ct);
+        TrainingStates = await _service.GetTrainingStatesAsync(ct);
         Locations = await _service.GetTrainingLocationsAsync(ct);
 
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
@@ -106,6 +111,12 @@ public class IndexModel : PageModel
         SelectedTrainingTypeIds = TrainingTypes
             .Where(t => requestedTrainingTypeIds.Contains(t.Id))
             .Select(t => t.Id)
+            .ToList();
+
+        var requestedTrainingStateIds = SelectedTrainingStateIds.ToHashSet();
+        SelectedTrainingStateIds = TrainingStates
+            .Where(s => requestedTrainingStateIds.Contains(s.Id))
+            .Select(s => s.Id)
             .ToList();
 
         var requestedLocations = SelectedLocations.ToHashSet();
@@ -149,6 +160,7 @@ public class IndexModel : PageModel
                 ? SelectedCategories
                 : SeasonCategories.Select(c => c.Name).ToList(),
             SelectedTrainingTypeIds,
+            SelectedTrainingStateIds,
             SelectedLocations,
             filter.DateFrom,
             filter.DateTo,

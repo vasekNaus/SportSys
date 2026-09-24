@@ -33,12 +33,12 @@ public sealed class TrainingScheduleExcelExporter
             }
         }
 
-        var tableRange = worksheet.Range(1, 1, rowNumber - 1, 7);
+        var tableRange = worksheet.Range(1, 1, rowNumber - 1, 8);
         tableRange.CreateTable(TableName);
 
         worksheet.Column(2).Style.DateFormat.Format = "dd.MM.yyyy";
         worksheet.Columns(3, 4).Style.DateFormat.Format = "hh:mm";
-        worksheet.Columns(5, 7).Style.Alignment.WrapText = true;
+        worksheet.Columns(5, 8).Style.Alignment.WrapText = true;
         worksheet.Columns().AdjustToContents();
 
         foreach (var column in worksheet.ColumnsUsed())
@@ -61,6 +61,7 @@ public sealed class TrainingScheduleExcelExporter
         worksheet.Cell(1, 5).Value = "Typ tréninku";
         worksheet.Cell(1, 6).Value = "Lokalita";
         worksheet.Cell(1, 7).Value = "Trenéři";
+        worksheet.Cell(1, 8).Value = "Stav";
     }
 
     private static void WriteRow(
@@ -76,5 +77,6 @@ public sealed class TrainingScheduleExcelExporter
         worksheet.Cell(rowNumber, 5).Value = block.TrainingTypeSummary;
         worksheet.Cell(rowNumber, 6).Value = block.LocationSummary;
         worksheet.Cell(rowNumber, 7).Value = block.CoachSummary;
+        worksheet.Cell(rowNumber, 8).Value = block.UniformStateName ?? string.Empty;
     }
 }

@@ -2,6 +2,12 @@ using SportSys.Contract.Models;
 
 namespace SportSys.Razor.Models.TrainingSchedule;
 
+public sealed class TrainingScheduleCategorySegment
+{
+    public required string CategoryName { get; init; }
+    public string? StateIcon { get; init; }
+}
+
 public sealed class TrainingScheduleBlockData
 {
     public required IReadOnlyList<ITrainingScheduleItem> Items { get; init; }
@@ -10,10 +16,16 @@ public sealed class TrainingScheduleBlockData
     public required IReadOnlyList<string> Locations { get; init; }
     public required IReadOnlyList<string> CoachNames { get; init; }
     public required IReadOnlyList<string> TrainingTypeLocationSummaries { get; init; }
+    public required IReadOnlyList<TrainingScheduleCategorySegment> CategorySegments { get; init; }
     public TimeOnly TimeFrom { get; init; }
     public TimeOnly TimeTo { get; init; }
     public int SeasonCategoryOrder { get; init; }
     public int MinimumItemId { get; init; }
+    public bool IsUniformState { get; init; }
+    public bool HasMixedState { get; init; }
+    public string? UniformStateCssClass { get; init; }
+    public string? UniformStateIcon { get; init; }
+    public string? UniformStateName { get; init; }
 
     public string TrainingTypeSummary => string.Join(", ", TrainingTypeNames);
     public string LocationSummary => string.Join(", ", Locations);
@@ -59,6 +71,24 @@ public static class TrainingScheduleBlockFactory
 
         var primaryItem = items[0];
 
+        var stateIds = items.Select(item => item.TrainingStateId).ToList();
+        var hasAnyState = stateIds.Any(id => id.HasValue);
+        var isUniformState = hasAnyState
+            && stateIds.All(id => id.HasValue)
+            && stateIds.Distinct().Count() == 1;
+        var hasMixedState = hasAnyState && !isUniformState;
+
+        string? uniformStateCssClass = null;
+        string? uniformStateIcon = null;
+        string? uniformStateName = null;
+        if (isUniformState)
+        {
+            var visual = TrainingStateVisual.Get(stateIds[0]);
+            uniformStateCssClass = visual?.CssClass;
+            uniformStateIcon = visual?.Icon;
+            uniformStateName = primaryItem.TrainingStateName;
+        }
+
         return new TrainingScheduleBlockData
         {
             Items = items,
@@ -76,6 +106,18 @@ public static class TrainingScheduleBlockFactory
                 string.IsNullOrWhiteSpace(item.Location)
                     ? item.TrainingTypeName
                     : $"{item.TrainingTypeName} - {item.Location}")),
+            CategorySegments = items
+                .Select(item => new TrainingScheduleCategorySegment
+                {
+                    CategoryName = item.SeasonCategoryName,
+                    StateIcon = TrainingStateVisual.Get(item.TrainingStateId)?.Icon,
+                })
+                .ToList(),
+            IsUniformState = isUniformState || !hasAnyState,
+            HasMixedState = hasMixedState,
+            UniformStateCssClass = uniformStateCssClass,
+            UniformStateIcon = uniformStateIcon,
+            UniformStateName = uniformStateName,
             TimeFrom = items.Min(item => item.TimeFrom),
             TimeTo = items.Max(item => item.TimeTo),
             SeasonCategoryOrder = primaryItem.SeasonCategoryOrder,
