@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SportSys.Database.Models.dboSchema;
+using SportSys.Database.Models.hr;
 
 namespace SportSys.Database.Models.sport;
 
@@ -29,4 +29,6 @@ public partial class Season
     public virtual ICollection<SeasonCategory> SeasonCategories { get; set; } = new List<SeasonCategory>();
 
     public virtual ICollection<Training> Training { get; set; } = new List<Training>();
+
+    public ICollection<CoachContract> CoachContracts { get; set; } = [];
 }

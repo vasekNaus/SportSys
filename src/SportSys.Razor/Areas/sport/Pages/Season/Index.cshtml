@@ -63,8 +63,8 @@ else
             {
                 <tr class="@(!season.IsActive ? "inactive-row" : null)">
                     <td>@season.Name</td>
-                    <td>@season.From.ToString("d. M. yyyy")</td>
-                    <td>@season.To.ToString("d. M. yyyy")</td>
+                    <td>@season.From.ToString("d")</td>
+                    <td>@season.To.ToString("d")</td>
                     <td>@(season.IsActive ? "Aktivní" : "Neaktivní")</td>
                     <td class="buttons">
                         <a class="button secondary icon-btn"

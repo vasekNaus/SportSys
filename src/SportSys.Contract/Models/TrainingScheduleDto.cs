@@ -20,12 +20,16 @@ public interface ITrainingScheduleItem
     TimeOnly TimeTo { get; }
     int? DurationMinutes { get; }
     Guid? GroupId { get; }
+    Guid? VisualizationGroupId { get; }
     int SeasonCategoryOrder { get; }
     string SeasonCategoryName { get; }
     string Location { get; }
     string TrainingTypeName { get; }
     string TrainingPhaseName { get; }
+    IReadOnlyList<string> CoachFullNames { get; }
     string Note { get; }
+    int? TrainingStateId { get; }
+    string? TrainingStateName { get; }
 }
 
 public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
@@ -38,12 +42,16 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public TimeOnly TimeTo { get; set; }
     public int? DurationMinutes { get; set; }
     public Guid? GroupId { get; set; }
+    public Guid? VisualizationGroupId { get; set; }
     public int SeasonCategoryOrder { get; set; }
     public string SeasonCategoryName { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
     public string TrainingTypeName { get; set; } = string.Empty;
     public string TrainingPhaseName { get; set; } = string.Empty;
+    public IReadOnlyList<string> CoachFullNames { get; set; } = [];
     public string Note { get; set; } = string.Empty;
+    public int? TrainingStateId { get; set; }
+    public string? TrainingStateName { get; set; }
 
     public DayOfWeek DayOfWeek
     {

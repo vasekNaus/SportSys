@@ -21,7 +21,7 @@ Přidat databázové schéma `hr` pro personální agendu trenérů a administra
 - Uživatelská tabulka se v aktuálním projektu jmenuje `identity.User`, nikoliv
   `dbo.User`.
 - V projektu již existuje `dbo.Coach`. Odkazují na ni tabulky
-  `sport.CoachTraining`, `sport.CoachTrainingEntitlement` a
+  `sport.CoachTraining`, `sport.CoachTrainingRequirement` a
   `sport.CoachTrainingPlan`.
 - Stávající `Coach.Id` se zachová, aby nebylo nutné přečíslovat existující
   sportovní záznamy.

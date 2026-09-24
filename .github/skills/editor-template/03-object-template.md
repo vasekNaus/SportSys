@@ -1,6 +1,6 @@
 # 03 – Object.cshtml – klíčová šablona
 
-> **Navigace:** [← Atributy](02-data-annotations.md) | [Property templates →](04-property-templates.md) | [README](README.md)
+> **Navigace:** [← Atributy](02-data-annotations.md) | [Property templates →](04-property-templates.md) | [Skill](SKILL.md)
 
 Object.cshtml je **nejdůležitější šablona** celého systému. Použije se automaticky pro komplexní typy (InputModel). Iteruje všechny vlastnosti modelu a pro každou vygeneruje label + editor + validaci.
 

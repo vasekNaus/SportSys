@@ -1,0 +1,81 @@
+@model SportSys.Razor.Areas.hr.Pages.Coach.EditModel
+
+@if (Model.IsNew)
+{
+    <p>Nejprve uložte základní údaje trenéra.</p>
+}
+else
+{
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Sezóna</th>
+                <th>Typ</th>
+                <th>Odměna</th>
+                <th>Aktivní</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var contract in Model.Coach.Contracts)
+            {
+                <tr>
+                    <td>@contract.SeasonName</td>
+                    <td>@(contract.ContractType == ECoachContractType.Dpp ? "DPP" : "OSVČ")</td>
+                    <td>@contract.RewardAmount.ToString("N2") Kč</td>
+                    <td>@(contract.IsActive ? "Ano" : "Ne")</td>
+                    <td class="buttons">
+                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@Model.Coach.Id"
+                           asp-route-activeTab="contracts" asp-route-contractId="@contract.Id" title="Upravit">
+                            <i class="fa-solid fa-pen fa-fw"></i>
+                        </a>
+                        <form method="post" asp-page-handler="SetContractActive" class="inline-form">
+                            <input type="hidden" name="coachId" value="@Model.Coach.Id" />
+                            <input type="hidden" name="contractId" value="@contract.Id" />
+                            <input type="hidden" name="isActive" value="@(!contract.IsActive)" />
+                            <button type="submit" class="button secondary icon-btn" title="@(contract.IsActive ? "Deaktivovat" : "Aktivovat")">
+                                <i class="fa-solid @(contract.IsActive ? "fa-pause" : "fa-play") fa-fw"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>@(Model.ContractInput.Id == 0 ? "Nová smlouva" : "Upravit smlouvu")</h2>
+    <form method="post" asp-page-handler="SaveContract">
+        <input type="hidden" asp-for="ContractInput.Id" />
+        <input type="hidden" asp-for="ContractInput.CoachId" />
+        <p>
+            <label asp-for="ContractInput.SeasonId"></label>
+            <select asp-for="ContractInput.SeasonId" asp-items="Model.SeasonSelectList"></select>
+            <span asp-validation-for="ContractInput.SeasonId" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="ContractInput.ContractType"></label>
+            <select asp-for="ContractInput.ContractType" asp-items="Model.ContractTypeSelectList"></select>
+            <span asp-validation-for="ContractInput.ContractType" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="ContractInput.RewardAmount"></label>
+            <input asp-for="ContractInput.RewardAmount" type="number" min="0" step="0.01" />
+            <span asp-validation-for="ContractInput.RewardAmount" class="field-validation-error"></span>
+        </p>
+        <p class="checkbox-field">
+            <input asp-for="ContractInput.IsActive" />
+            <label asp-for="ContractInput.IsActive"></label>
+        </p>
+        <footer>
+            <button type="submit" class="button">
+                <i class="fa-solid fa-floppy-disk fa-fw"></i> Uložit smlouvu
+            </button>
+            @if (Model.ContractInput.Id != 0)
+            {
+                <a class="button secondary" asp-page="Edit" asp-route-id="@Model.Coach.Id" asp-route-activeTab="contracts">
+                    <i class="fa-solid fa-xmark fa-fw"></i> Zrušit editaci
+                </a>
+            }
+        </footer>
+    </form>
+}

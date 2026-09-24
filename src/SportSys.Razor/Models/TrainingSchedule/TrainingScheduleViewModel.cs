@@ -21,10 +21,12 @@ public class TrainingScheduleViewModel : ITrainingScheduleViewModel
 
     public TrainingScheduleViewModel(
         IReadOnlyList<TrainingScheduleRow> rows,
-        IReadOnlyList<string> categoryNames)
+        IReadOnlyList<string> categoryNames,
+        bool allowEditing = true)
     {
         Rows = rows;
         CategoryColors = CreateCategoryColors(categoryNames);
+        AllowEditing = allowEditing;
 
         var items = rows.SelectMany(r => r.Items).ToList();
         HasItems = items.Count > 0;
@@ -52,6 +54,7 @@ public class TrainingScheduleViewModel : ITrainingScheduleViewModel
     public TimeOnly TimelineStart { get; }
     public TimeOnly TimelineEnd { get; }
     public bool HasItems { get; }
+    public bool AllowEditing { get; }
 
     private static IReadOnlyDictionary<string, string> CreateCategoryColors(
         IReadOnlyList<string> categoryNames)

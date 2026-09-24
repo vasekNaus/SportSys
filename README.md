@@ -1,72 +1,65 @@
 # SportSys
 
-Informační systém pro sportovní organizaci. Slouží jako nadstavba nad existujícími systémy (rezervační systém sportoviště, účetnictví) a poskytuje funkce, které tyto systémy samostatně nepokrývají – zejména kontrolu fakturace, evidenci sportovních událostí a automatizaci plateb.
+Interní informační systém hokejového klubu pro evidenci sportovních událostí,
+personalistiku trenérů, archivaci docházky a skladové hospodářství. Aktivní
+aplikace používá ASP.NET Core Razor Pages, .NET 10, EF Core 10 a SQL Server.
 
-## Technologie
+## Projekty
 
-| Vrstva | Technologie |
+| Projekt | Účel |
 |---|---|
-| Backend | ASP.NET Core (.NET 10), Razor Pages + Blazor Server |
-| Databáze | Microsoft SQL Server 2019+, Entity Framework Core 10 |
-| ORM / migrace | EF Core 10 – TPC dědičnost, sdílené DB sekvence, `dotnet ef` |
-| Frontend | HTML, CSS (vlastní, bez frameworků), Vanilla JS |
-| API | ASP.NET Core Minimal API (selektivně) |
-| Import dat | ExcelDataReader (`.xlsx` → SQL Server) |
+| `src/SportSys.Razor` | Aktivní webová aplikace |
+| `src/SportSys.Contract` | Aplikační služby, validace a DTO |
+| `src/SportSys.Database` | EF Core model a DbContext |
+| `src/SportSys.Model` | Sdílené modely |
+| `src/SportSys.ConsoleApp` | Dávkové importy a pomocné příkazy |
+| `src/SportSys.Web` | Izolovaný scaffoldovaný prototyp; není aktivní aplikací |
 
 ## Předpoklady
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- Microsoft SQL Server 2019+ (nebo SQL Server Express / LocalDB)
-- Visual Studio 2022+ nebo VS Code s rozšířením C#
-- EF Core CLI: `dotnet tool install --global dotnet-ef`
+- Microsoft SQL Server 2019 nebo novější
+- Node.js a npm pro kompilaci SCSS
+- EF Core CLI pro uživatelskou správu migrací
 
 ## Rychlý start
 
-```bash
-# 1. Klonovat repozitář
-git clone <url>
+Connection string nepatří do verzovaného `appsettings.json`. Nastavte jej přes
+user secrets:
 
-# 2. Nastavit connection string v appsettings.json
-# "ConnectionStrings": { "DefaultConnection": "Server=.;Database=SportSys;Trusted_Connection=True;" }
-
-# 3. Aplikovat databázové migrace (EF Core CLI)
-dotnet ef database update --project src/SportSys.Database
-
-# 4. Spustit aplikaci
-dotnet run --project src/SportSys.Razor
+```powershell
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<connection-string>" --project src\SportSys.Razor
+dotnet build SportSys.slnx
+dotnet run --project src\SportSys.Razor
 ```
 
-> Migrace automaticky vytvoří schéma včetně sekvence `SportEventSeq` sdílené mezi `Training` a `Match` (TPC vzor).
+Migrace vytváří, kontroluje a aplikuje výhradně vývojář:
 
-## Struktura projektu
-
-```
-src/
-  SportSys.Database/      # EF Core modely, DbContext, migrace
-    Models/
-      Emr/                # Read-only modely napojené na ext. rezervační systém
-    Context/              # SportSysDbContext
-    Migrations/
-  SportSys.Web/           # ASP.NET Core – Razor Pages / Blazor Server (připravováno)
-  SportSys.ConsoleApp/    # Pomocné CLI nástroje (import dat z Excelu)
-  DB Model/               # SQL DDL skripty (záložní zdroj schématu)
-docs/                     # Projektová dokumentace
+```powershell
+dotnet ef migrations list --project src\SportSys.Database
+dotnet ef database update --project src\SportSys.Database
 ```
 
 ## Dokumentace
 
 | Dokument | Obsah |
 |---|---|
-| [docs/overview.md](docs/overview.md) | Účel systému, kontext, integrace |
-| [docs/architecture.md](docs/architecture.md) | Technická architektura, DB schémata, vrstvy |
-| [docs/conventions.md](docs/conventions.md) | EF Core konvence, SCSS, ikony |
-| [docs/features.md](docs/features.md) | Přehled funkcí dle modulů |
-| [docs/use-cases.md](docs/use-cases.md) | Scénáře použití |
-| [docs/inventory.md](docs/inventory.md) | Modul skladového hospodářství |
-| [docs/modules/auth.md](docs/modules/auth.md) | Autentizace a autorizace |
-| [docs/modules/frontend.md](docs/modules/frontend.md) | Frontend, SCSS, ikony |
-| [.github/copilot-instructions.md](.github/copilot-instructions.md) | Instrukce pro AI agenty |
+| [Architektura](docs/architecture.md) | Vrstvy, závislosti, schémata a integrace |
+| [Konvence](docs/conventions.md) | Projektová pravidla pro EF Core a frontend |
+| [Sport](docs/modules/sport.md) | Tréninky, plány, požadavky a číselníky |
+| [Personalistika](docs/modules/hr.md) | Trenéři, smlouvy, licence a docházka |
+| [Sklad](docs/modules/inventory.md) | Majetek, výstroj, zápůjčky a inventury |
+| [Autentizace](docs/modules/auth.md) | Entra ID, Identity a autorizace |
+| [Frontend](docs/modules/frontend.md) | Razor, SCSS, tokeny a komponenty |
+| [ADR](docs/decisions/README.md) | Přijatá architektonická rozhodnutí |
+| [Funkce](docs/features.md) | Stručný produktový přehled aktuálních funkcí |
+| [Scénáře](docs/use-cases.md) | Typické uživatelské toky |
+| [Instrukce pro AI](.github/copilot-instructions.md) | Pravidla a navigace pro agenty |
+
+Produktový kontext je v [přehledovém dokumentu](docs/overview.md). Historické
+implementační plány jsou v `.github/tasks/` a výzkumné podklady v
+`docs/research/`; nejsou zdrojem aktuálního stavu.
 
 ## Licence
 
-Interní projekt – není určen k veřejnému šíření.
+Interní projekt - není určen k veřejnému šíření.

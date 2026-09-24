@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using SportSys.Database.Models.hr;
 
 namespace SportSys.Database.Models.identity;
 
@@ -18,4 +19,6 @@ public class User : IdentityUser<int>
 
   /// <summary>Čas posledního přihlášení (UTC).</summary>
   public DateTime? LastLoginUtc { get; set; }
+
+  public ICollection<CoachAttendance> UploadedCoachAttendances { get; set; } = [];
 }

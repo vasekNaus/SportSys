@@ -25,11 +25,11 @@ else
             <dt>Člen</dt>
             <dd>@Model.Loan.MemberName</dd>
             <dt>Datum vydání</dt>
-            <dd>@Model.Loan.LoanDate.ToString("d.M.yyyy")</dd>
+            <dd>@Model.Loan.LoanDate.ToString("d")</dd>
             @if (Model.Loan.ExpectedReturnDate.HasValue)
             {
                 <dt>Plánované vrácení</dt>
-                <dd>@Model.Loan.ExpectedReturnDate.Value.ToString("d.M.yyyy")</dd>
+                <dd>@Model.Loan.ExpectedReturnDate.Value.ToString("d")</dd>
             }
             <dt>Stav</dt>
             <dd>
@@ -81,7 +81,7 @@ else
                             <span class="text-muted">—</span>
                         }
                     </td>
-                    <td>@(item.ReturnedDate?.ToString("d.M.yyyy") ?? "—")</td>
+                    <td>@(item.ReturnedDate?.ToString("d") ?? "—")</td>
                     <td class="buttons">
                         @if (!item.IsReturned)
                         {

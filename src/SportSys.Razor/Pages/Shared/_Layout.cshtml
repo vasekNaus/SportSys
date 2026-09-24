@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="cs">
+<html lang="cs-CZ">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -42,18 +42,23 @@
         <ul>
             <li><a asp-area="" asp-page="/Index"><i class="fa-solid fa-house fa-fw"></i> Úvod</a></li>
             <li>
-                <a asp-area="sport" asp-page="/Training/Schedule">
+                <a asp-area="sport" asp-page="/Training/Schedule/Index">
                     <i class="fa-solid fa-hockey-puck fa-fw"></i> Sport
                 </a>
                 <ul>
                     <li>
-                        <a asp-area="sport" asp-page="/Training/Schedule">
+                        <a asp-area="sport" asp-page="/Training/Schedule/Index">
                             <i class="fa-solid fa-calendar-days fa-fw"></i> Rozpis
                         </a>
                     </li>
                     <li>
-                        <a asp-area="sport" asp-page="/Training/Plan">
+                        <a asp-area="sport" asp-page="/Training/Plan/Index">
                             <i class="fa-solid fa-calendar-week fa-fw"></i> Tréninkové plány
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="sport" asp-page="/Training/Requirement/Index">
+                            <i class="fa-solid fa-list-check fa-fw"></i> Požadavky
                         </a>
                     </li>
                     <li>
@@ -106,6 +111,23 @@
                     <li>
                         <a asp-area="Inventory" asp-page="/Loans/Index">
                             <i class="fa-solid fa-hand-holding-box fa-fw"></i> Výpůjčky
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a asp-area="hr" asp-page="/Coach/Index">
+                    <i class="fa-solid fa-user-tie fa-fw"></i> Personalistika
+                </a>
+                <ul>
+                    <li>
+                        <a asp-area="hr" asp-page="/Coach/Index">
+                            <i class="fa-solid fa-people-group fa-fw"></i> Trenéři
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="hr" asp-page="/Attendance/Index">
+                            <i class="fa-solid fa-file-excel fa-fw"></i> Docházka
                         </a>
                     </li>
                 </ul>

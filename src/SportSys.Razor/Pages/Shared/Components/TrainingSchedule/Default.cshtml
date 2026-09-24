@@ -4,11 +4,11 @@
 }
 
 <div class="schedule-legend">
-    @foreach (var (category, color) in Model.CategoryColors)
+    @foreach (var item in Model.LegendItems)
     {
         <div class="schedule-legend-item">
-            <span class="schedule-legend-swatch" style="background-color: @color"></span>
-            <span>@category</span>
+            <span class="schedule-legend-swatch" style="background-color: @item.Color"></span>
+            <span>@item.Label</span>
         </div>
     }
 </div>
@@ -62,14 +62,49 @@
                         }
                         @foreach (var block in lane)
                         {
-                            <div class="schedule-block"
-                                 style="left: @block.Left.ToString("F2", invariant)%; width: @block.Width.ToString("F2", invariant)%; background-color: @block.Color"
-                                 title="@block.Tooltip">
-                                <span class="schedule-block-cat">@block.Title</span>
-                                <span class="schedule-block-time">
-                                    @block.TimeFrom.ToString("H:mm")–@block.TimeTo.ToString("H:mm")
-                                </span>
-                            </div>
+                            @if (block.EditItemId.HasValue)
+                            {
+                                <a class="schedule-block schedule-block--editable"
+                                   asp-area="sport"
+                                   asp-page="@block.EditPage"
+                                   asp-route-id="@block.EditItemId.Value"
+                                   target="_blank"
+                                   rel="noopener"
+                                   style="left: @block.Left.ToString("F2", invariant)%; width: @block.Width.ToString("F2", invariant)%; background-color: @block.Color"
+                                   title="@block.Tooltip">
+                                    <span class="schedule-block-cat">@block.Title</span>
+                                    <span class="schedule-block-time">
+                                        @block.TimeFrom.ToString("H:mm")–@block.TimeTo.ToString("H:mm")
+                                    </span>
+                                    <span class="schedule-block-type">@block.TrainingTypeSummary</span>
+                                    <span class="schedule-block-coaches">@block.CoachSummary</span>
+                                    @if (Model.AllowEditing && !string.IsNullOrEmpty(block.StateIcon))
+                                    {
+                                        <span class="schedule-block-state-icon"
+                                              aria-hidden="@(block.StateTooltip is null ? "true" : "false")"
+                                              title="@block.StateTooltip">@block.StateIcon</span>
+                                    }
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="schedule-block"
+                                     style="left: @block.Left.ToString("F2", invariant)%; width: @block.Width.ToString("F2", invariant)%; background-color: @block.Color"
+                                     title="@block.Tooltip">
+                                    <span class="schedule-block-cat">@block.Title</span>
+                                    <span class="schedule-block-time">
+                                        @block.TimeFrom.ToString("H:mm")–@block.TimeTo.ToString("H:mm")
+                                    </span>
+                                    <span class="schedule-block-type">@block.TrainingTypeSummary</span>
+                                    <span class="schedule-block-coaches">@block.CoachSummary</span>
+                                    @if (Model.AllowEditing && !string.IsNullOrEmpty(block.StateIcon))
+                                    {
+                                        <span class="schedule-block-state-icon"
+                                              aria-hidden="@(block.StateTooltip is null ? "true" : "false")"
+                                              title="@block.StateTooltip">@block.StateIcon</span>
+                                    }
+                                </div>
+                            }
                         }
                     </div>
                 }

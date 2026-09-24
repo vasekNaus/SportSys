@@ -31,6 +31,7 @@ Vytvoření a aplikaci migrace provádí výhradně uživatel po kontrole změn 
 - `HasComputedColumnSql(...)` — persisted computed sloupce
 - `HasDefaultValue(...)` / `HasDefaultValueSql(...)` s pojmenovaným constraintem
 - `UseTpcMappingStrategy()` — TPC dědičnost
+- `UseTptMappingStrategy()` — TPT dědičnost
 - `HasConversion(...)` — value convertory
 - `HasData(...)` — seed data
 - `HasSequence(...)` — databázové sekvence
@@ -45,7 +46,7 @@ Názvy DB schémat jsou `const string` v `Models/Schemas.cs`. Nikdy string liter
 
 ```csharp
 [Table(nameof(Training), Schema = Schemas.Sport)]
-[Table(nameof(Coach),    Schema = Schemas.Dbo)]
+[Table(nameof(Coach),    Schema = Schemas.Hr)]
 ```
 
 > **Proč `const`, ne `static readonly`?** Atributy vyžadují compile-time konstanty.
@@ -166,6 +167,8 @@ using MatchType = SportSys.Database.Models.sportSchema.MatchType;
 
 ## TPC dědičnost
 
+TPC je výchozí preferovaná strategie dědičnosti v projektu.
+
 Vzor sdílené sekvence (`SportEvent → Training / Match`, `InventoryItem → Equipment / Asset`):
 - Fyzická tabulka abstraktního předka neexistuje
 - Sdílená sekvence zajišťuje unikátní ID napříč konkrétními tabulkami
@@ -173,6 +176,18 @@ Vzor sdílené sekvence (`SportEvent → Training / Match`, `InventoryItem → E
 - Apollo `IdConvention()` pojmenuje FK sloupce zděděné z bázové třídy automaticky — ❌ nepřidávat `HasColumnName` pro zděděné FK
 
 **Výjimka:** FK sdílené ve dvou navigacích TPC hierarchie (např. `SeasonId`, `SeasonCategoryName` v `SportEventConfiguration`) — zde `HasColumnName` explicitně nastavit.
+
+### TPT výjimka pro Identity
+
+`User → Coach` používá TPT podle
+`docs/decisions/adr-004-coach-jako-tpt-potomek-user.md`, protože trenér musí
+sdílet fyzický řádek a PK s `identity.User`.
+
+- `User` zůstává neabstraktní základní typ.
+- `hr.Coach.Id` je PK/FK na `identity.User.Id`.
+- Společná profilová pole patří pouze do `identity.User`.
+- TPT konfigurace je v `Configurations/identity/UserConfiguration.cs`.
+- Tuto výjimku nerozšiřovat na další hierarchie bez samostatného ADR.
 
 ---
 
@@ -188,39 +203,12 @@ Všechny projekty: `<Nullable>enable</Nullable>` + `<ImplicitUsings>enable</Impl
 
 ---
 
-## Frontend: SCSS
+## Frontend
 
-Žádný CSS framework. Vlastní SCSS kompilovaný do `wwwroot/css/site.css` přes `npm run build:css`.
-
-> ⚠️ `wwwroot/css/site.css` je kompilovaný výstup — ❌ nikdy neupravovat ručně.
-
-SCSS soubory jsou v `src/SportSys.Razor/Styles/`:
-- `_vars.scss` — design tokeny přes CSS custom properties
-- Sémantické tokeny (`--color-*`) mají přednost před primitivními (`--sport-red-500`)
-
-**Brand červená** (`#d8232a`, `--color-brand-primary`) — pro tlačítka, navigaci, akcenty. Tmavší varianty (`--color-brand-primary-active`) **výhradně** pro `:active`/`:hover`, nikoli jako alternativní barva.
-
-Viz `docs/modules/frontend.md` pro úplné konvence.
-
----
-
-## Ikony (Font Awesome 6)
-
-- Každá ikona: třída `fa-fw` (pevná šířka).
-- Akční tlačítka v řádcích gridu: pouze ikona, `class="button secondary icon-btn"`, atribut `title`.
-
-| Akce | Ikona |
-|---|---|
-| Přidat / Nový | `fa-solid fa-plus` |
-| Upravit | `fa-solid fa-pen` |
-| Smazat | `fa-solid fa-trash` |
-| Detail / Zobrazit | `fa-solid fa-eye` |
-| Hledat | `fa-solid fa-magnifying-glass` |
-| Vymazat filtr | `fa-solid fa-filter-circle-xmark` |
-| Uložit | `fa-solid fa-floppy-disk` |
-| Zpět | `fa-solid fa-arrow-left` |
-| Potvrdit / OK | `fa-solid fa-circle-check` |
-| Varování | `fa-solid fa-triangle-exclamation` |
+Frontendové konvence mají jediný zdroj pravdy v
+`docs/modules/frontend.md`. Zejména platí, že
+`src/SportSys.Razor/wwwroot/css/site.css` je generovaný výstup a ručně se
+neupravuje.
 
 ---
 
@@ -228,6 +216,7 @@ Viz `docs/modules/frontend.md` pro úplné konvence.
 
 - `docs/modules/auth.md` — autentizace a autorizace
 - `docs/modules/frontend.md` — SCSS struktura, barevné schéma
+- `docs/modules/inventory.md` — TPC a aplikační integrita skladu
 - `.github/skills/lookup-table/SKILL.md` — přidání nové lookup tabulky
 - `.github/skills/has-default-value/SKILL.md` — pojmenované DB default constraints
 - `.github/skills/new-ef-entity/SKILL.md` — přidání nové EF Core entity

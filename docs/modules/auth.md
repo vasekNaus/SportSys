@@ -1,118 +1,109 @@
-# Autentizace a autorizace — SportSys
+# Autentizace a autorizace
 
-## Architektura identity
+## Účel
 
-| Vrstva | Technologie | Role |
-|---|---|---|
-| Primární autentizace | Microsoft Entra ID (OIDC, SSO, MFA) | Interní uživatelé |
-| Fallback | Lokální ASP.NET Core Identity účty | Přímý přístup bez Entra |
-| User store | ASP.NET Core Identity (`IdentityUser<int>`) | Jednotný model |
-| Business autorizace | Policy-based + Claims transformation | Detailní oprávnění |
+Modul sjednocuje přihlášení přes Microsoft Entra ID a lokální ASP.NET Core
+Identity nad jedním uživatelským úložištěm. Poskytuje stabilní lokální ID
+uživatele pro auditní vazby a systémové role pro autorizaci.
 
----
+## Odpovědnosti
 
-## Model uživatele (`User`)
+- OIDC přihlášení interních uživatelů přes Microsoft Entra ID.
+- Lokální Identity účty jako fallback.
+- Automatický provisioning a synchronizace uživatele z Entra claims.
+- Doplnění lokálního `identity.User.Id` do principalu.
+- Registrace systémových rolí a fallback politiky vyžadující přihlášení.
 
-Třída `User` v `Models/identity/` rozšiřuje `IdentityUser<int>`:
+## Datový model
 
-```csharp
-public class User : IdentityUser<int>
-{
-    public string? EntraOid { get; set; }         // OID z Entra ID tokenu
-    public string? EntraTenantId { get; set; }    // TID z Entra ID tokenu
-    public string? DisplayName { get; set; }
-    public bool IsLocalAccount { get; set; }
-    public DateTime? LastLoginUtc { get; set; }
-}
-```
+`SportSys.Database.Models.identity.User` dědí z `IdentityUser<int>` a doplňuje:
 
-> ❌ Nikdy nepoužívat email ani UPN jako identity klíč pro Entra uživatele — použít `EntraOid` + `EntraTenantId`.
-
----
-
-## Identity tabulky
-
-Identity tabulky jsou ve schématu `identity` (ne výchozí `dbo`), **bez** `AspNet` prefixu:
-
-| Tabulka | Mapuje na |
+| Vlastnost | Význam |
 |---|---|
-| `identity.User` | `IdentityUser<int>` |
-| `identity.Role` | `IdentityRole<int>` |
-| `identity.UserRole` | `IdentityUserRole<int>` |
-| `identity.UserClaim` | `IdentityUserClaim<int>` |
-| `identity.UserLogin` | `IdentityUserLogin<int>` |
-| `identity.UserToken` | `IdentityUserToken<int>` |
-| `identity.RoleClaim` | `IdentityRoleClaim<int>` |
+| `EntraOid` | Object ID uživatele v Entra ID |
+| `EntraTenantId` | Tenant ID vydavatele |
+| `DisplayName` | Zobrazované jméno synchronizované z Entra |
+| `IsLocalAccount` | Rozlišení lokálního a Entra účtu |
+| `LastLoginUtc` | Poslední synchronizované přihlášení |
 
----
+Identity tabulky jsou ve schématu `identity` bez prefixu `AspNet`.
+Kombinace `EntraOid + EntraTenantId` je identitou Entra uživatele; e-mail ani
+UPN nesmí být použit jako stabilní klíč.
 
-## Registrace servisů
+`hr.Coach` je TPT potomek `identity.User`. Trenér proto používá stejné
+`User.Id`, Identity údaje a profilová pole jako základní uživatel. Běžný
+uživatel derived řádek nemá. Entra provisioning vytváří pouze základního
+uživatele; trenérský profil vzniká samostatnou personální operací.
 
-Veškerá registrace probíhá výhradně přes `AddSportSysServices()` v `SportSys.Contract/ServiceCollectionExtensions.cs`.
+Business role a permission entity jsou v aktuálním projektu vyřazeny z
+kompilace a jejich DbSety i transformace claims jsou zakomentované. Nejde tedy
+o aktivní autorizační mechanismus.
 
-> ❌ `AddIdentity<T>()` NESMÍ být použito — nahrazuje OIDC jako výchozí autentizační schéma, přeruší přihlašování přes Entra ID.
+## Tok zpracování
 
-> ✅ Vždy `AddIdentityCore<User>()` + `.AddSignInManager()`.
+1. `SportSys.Razor` zahájí OIDC přihlášení přes Microsoft Identity Web.
+2. `EntraClaimsTransformation` načte claims `oid` a `tid`.
+3. Uživatele vyhledá v `identity.User`, případně jej vytvoří přes
+   `UserManager<User>`.
+4. Synchronizuje jméno, e-mail a `LastLoginUtc`.
+5. Přidá claim `SportSysClaimTypes.UserId` s lokálním číselným ID.
+6. Auditní operace používají `CurrentUserIdResolver`, nikoli Entra OID.
 
----
+Lokální Identity principal může jako fallback použít kladný číselný
+`NameIdentifier`.
 
-## FrameworkReference (ne NuGet)
+## Klíčové komponenty
 
-`SportSys.Database` a `SportSys.Contract` referencují ASP.NET Core Identity přes:
+| Komponenta | Cesta | Odpovědnost |
+|---|---|---|
+| Registrace | `src/SportSys.Contract/ServiceCollectionExtensions.cs` | DbContext, Identity, cookies, transformace a policies |
+| Entra transformace | `src/SportSys.Contract/Auth/EntraClaimsTransformation.cs` | Provisioning, synchronizace a lokální ID claim |
+| Typ claimu | `src/SportSys.Contract/Auth/SportSysClaimTypes.cs` | Stabilní název lokálního user ID |
+| Resolver | `src/SportSys.Contract/Auth/CurrentUserIdResolver.cs` | Bezpečné získání lokálního ID |
+| User model | `src/SportSys.Database/Models/identity/User.cs` | Jednotný user store |
+| HTTP konfigurace | `src/SportSys.Razor/Program.cs` | OIDC a middleware pipeline |
 
-```xml
-<FrameworkReference Include="Microsoft.AspNetCore.App" />
-```
+## Rozhraní
 
-❌ Ne NuGet balíček `Microsoft.AspNetCore.Identity` — na .NET 10 by kolidoval.
+- Policy `SystemAdmin`, `Support` a `InternalUser` vyžadují stejnojmenné
+  Identity role.
+- Fallback policy odpovídá default policy, takže všechny nezpřístupněné
+  endpointy vyžadují přihlášení.
+- `SportSysClaimTypes.UserId` slouží pouze jako interní lokální identifikátor,
+  ne jako business oprávnění.
 
----
+## Integrační vazby
 
-## Authorization
+- Microsoft Entra ID poskytuje OIDC token a claims.
+- ASP.NET Core Identity ukládá uživatele a role do SQL Serveru.
+- HR docházka používá lokální user ID pro povinný audit uploadu.
 
-Identity role pouze pro: `SystemAdmin`, `Support`, `InternalUser`.
+## Závislosti
 
-> ❌ Business oprávnění NESMÍ být ukládána do Identity rolí ani claims — narušuje oddělení odpovědností a ztěžuje správu.
+`SportSys.Razor` registruje OIDC, ale DbContext, Identity store, cookie schémata
+a policies registruje výhradně `AddSportSysServices()` v Contract vrstvě.
 
-Business autorizace je implementována přes `EntraClaimsTransformation` (implementuje `IClaimsTransformation`) — dynamicky doplňuje claims z databáze po přihlášení.
+## Omezení a pravidla
+
+- Používej `AddIdentityCore<User>()` a `.AddSignInManager()`.
+- Nepoužívej `AddIdentity<T>()`; přepsalo by výchozí OIDC schéma.
+- Nepoužívej e-mail ani UPN jako klíč Entra uživatele.
+- Po Identity scaffoldingu proveď cleanup podle příslušného skillu.
+- Do dokumentace neuváděj business permissions jako aktivní, dokud se jejich
+  entity a DbSety nevrátí do kompilace.
+- TPT `User -> Coach` nemění přihlašovací tok ani typ Identity store.
+
+## Příklady
+
+Auditní služba získá lokální ID pomocí:
 
 ```csharp
-// Policy-based authorization (příklad)
-options.AddPolicy("invoice.approve",
-    policy => policy.RequireClaim("permission", "invoice.approve"));
+var userId = CurrentUserIdResolver.GetRequiredUserId(principal);
 ```
 
----
+## Odkazovaná dokumentace
 
-## Login flow (Entra ID)
-
-1. OIDC callback → claims obsahují `oid` (EntraOid) a `tid` (EntraTenantId)
-2. Vyhledat `User` podle `EntraOid` + `EntraTenantId`
-3. Pokud neexistuje → automaticky vytvořit
-4. Synchronizovat `DisplayName`, `Email`, `LastLoginUtc`
-5. `EntraClaimsTransformation.TransformAsync` → načíst business oprávnění z DB → doplnit claims
-
----
-
-## Scaffolding Identity stránek — povinný cleanup
-
-Po `dotnet aspnet-codegenerator identity` scaffolder vloží do `Program.cs` 3 řádky, které **musí být okamžitě smazány** (způsobí `"Scheme already exists: Identity.Application"`):
-
-```csharp
-// ❌ Smazat:
-var connectionString = builder.Configuration.GetConnectionString("SportSysDbContext");
-builder.Services.AddDbContext<SportSys.Razor.Data.SportSysDbContext>(...);
-builder.Services.AddDefaultIdentity<SportSys.Razor.Data.ApplicationUser>(...);
-```
-
-Scaffoldované stránky v `Areas/Identity/Pages/` — přejmenovat `using SportSys.Razor.Data` na `using SportSys.Database.Models.identity`.
-
-Viz `.github/skills/identity-scaffold-cleanup/SKILL.md` pro krok-za-krokem postup.
-
----
-
-## Reference
-
-- `src/SportSys.Contract/ServiceCollectionExtensions.cs` — jediné místo registrace
-- `src/SportSys.Database/Models/identity/` — identity modely
-- `.github/skills/identity-scaffold-cleanup/SKILL.md` — postup po scaffoldingu
+- `docs/architecture.md`
+- `.github/skills/identity-scaffold-cleanup/SKILL.md`
+- `docs/decisions/adr-002-hybridni-identita.md`
+- `docs/decisions/adr-004-coach-jako-tpt-potomek-user.md`

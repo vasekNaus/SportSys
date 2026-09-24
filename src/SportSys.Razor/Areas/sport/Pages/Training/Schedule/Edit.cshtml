@@ -1,0 +1,120 @@
+@page
+@model EditModel
+@{
+    ViewData["Title"] = "Upravit trénink";
+    var categories = string.Join(" + ", Model.Context.CategoryNames);
+    var trainingTypes = string.Join(
+        ", ",
+        Model.Context.Members
+            .Select(member => member.TrainingTypeName)
+            .Distinct(StringComparer.CurrentCulture)
+            .OrderBy(name => name, StringComparer.CurrentCulture));
+}
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="infobox">
+        <i class="fa-solid fa-circle-check fa-fw"></i> @Model.StatusMessage
+    </div>
+}
+
+<dl class="training-edit-summary">
+    <div>
+        <dt>Kategorie</dt>
+        <dd>@categories</dd>
+    </div>
+    <div>
+        <dt>Typ tréninku</dt>
+        <dd>@trainingTypes</dd>
+    </div>
+</dl>
+
+@if (Model.Context.IsGrouped)
+{
+    @if (Model.Context.CanEdit)
+    {
+        <div class="infobox">
+            <i class="fa-solid fa-link fa-fw"></i>
+            Změny budou uloženy pro všechny spojené tréninky:
+            @string.Join(", ", Model.Context.CategoryNames).
+        </div>
+    }
+    else
+    {
+        <div class="validation-summary-errors" role="alert">
+            <i class="fa-solid fa-triangle-exclamation fa-fw"></i>
+            Spojené tréninky nemají stejné datum, čas, lokalitu nebo poznámku.
+            Dokud nebudou hodnoty sjednocené, nelze skupinu editovat.
+        </div>
+    }
+
+    <div class="training-edit-members">
+        <table class="details">
+            <thead>
+                <tr>
+                    <th>Kategorie</th>
+                    <th>Typ</th>
+                    <th>Datum</th>
+                    <th>Čas od</th>
+                    <th>Čas do</th>
+                    <th>Lokalita</th>
+                    <th>Poznámka</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var member in Model.Context.Members)
+                {
+                    <tr>
+                        <td>@member.SeasonCategoryName</td>
+                        <td>@member.TrainingTypeName</td>
+                        <td>@member.Date.ToString("d")</td>
+                        <td>@member.TimeFrom.ToString("H:mm")</td>
+                        <td>@member.TimeTo.ToString("H:mm")</td>
+                        <td>@member.Location</td>
+                        <td>@member.Note</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+@if (Model.Context.CanEdit)
+{
+    <form method="post">
+        @Html.EditorFor(model => model.Input)
+
+        <footer>
+            <button type="submit" class="button">
+                <i class="fa-solid fa-floppy-disk fa-fw"></i> Uložit
+            </button>
+            <button type="button" class="button secondary" onclick="closeTrainingEdit()">
+                <i class="fa-solid fa-xmark fa-fw"></i> Zavřít
+            </button>
+        </footer>
+    </form>
+}
+else
+{
+    <p class="buttons">
+        <button type="button" class="button secondary" onclick="closeTrainingEdit()">
+            <i class="fa-solid fa-xmark fa-fw"></i> Zavřít
+        </button>
+    </p>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function closeTrainingEdit() {
+            window.close();
+            window.setTimeout(function () {
+                if (!window.closed) {
+                    window.location.href = '@Url.Page("./Index")';
+                }
+            }, 100);
+        }
+    </script>
+}

@@ -353,4 +353,4 @@ public class SliderAttribute(int min, int max, int step = 1) : DataTypeAttribute
 | [08-validation.md](08-validation.md) | Client-side validace, jquery.validate |
 | [09-gotchas.md](09-gotchas.md) | 13 nejčastějších problémů + debug checklist |
 | [examples/](examples/) | Funkční ukázky kódu připravené k použití |
-| [_research/webov-projekt-altairis-rep-web-altairis-rep-web-cs.md](_research/webov-projekt-altairis-rep-web-altairis-rep-web-cs.md) | Originální výzkumná zpráva |
+| [_research/original-research.md](_research/original-research.md) | Originální výzkumná zpráva |

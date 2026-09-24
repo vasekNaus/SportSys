@@ -66,6 +66,11 @@ public static class ServiceCollectionExtensions
     services.AddScoped<SeasonService>();
     services.AddScoped<SeasonCategoryService>();
     services.AddScoped<TrainingScheduleService>();
+    services.AddScoped<TrainingService>();
+    services.AddScoped<TrainingPlanService>();
+    services.AddScoped<TrainingRequirementService>();
+    services.AddScoped<CoachService>();
+    services.AddScoped<CoachAttendanceService>();
 
     services.AddScoped<ManufacturerService>();
     services.AddScoped<LocationService>();

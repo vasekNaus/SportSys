@@ -1,6 +1,6 @@
 # Examples – přehled ukázek
 
-> **Navigace:** [← Skills README](../README.md)
+> **Navigace:** [← Skill](../SKILL.md)
 
 Funkční ukázky kódu připravené k přímému použití nebo jako základ pro vlastní implementaci.
 

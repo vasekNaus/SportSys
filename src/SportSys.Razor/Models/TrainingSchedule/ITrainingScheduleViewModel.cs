@@ -9,4 +9,5 @@ public interface ITrainingScheduleViewModel
     TimeOnly TimelineStart { get; }
     TimeOnly TimelineEnd { get; }
     bool HasItems { get; }
+    bool AllowEditing { get; }
 }

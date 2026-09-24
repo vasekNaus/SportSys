@@ -82,7 +82,7 @@ else
                         @if (item.WarrantyUntil.HasValue)
                         {
                             var expired = item.WarrantyUntil.Value < DateOnly.FromDateTime(DateTime.Today);
-                            <span class="@(expired ? "text-muted" : "")">@item.WarrantyUntil.Value.ToString("d. M. yyyy")</span>
+                            <span class="@(expired ? "text-muted" : "")">@item.WarrantyUntil.Value.ToString("d")</span>
                         }
                         else
                         {

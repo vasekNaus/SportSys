@@ -1,6 +1,6 @@
 # 02 – DataAnnotations – kompletní reference atributů
 
-> **Navigace:** [← Core concepts](01-core-concepts.md) | [Object.cshtml →](03-object-template.md) | [README](README.md)
+> **Navigace:** [← Core concepts](01-core-concepts.md) | [Object.cshtml →](03-object-template.md) | [Skill](SKILL.md)
 
 ---
 

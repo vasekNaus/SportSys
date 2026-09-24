@@ -7,4 +7,12 @@
         _ => string.Empty,
     };
 }
-@Html.TextBox(string.Empty, value, new { type = "date", @class = "short" })
+@Html.TextBox(
+    string.Empty,
+    value,
+    new
+    {
+        type = "date",
+        @class = "short",
+        lang = "cs-CZ",
+    })

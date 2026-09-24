@@ -1,6 +1,6 @@
 # 01 – Jak EditorTemplates fungují
 
-> **Navigace:** [← README](README.md) | [Atributy →](02-data-annotations.md) | [Object.cshtml →](03-object-template.md)
+> **Navigace:** [← Skill](SKILL.md) | [Atributy →](02-data-annotations.md) | [Object.cshtml →](03-object-template.md)
 
 ---
 

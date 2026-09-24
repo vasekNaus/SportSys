@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using SportSys.Database.Models;
 using SportSys.Database.Models.dbo;
+using SportSys.Database.Models.hr;
 using SportSys.Database.Models.sport;
 using SportSys.Database.Models.inventory;
 
@@ -23,11 +24,21 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
 
   public virtual DbSet<Coach> Coaches { get; set; }
 
+  public virtual DbSet<CoachSetting> CoachSettings { get; set; }
+
+  public virtual DbSet<CoachLicenseType> CoachLicenseTypes { get; set; }
+
+  public virtual DbSet<CoachLicense> CoachLicenses { get; set; }
+
+  public virtual DbSet<CoachContract> CoachContracts { get; set; }
+
+  public virtual DbSet<CoachAttendance> CoachAttendances { get; set; }
+
   public virtual DbSet<CoachRole> CoachRoles { get; set; }
 
   public virtual DbSet<CoachTraining> CoachTrainings { get; set; }
 
-  public virtual DbSet<CoachTrainingEntitlement> CoachTrainingEntitlements { get; set; }
+  public virtual DbSet<CoachTrainingRequirement> CoachTrainingRequirements { get; set; }
 
   public virtual DbSet<CoachTrainingPlan> CoachTrainingPlans { get; set; }
 
@@ -47,7 +58,7 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
 
   public virtual DbSet<Training> Training { get; set; }
 
-  public virtual DbSet<TrainingEntitlement> TrainingEntitlements { get; set; }
+  public virtual DbSet<TrainingRequirement> TrainingRequirements { get; set; }
 
   public virtual DbSet<TrainingGroup> TrainingGroups { get; set; }
 
@@ -114,7 +125,6 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
     base.OnModelCreating(modelBuilder);
 
     //zmnena pojmenovani tabulek s daty Identity
-    modelBuilder.Entity<User>().ToTable(nameof(User), Schemas.Identity);
     modelBuilder.Entity<Role>().ToTable(nameof(Role), Schemas.Identity);
     modelBuilder.Entity<UserRole>().ToTable(nameof(UserRole), Schemas.Identity);
     modelBuilder.Entity<UserClaim>().ToTable(nameof(UserClaim), Schemas.Identity);

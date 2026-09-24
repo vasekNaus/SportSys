@@ -1,80 +1,58 @@
-# Scénáře použití (Use Cases)
+# Scénáře použití
 
-## UC-01: Kontrola faktury za ledový čas
+## UC-01: Kontrola rozvrhu tréninků
 
-**Aktér:** Ekonom / člen výboru  
-**Trigger:** Přijata faktura od provozovatele zimního stadionu za uplynulý měsíc
+**Aktér:** člen výboru nebo trenér
 
-**Postup:**
-1. Uživatel otevře modul Kontrola fakturace.
-2. Vybere zúčtovací období (měsíc/sezóna) a kategorii.
-3. Systém načte bloky z rezervačního systému (`plan.Block`) pro dané období.
-4. Systém vypočítá celkový objem minut/hodin dle rezervací.
-5. Uživatel zadá nebo importuje položky z faktury.
-6. Systém zobrazí srovnávací tabulku: rezervace vs. faktura.
-7. Pokud existují rozdíly, systém je zvýrazní a umožní export pro reklamaci.
+1. Uživatel otevře `/sport/Training/Schedule`.
+2. Vybere sezonu, kategorie, typy, lokality a období.
+3. Systém zobrazí jednotlivé i propojené bloky v časové ose.
+4. Uživatel otevře editaci konkrétního tréninku nebo exportuje výsledek do
+   XLSX.
 
-**Výsledek:** Uživatel potvrdí, nebo zamítne fakturu s podloženým výpočtem.
+**Výsledek:** uživatel má filtrovaný přehled a může upravit povolené údaje.
 
----
+## UC-02: Kontrola požadavků na tréninky
 
-## UC-02: Import výkazů trenérů z Excelu
+**Aktér:** člen výboru
 
-**Aktér:** Administrátor / asistent  
-**Trigger:** Trenér odevzdá měsíční výkaz v souboru `.xlsx`
+1. Uživatel otevře `/sport/Training/Requirement`.
+2. Zvolí sezonu a volitelné kategorie, typy a fáze.
+3. Systém zobrazí požadovaný hodinový rozsah a přiřazené trenéry.
 
-**Postup:**
-1. Administrátor spustí `SportSys.ConsoleApp` (nebo budoucí UI v SportSys.Web).
-2. Vybere složku s `.xlsx` soubory (formát: `[číslo] [příjmení trenéra].xlsx`).
-3. Aplikace přečte každý soubor, identifikuje trenéra z názvu souboru.
-4. Záznamy jsou validovány (datum, čas, kategorie).
-5. Duplicity jsou detekovány a přeskočeny / označeny k ověření.
-6. Validní záznamy jsou vloženy do tabulky `Training` v databázi SportSys.
+**Výsledek:** uživatel získá read-only podklad pro plánování sezony.
 
-**Výsledek:** Databáze obsahuje záznamy tréninků odpovídající odevzdaným výkazům.
+## UC-03: Správa trenéra
 
----
+**Aktér:** přihlášený interní uživatel
 
-## UC-03: Přehled tréninků sezóny
+1. Uživatel otevře `/hr/Coach/Index` a vybere trenéra.
+2. Na samostatných záložkách upraví základní údaje, fotografii, nastavení,
+   licence nebo smlouvy.
+3. Každá záložka se validuje a ukládá nezávisle.
 
-**Aktér:** Člen výboru / trenér  
-**Trigger:** Potřeba zkontrolovat počty tréninků v aktuální sezóně
+**Výsledek:** personální historie zůstává oddělená podle typu údajů.
 
-**Postup:**
-1. Uživatel přejde do sekce Evidence tréninků.
-2. Vybere sezónu a volitelně kategorii nebo typ tréninku.
-3. Systém zobrazí seznam tréninků s filtrovacími a řadicími možnostmi.
-4. Uživatel může zobrazit detail záznamu nebo provést export.
+## UC-04: Archivace měsíční docházky
 
-**Výsledek:** Uživatel má přehled o odtrénovaných jednotkách včetně sportoviště a délky.
+**Aktér:** přihlášený interní uživatel
 
----
+1. Uživatel otevře `/hr/Attendance/Index`.
+2. Vybere trenéra, rok, měsíc a zdrojový `.xlsx` soubor.
+3. Systém ověří soubor, unikátnost období a auditní identitu.
+4. Uloží původní soubor bez interpretace buněk.
+5. Uživatel může historii filtrovat a soubor znovu stáhnout.
 
-## UC-04: Generování plateb trenérům
+**Výsledek:** existuje auditovaný zdrojový dokument pro daného trenéra a
+měsíc.
 
-**Aktér:** Ekonom  
-**Trigger:** Konec měsíce / výplatní termín
+## UC-05: Evidence zápůjčky
 
-**Postup:**
-1. Systém načte platné smlouvy s trenéry pro aktuální období.
-2. Porovná počet odtrénovaných hodin z evidence tréninků se smluvní odměnou.
-3. Vygeneruje seznam platebních příkazů.
-4. Uživatel zkontroluje a potvrdí platby.
-5. Systém exportuje soubor pro internetové bankovnictví.
+**Aktér:** správce skladu
 
-**Výsledek:** Platby jsou připraveny k odeslání bez ručního přepisování dat.
+1. Uživatel vybere položku skladu a člena klubu.
+2. Zadá datum vydání a očekávané vrácení.
+3. Contract služba ověří stav položky a uloží zápůjčku i auditní pohyb.
+4. Při vrácení zápůjčku uzavře a aktualizuje stav položky.
 
----
-
-## UC-05: Evidence zápasů a výsledků
-
-**Aktér:** Sekretář / člen výboru  
-**Trigger:** Odehrání zápasu
-
-**Postup:**
-1. Uživatel přejde do sekce Zápasy a vybere sezónu + kategorii.
-2. Doplní výsledek (skóre) a případnou poznámku k již naplánovanému zápasu.
-3. Systém aktualizuje stav zápasu na „odehráno".
-4. Zápas je dostupný v pohledu `SportEvent` společně s tréninky.
-
-**Výsledek:** Výsledky jsou evidovány centrálně a dostupné pro statistické přehledy.
+**Výsledek:** aktuální držitel i historie pohybu jsou dohledatelné.

@@ -18,7 +18,7 @@ namespace SportSys.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -26,36 +26,6 @@ namespace SportSys.Database.Migrations
             modelBuilder.HasSequence<int>("InventoryItemSeq", "inventory");
 
             modelBuilder.HasSequence<int>("SportEventSeq", "sport");
-
-            modelBuilder.Entity("SportSys.Database.Models.dbo.Coach", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasMaxLength(101)
-                        .HasColumnType("nvarchar(101)")
-                        .HasComputedColumnSql("(([FirstName]+N' ')+[LastName])", true);
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Coach", "dbo");
-                });
 
             modelBuilder.Entity("SportSys.Database.Models.dbo.Manufacturer", b =>
                 {
@@ -129,6 +99,247 @@ namespace SportSys.Database.Migrations
                         {
                             Id = 6,
                             Name = "Kondiční"
+                        });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachAttendance", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CoachId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<byte[]>("FileContent")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<byte>("PeriodMonth")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int>("PeriodYear")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2(0)");
+
+                    b.Property<int>("UserUploadId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "CoachId", "PeriodYear", "PeriodMonth" }, "IX_CoachAttendance_Coach_Period")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "UploadedAt" }, "IX_CoachAttendance_UploadedAt");
+
+                    b.HasIndex(new[] { "UserUploadId" }, "IX_CoachAttendance_UserUpload");
+
+                    b.ToTable("CoachAttendance", "hr", t =>
+                        {
+                            t.HasCheckConstraint("CK_CoachAttendance_PeriodMonth", "[PeriodMonth] BETWEEN 1 AND 12");
+
+                            t.HasCheckConstraint("CK_CoachAttendance_PeriodYear", "[PeriodYear] BETWEEN 1 AND 9999");
+
+                            t.Property("CoachId")
+                                .HasColumnName("Coach_Id");
+
+                            t.Property("UserUploadId")
+                                .HasColumnName("UserUpload_Id");
+                        });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachContract", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CoachId")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("ContractType")
+                        .HasColumnType("tinyint");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true, "DF_CoachContract_IsActive");
+
+                    b.Property<decimal>("RewardAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "CoachId", "SeasonId" }, "IX_CoachContract_Coach_Season");
+
+                    b.HasIndex(new[] { "SeasonId" }, "IX_CoachContract_Season");
+
+                    b.ToTable("CoachContract", "hr", t =>
+                        {
+                            t.HasCheckConstraint("CK_CoachContract_ContractType", "[ContractType] IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_CoachContract_RewardAmount", "[RewardAmount] >= 0");
+
+                            t.Property("CoachId")
+                                .HasColumnName("Coach_Id");
+
+                            t.Property("SeasonId")
+                                .HasColumnName("Season_Id");
+                        });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachLicense", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CoachId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CoachLicenseTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "CoachLicenseTypeId" }, "IX_CoachLicense_CoachLicenseType");
+
+                    b.HasIndex(new[] { "CoachId", "ValidFrom", "ValidTo" }, "IX_CoachLicense_Coach_Validity");
+
+                    b.ToTable("CoachLicense", "hr", t =>
+                        {
+                            t.HasCheckConstraint("CK_CoachLicense_Validity", "[ValidTo] IS NULL OR [ValidTo] >= [ValidFrom]");
+
+                            t.Property("CoachId")
+                                .HasColumnName("Coach_Id");
+
+                            t.Property("CoachLicenseTypeId")
+                                .HasColumnName("CoachLicenseType_Id");
+                        });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachLicenseType", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "Code" }, "UX_CoachLicenseType_Code")
+                        .IsUnique();
+
+                    b.ToTable("CoachLicenseType", "hr");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BankAccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<string>("BankAccountPrefix")
+                        .HasMaxLength(6)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(6)");
+
+                    b.Property<string>("BankCode")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(4)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("CoachId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HealthInsuranceCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(3)");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ZipCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "CoachId", "ValidFrom", "ValidTo" }, "IX_CoachSetting_Coach_Validity");
+
+                    b.ToTable("CoachSetting", "hr", t =>
+                        {
+                            t.HasCheckConstraint("CK_CoachSetting_Validity", "[ValidTo] IS NULL OR [ValidTo] >= [ValidFrom]");
+
+                            t.Property("CoachId")
+                                .HasColumnName("Coach_Id");
                         });
                 });
 
@@ -266,6 +477,8 @@ namespace SportSys.Database.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("User", "identity");
+
+                    b.UseTptMappingStrategy();
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.identity.UserClaim", b =>
@@ -909,32 +1122,6 @@ namespace SportSys.Database.Migrations
                         });
                 });
 
-            modelBuilder.Entity("SportSys.Database.Models.sport.CoachTrainingEntitlement", b =>
-                {
-                    b.Property<int>("CoachId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TrainingEntitlementId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CoachRoleId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CoachId", "TrainingEntitlementId", "CoachRoleId");
-
-                    b.ToTable("CoachTrainingEntitlement", "sport", t =>
-                        {
-                            t.Property("CoachId")
-                                .HasColumnName("Coach_Id");
-
-                            t.Property("TrainingEntitlementId")
-                                .HasColumnName("TrainingEntitlement_Id");
-
-                            t.Property("CoachRoleId")
-                                .HasColumnName("CoachRole_Id");
-                        });
-                });
-
             modelBuilder.Entity("SportSys.Database.Models.sport.CoachTrainingPlan", b =>
                 {
                     b.Property<int>("CoachId")
@@ -962,6 +1149,32 @@ namespace SportSys.Database.Migrations
 
                             t.Property("TrainingPlanId")
                                 .HasColumnName("TrainingPlan_Id");
+                        });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.CoachTrainingRequirement", b =>
+                {
+                    b.Property<int>("CoachId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TrainingRequirementId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CoachRoleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CoachId", "TrainingRequirementId", "CoachRoleId");
+
+                    b.ToTable("CoachTrainingRequirement", "sport", t =>
+                        {
+                            t.Property("CoachId")
+                                .HasColumnName("Coach_Id");
+
+                            t.Property("TrainingRequirementId")
+                                .HasColumnName("TrainingRequirement_Id");
+
+                            t.Property("CoachRoleId")
+                                .HasColumnName("CoachRole_Id");
                         });
                 });
 
@@ -1169,56 +1382,6 @@ namespace SportSys.Database.Migrations
                         });
                 });
 
-            modelBuilder.Entity("SportSys.Database.Models.sport.TrainingEntitlement", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("DurationHours")
-                        .HasColumnType("decimal(5, 2)");
-
-                    b.Property<DateOnly>("From")
-                        .HasColumnType("date");
-
-                    b.Property<string>("SeasonCategoryName")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(10)");
-
-                    b.Property<int>("SeasonId")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly>("To")
-                        .HasColumnType("date");
-
-                    b.Property<int>("TrainingPhaseId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TrainingTypeId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TrainingEntitlement", "sport", t =>
-                        {
-                            t.Property("SeasonCategoryName")
-                                .HasColumnName("SeasonCategory_Name");
-
-                            t.Property("SeasonId")
-                                .HasColumnName("SeasonCategory_Season_Id");
-
-                            t.Property("TrainingPhaseId")
-                                .HasColumnName("TrainingPhase_Id");
-
-                            t.Property("TrainingTypeId")
-                                .HasColumnName("TrainingType_Id");
-                        });
-                });
-
             modelBuilder.Entity("SportSys.Database.Models.sport.TrainingGroup", b =>
                 {
                     b.Property<Guid>("GroupId")
@@ -1327,6 +1490,56 @@ namespace SportSys.Database.Migrations
                         {
                             t.Property("TrainingPlanId")
                                 .HasColumnName("TrainingPlan_Id");
+                        });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.TrainingRequirement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("DurationHours")
+                        .HasColumnType("decimal(5, 2)");
+
+                    b.Property<DateOnly>("From")
+                        .HasColumnType("date");
+
+                    b.Property<string>("SeasonCategoryName")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("To")
+                        .HasColumnType("date");
+
+                    b.Property<int>("TrainingPhaseId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TrainingTypeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TrainingRequirement", "sport", t =>
+                        {
+                            t.Property("SeasonCategoryName")
+                                .HasColumnName("SeasonCategory_Name");
+
+                            t.Property("SeasonId")
+                                .HasColumnName("SeasonCategory_Season_Id");
+
+                            t.Property("TrainingPhaseId")
+                                .HasColumnName("TrainingPhase_Id");
+
+                            t.Property("TrainingTypeId")
+                                .HasColumnName("TrainingType_Id");
                         });
                 });
 
@@ -1535,6 +1748,37 @@ namespace SportSys.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SportSys.Database.Models.hr.Coach", b =>
+                {
+                    b.HasBaseType("SportSys.Database.Models.identity.User");
+
+                    b.Property<string>("IdentificationNumber")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<string>("PersonalNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<byte[]>("Photo")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("PhotoContentType")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("PhotoFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.ToTable("Coach", "hr");
+                });
+
             modelBuilder.Entity("SportSys.Database.Models.inventory.Asset", b =>
                 {
                     b.HasBaseType("SportSys.Database.Models.inventory.InventoryItem");
@@ -1670,6 +1914,74 @@ namespace SportSys.Database.Migrations
                             t.Property("TrainingTypeId")
                                 .HasColumnName("TrainingType_Id");
                         });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachAttendance", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
+                        .WithMany("Attendances")
+                        .HasForeignKey("CoachId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.identity.User", "UserUpload")
+                        .WithMany("UploadedCoachAttendances")
+                        .HasForeignKey("UserUploadId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Coach");
+
+                    b.Navigation("UserUpload");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachContract", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
+                        .WithMany("Contracts")
+                        .HasForeignKey("CoachId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sport.Season", "Season")
+                        .WithMany("CoachContracts")
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Coach");
+
+                    b.Navigation("Season");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachLicense", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
+                        .WithMany("Licenses")
+                        .HasForeignKey("CoachId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.hr.CoachLicenseType", "CoachLicenseType")
+                        .WithMany("Licenses")
+                        .HasForeignKey("CoachLicenseTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Coach");
+
+                    b.Navigation("CoachLicenseType");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachSetting", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
+                        .WithMany("Settings")
+                        .HasForeignKey("CoachId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Coach");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.identity.RoleClaim", b =>
@@ -1844,7 +2156,7 @@ namespace SportSys.Database.Migrations
 
             modelBuilder.Entity("SportSys.Database.Models.sport.CoachTraining", b =>
                 {
-                    b.HasOne("SportSys.Database.Models.dbo.Coach", "Coach")
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
                         .WithMany("CoachTrainings")
                         .HasForeignKey("CoachId")
                         .IsRequired();
@@ -1867,33 +2179,9 @@ namespace SportSys.Database.Migrations
                     b.Navigation("Training");
                 });
 
-            modelBuilder.Entity("SportSys.Database.Models.sport.CoachTrainingEntitlement", b =>
-                {
-                    b.HasOne("SportSys.Database.Models.dbo.Coach", "Coach")
-                        .WithMany("CoachTrainingEntitlementCoaches")
-                        .HasForeignKey("CoachId")
-                        .IsRequired();
-
-                    b.HasOne("SportSys.Database.Models.dboSchema.CoachRole", "CoachRole")
-                        .WithMany("CoachTrainingEntitlementCoachRoles")
-                        .HasForeignKey("CoachRoleId")
-                        .IsRequired();
-
-                    b.HasOne("SportSys.Database.Models.sport.TrainingEntitlement", "TrainingEntitlement")
-                        .WithMany("CoachTrainingEntitlements")
-                        .HasForeignKey("TrainingEntitlementId")
-                        .IsRequired();
-
-                    b.Navigation("Coach");
-
-                    b.Navigation("CoachRole");
-
-                    b.Navigation("TrainingEntitlement");
-                });
-
             modelBuilder.Entity("SportSys.Database.Models.sport.CoachTrainingPlan", b =>
                 {
-                    b.HasOne("SportSys.Database.Models.dbo.Coach", "Coach")
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
                         .WithMany("CoachTrainingPlans")
                         .HasForeignKey("CoachId")
                         .IsRequired();
@@ -1906,6 +2194,30 @@ namespace SportSys.Database.Migrations
                     b.Navigation("Coach");
 
                     b.Navigation("TrainingPlan");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.CoachTrainingRequirement", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
+                        .WithMany("CoachTrainingRequirementCoaches")
+                        .HasForeignKey("CoachId")
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.dboSchema.CoachRole", "CoachRole")
+                        .WithMany("CoachTrainingRequirementCoachRoles")
+                        .HasForeignKey("CoachRoleId")
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sport.TrainingRequirement", "TrainingRequirement")
+                        .WithMany("CoachTrainingRequirements")
+                        .HasForeignKey("TrainingRequirementId")
+                        .IsRequired();
+
+                    b.Navigation("Coach");
+
+                    b.Navigation("CoachRole");
+
+                    b.Navigation("TrainingRequirement");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sport.SeasonCategory", b =>
@@ -1925,30 +2237,6 @@ namespace SportSys.Database.Migrations
                         .HasForeignKey("HomeIceRinkId");
 
                     b.Navigation("HomeIceRink");
-                });
-
-            modelBuilder.Entity("SportSys.Database.Models.sport.TrainingEntitlement", b =>
-                {
-                    b.HasOne("SportSys.Database.Models.sportSchema.TrainingPhase", "TrainingPhase")
-                        .WithMany("TrainingEntitlements")
-                        .HasForeignKey("TrainingPhaseId")
-                        .IsRequired();
-
-                    b.HasOne("SportSys.Database.Models.sportSchema.TrainingType", "TrainingType")
-                        .WithMany("TrainingEntitlements")
-                        .HasForeignKey("TrainingTypeId")
-                        .IsRequired();
-
-                    b.HasOne("SportSys.Database.Models.sport.SeasonCategory", "SeasonCategory")
-                        .WithMany("TrainingEntitlements")
-                        .HasForeignKey("SeasonId", "SeasonCategoryName")
-                        .IsRequired();
-
-                    b.Navigation("SeasonCategory");
-
-                    b.Navigation("TrainingPhase");
-
-                    b.Navigation("TrainingType");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sport.TrainingGroup", b =>
@@ -1995,6 +2283,39 @@ namespace SportSys.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("TrainingPlan");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.TrainingRequirement", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.sportSchema.TrainingPhase", "TrainingPhase")
+                        .WithMany("TrainingRequirements")
+                        .HasForeignKey("TrainingPhaseId")
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sportSchema.TrainingType", "TrainingType")
+                        .WithMany("TrainingRequirements")
+                        .HasForeignKey("TrainingTypeId")
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sport.SeasonCategory", "SeasonCategory")
+                        .WithMany("TrainingRequirements")
+                        .HasForeignKey("SeasonId", "SeasonCategoryName")
+                        .IsRequired();
+
+                    b.Navigation("SeasonCategory");
+
+                    b.Navigation("TrainingPhase");
+
+                    b.Navigation("TrainingType");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.Coach", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.identity.User", null)
+                        .WithOne()
+                        .HasForeignKey("SportSys.Database.Models.hr.Coach", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.inventory.Equipment", b =>
@@ -2095,18 +2416,19 @@ namespace SportSys.Database.Migrations
                     b.Navigation("TrainingType");
                 });
 
-            modelBuilder.Entity("SportSys.Database.Models.dbo.Coach", b =>
-                {
-                    b.Navigation("CoachTrainingEntitlementCoaches");
-
-                    b.Navigation("CoachTrainingPlans");
-
-                    b.Navigation("CoachTrainings");
-                });
-
             modelBuilder.Entity("SportSys.Database.Models.dboSchema.CoachRole", b =>
                 {
-                    b.Navigation("CoachTrainingEntitlementCoachRoles");
+                    b.Navigation("CoachTrainingRequirementCoachRoles");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.CoachLicenseType", b =>
+                {
+                    b.Navigation("Licenses");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.identity.User", b =>
+                {
+                    b.Navigation("UploadedCoachAttendances");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.inventory.Category", b =>
@@ -2140,6 +2462,8 @@ namespace SportSys.Database.Migrations
 
             modelBuilder.Entity("SportSys.Database.Models.sport.Season", b =>
                 {
+                    b.Navigation("CoachContracts");
+
                     b.Navigation("Matches");
 
                     b.Navigation("SeasonCategories");
@@ -2153,9 +2477,9 @@ namespace SportSys.Database.Migrations
 
                     b.Navigation("Training");
 
-                    b.Navigation("TrainingEntitlements");
-
                     b.Navigation("TrainingPlans");
+
+                    b.Navigation("TrainingRequirements");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sport.Team", b =>
@@ -2165,11 +2489,6 @@ namespace SportSys.Database.Migrations
                     b.Navigation("HomeMatches");
                 });
 
-            modelBuilder.Entity("SportSys.Database.Models.sport.TrainingEntitlement", b =>
-                {
-                    b.Navigation("CoachTrainingEntitlements");
-                });
-
             modelBuilder.Entity("SportSys.Database.Models.sport.TrainingPlan", b =>
                 {
                     b.Navigation("CoachTrainingPlans");
@@ -2177,6 +2496,11 @@ namespace SportSys.Database.Migrations
                     b.Navigation("GroupMembership");
 
                     b.Navigation("Training");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.TrainingRequirement", b =>
+                {
+                    b.Navigation("CoachTrainingRequirements");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sportSchema.MatchType", b =>
@@ -2193,9 +2517,9 @@ namespace SportSys.Database.Migrations
                 {
                     b.Navigation("Training");
 
-                    b.Navigation("TrainingEntitlements");
-
                     b.Navigation("TrainingPlans");
+
+                    b.Navigation("TrainingRequirements");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sportSchema.TrainingState", b =>
@@ -2207,9 +2531,26 @@ namespace SportSys.Database.Migrations
                 {
                     b.Navigation("Training");
 
-                    b.Navigation("TrainingEntitlements");
-
                     b.Navigation("TrainingPlans");
+
+                    b.Navigation("TrainingRequirements");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.hr.Coach", b =>
+                {
+                    b.Navigation("Attendances");
+
+                    b.Navigation("CoachTrainingPlans");
+
+                    b.Navigation("CoachTrainingRequirementCoaches");
+
+                    b.Navigation("CoachTrainings");
+
+                    b.Navigation("Contracts");
+
+                    b.Navigation("Licenses");
+
+                    b.Navigation("Settings");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sport.Training", b =>

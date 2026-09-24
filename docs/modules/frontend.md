@@ -1,6 +1,6 @@
 # Frontend — SportSys
 
-## Přehled
+## Účel
 
 Žádný CSS framework (Bootstrap, Tailwind apod.). Vlastní SCSS kompilovaný do `wwwroot/css/site.css`.
 
@@ -11,6 +11,27 @@
 | JavaScript | Vanilla JS (minimální, bez frameworků) |
 | Ikony | Font Awesome 6 (CDN) |
 | Build nástroj | npm + sass |
+
+---
+
+## Odpovědnosti
+
+- Sdílený layout a navigace aktivní Razor aplikace.
+- Přístupné formuláře, tabulky, filtry a stavové zprávy.
+- Kompilace SCSS do jediného generovaného CSS souboru.
+- Konzistentní použití design tokenů, ikon a EditorTemplates.
+
+## Datový model
+
+Frontend nemá vlastní databázový model. PageModely používají Contract DTO a
+nikdy EF Core entity.
+
+## Tok zpracování
+
+1. PageModel načte nebo uloží data přes Contract službu.
+2. Razor view vykreslí DTO a použije sdílené komponenty nebo EditorTemplates.
+3. SCSS komponenty používají sémantické tokeny.
+4. `npm run build:css` vygeneruje `wwwroot/css/site.css`.
 
 ---
 
@@ -59,7 +80,8 @@ Design tokeny jsou definovány jako **CSS custom properties** v `_vars.scss`. �
 - `--color-brand-primary-active` — **výhradně** pro `:hover`/`:active` stavy, ❌ nikoli jako alternativní sekce
 - Sémantické tokeny (`--color-*`) mají přednost před primitivními (`--sport-red-500`)
 
-Barevné schéma HC Klatovy definováno v `.github/barevna-schemata/hc-klatovy/`:
+Barevné schéma HC Klatovy je definováno v
+`.github/skills/barevna-schemata/hc-klatovy/`:
 - `palette.md` — kompletní paleta
 - `tokens.md` — CSS custom properties
 - `usage.md` — pravidla použití
@@ -191,7 +213,46 @@ Vanilla JS bez frameworků. JS pouze tam, kde server-side logiku nelze použít.
 
 ---
 
-## Reference
+## Klíčové komponenty
 
-- `.github/barevna-schemata/hc-klatovy/` — kompletní barevné schéma HC Klatovy
+| Komponenta | Cesta |
+|---|---|
+| Sdílený layout | `src/SportSys.Razor/Pages/Shared/_Layout.cshtml` |
+| SCSS entry point | `src/SportSys.Razor/Styles/site.scss` |
+| Design tokeny | `src/SportSys.Razor/Styles/_vars.scss` |
+| EditorTemplates | `src/SportSys.Razor/Pages/Shared/EditorTemplates/` |
+| Rozvrhová komponenta | `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/` |
+
+## Rozhraní
+
+Veřejným frontendovým rozhraním jsou Razor routes zdokumentované v
+jednotlivých modulech. Sdílené CSS kontrakty tvoří třídy `button`, `grid`,
+`field`, `icon-btn` a sémantické CSS custom properties.
+
+## Integrační vazby
+
+- Razor závisí pouze na `SportSys.Contract`.
+- Font Awesome 6 je načítán z CDN.
+
+## Závislosti
+
+- Sass je npm build dependency projektu `SportSys.Razor`.
+- Barevná pravidla poskytuje skill `barevna-schemata`.
+
+## Omezení a pravidla
+
+- `wwwroot/css/site.css` je generovaný a ručně se neupravuje.
+- Komponenty používají sémantické tokeny místo přímých hex hodnot.
+- Ikony mají `fa-fw`; řádkové akce v gridu mají také `title`.
+- JavaScript se přidává pouze pro chování, které nelze rozumně řešit na
+  serveru.
+
+## Příklady
+
+Ukázky standardního seznamu, formuláře a tlačítek jsou výše v tomto dokumentu.
+
+## Odkazovaná dokumentace
+
+- `.github/skills/barevna-schemata/hc-klatovy/` — barevné schéma HC Klatovy
+- `.github/skills/editor-template/SKILL.md` — administrační formuláře
 - `docs/research/html-css-reference.md` — rešerše přístupu projektu ReP (inspirace)

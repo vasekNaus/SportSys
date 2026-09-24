@@ -1,6 +1,6 @@
 # 04 – Property Templates – implementace šablon
 
-> **Navigace:** [← Object.cshtml](03-object-template.md) | [Vlastní šablony →](05-custom-templates.md) | [README](README.md)
+> **Navigace:** [← Object.cshtml](03-object-template.md) | [Vlastní šablony →](05-custom-templates.md) | [Skill](SKILL.md)
 
 Šablony pro jednotlivé typy vlastností. Vycházejí ze vzoru projektu [Altairis.ReP](https://github.com/ridercz/ReP), kompletní implementaci najdete také v [Altairis.RazorPages.EditorTemplates](https://github.com/ridercz/Altairis.RazorPages.EditorTemplates).
 

@@ -1,0 +1,96 @@
+@use 'vars' as *;
+
+.coach-summary {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.coach-avatar {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-2);
+  object-fit: cover;
+}
+
+.coach-avatar.large {
+  width: 8rem;
+  height: 8rem;
+}
+
+.coach-photo-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.coach-photo-actions {
+  flex: 1 1 20rem;
+}
+
+.coach-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.coach-tag {
+  display: inline-block;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  font-size: .875rem;
+}
+
+.current-record {
+  background: var(--color-success-subtle);
+}
+
+.inline-form {
+  display: inline;
+}
+
+.attendance-upload {
+  padding: 1rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: 4px;
+  background: var(--color-surface-2);
+}
+
+.attendance-file-field {
+  min-width: min(24rem, 100%);
+}
+
+.period-filter {
+  padding: .5rem .75rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+}
+
+.period-filter legend {
+  padding: 0 .25rem;
+  font-weight: 600;
+}
+
+.period-fields {
+  display: flex;
+  gap: .5rem;
+}
+
+@media (max-width: $StopMin) {
+  .coach-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .period-fields {
+    display: block;
+  }
+}

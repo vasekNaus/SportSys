@@ -1,6 +1,6 @@
 # 06 – Konfigurace projektu
 
-> **Navigace:** [← Vlastní šablony](05-custom-templates.md) | [Admin vzory →](07-admin-patterns.md) | [README](README.md)
+> **Navigace:** [← Vlastní šablony](05-custom-templates.md) | [Admin vzory →](07-admin-patterns.md) | [Skill](SKILL.md)
 
 Nastavení projektu pro plné využití EditorTemplate systému včetně `Altairis.ConventionalMetadataProviders`.
 

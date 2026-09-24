@@ -1,0 +1,19 @@
+@{
+    Layout = "/Pages/Shared/EditorTemplates/_Layout.cshtml";
+    var value = ViewData.Model switch
+    {
+        TimeOnly timeOnly => timeOnly.ToString("HH:mm"),
+        TimeSpan timeSpan => timeSpan.ToString(@"hh\:mm"),
+        _ => string.Empty,
+    };
+}
+@Html.TextBox(
+    string.Empty,
+    value,
+    new
+    {
+        type = "time",
+        @class = "short",
+        lang = "cs-CZ",
+        step = 60,
+    })

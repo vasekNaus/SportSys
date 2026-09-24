@@ -4,7 +4,7 @@
 
 Tento dokument popisuje kroky pro implementaci databázové vrstvy modulu skladového hospodářství do projektu `SportSys.Database`. Implementace zahrnuje EF Core modely, enumerace, konfiguraci a migraci. Aplikační servisy (Contract) a UI (Razor) nejsou součástí tohoto plánu.
 
-**Referenční dokumentace:** [docs/inventory.md](../../docs/inventory.md)
+**Referenční dokumentace:** [docs/modules/inventory.md](../../docs/modules/inventory.md)
 
 ---
 

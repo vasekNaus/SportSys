@@ -1,0 +1,104 @@
+@model SportSys.Razor.Areas.hr.Pages.Coach.EditModel
+
+@if (Model.IsNew)
+{
+    <p>Nejprve uložte základní údaje trenéra.</p>
+}
+else
+{
+    var today = DateOnly.FromDateTime(DateTime.Today);
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Platnost</th>
+                <th>Bankovní účet</th>
+                <th>Adresa</th>
+                <th>Pojišťovna</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var setting in Model.Coach.Settings)
+            {
+                var isCurrent = setting.ValidFrom <= today && (!setting.ValidTo.HasValue || setting.ValidTo >= today);
+                var account = string.IsNullOrWhiteSpace(setting.BankAccountPrefix)
+                    ? $"{setting.BankAccountNumber}/{setting.BankCode}"
+                    : $"{setting.BankAccountPrefix}-{setting.BankAccountNumber}/{setting.BankCode}";
+                <tr class="@(isCurrent ? "current-record" : null)">
+                    <td>@setting.ValidFrom.ToString("d") – @(setting.ValidTo?.ToString("d") ?? "dosud")</td>
+                    <td>@account</td>
+                    <td>@setting.Street, @setting.ZipCode @setting.City</td>
+                    <td>@setting.HealthInsuranceCode</td>
+                    <td class="buttons">
+                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@Model.Coach.Id"
+                           asp-route-activeTab="settings" asp-route-settingId="@setting.Id" title="Upravit">
+                            <i class="fa-solid fa-pen fa-fw"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>@(Model.SettingInput.Id == 0 ? "Nové nastavení" : "Upravit nastavení")</h2>
+    <form method="post" asp-page-handler="SaveSetting">
+        <input type="hidden" asp-for="SettingInput.Id" />
+        <input type="hidden" asp-for="SettingInput.CoachId" />
+        <p>
+            <label asp-for="SettingInput.ValidFrom"></label>
+            <input asp-for="SettingInput.ValidFrom" type="date" />
+            <span asp-validation-for="SettingInput.ValidFrom" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="SettingInput.ValidTo"></label>
+            <input asp-for="SettingInput.ValidTo" type="date" />
+            <span asp-validation-for="SettingInput.ValidTo" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="SettingInput.BankAccountPrefix"></label>
+            <input asp-for="SettingInput.BankAccountPrefix" class="short" />
+            <span asp-validation-for="SettingInput.BankAccountPrefix" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="SettingInput.BankAccountNumber"></label>
+            <input asp-for="SettingInput.BankAccountNumber" class="short" />
+            <span asp-validation-for="SettingInput.BankAccountNumber" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="SettingInput.BankCode"></label>
+            <input asp-for="SettingInput.BankCode" class="short" />
+            <span asp-validation-for="SettingInput.BankCode" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="SettingInput.Street"></label>
+            <input asp-for="SettingInput.Street" />
+            <span asp-validation-for="SettingInput.Street" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="SettingInput.City"></label>
+            <input asp-for="SettingInput.City" />
+            <span asp-validation-for="SettingInput.City" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="SettingInput.ZipCode"></label>
+            <input asp-for="SettingInput.ZipCode" class="short" />
+            <span asp-validation-for="SettingInput.ZipCode" class="field-validation-error"></span>
+        </p>
+        <p>
+            <label asp-for="SettingInput.HealthInsuranceCode"></label>
+            <input asp-for="SettingInput.HealthInsuranceCode" class="short" />
+            <span asp-validation-for="SettingInput.HealthInsuranceCode" class="field-validation-error"></span>
+        </p>
+        <footer>
+            <button type="submit" class="button">
+                <i class="fa-solid fa-floppy-disk fa-fw"></i> Uložit nastavení
+            </button>
+            @if (Model.SettingInput.Id != 0)
+            {
+                <a class="button secondary" asp-page="Edit" asp-route-id="@Model.Coach.Id" asp-route-activeTab="settings">
+                    <i class="fa-solid fa-xmark fa-fw"></i> Zrušit editaci
+                </a>
+            }
+        </footer>
+    </form>
+}
