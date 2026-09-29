@@ -95,7 +95,7 @@ public static class TrainingScheduleBlockFactory
             Title = string.Join(" + ", items.Select(item => item.SeasonCategoryName)),
             TrainingTypeNames = DistinctOrdered(items.Select(item => item.TrainingTypeName)),
             Locations = DistinctOrdered(items
-                .Select(item => item.Location)
+                .Select(item => item.LocationName)
                 .Where(location => !string.IsNullOrWhiteSpace(location))),
             CoachNames = items
                 .SelectMany(item => item.CoachFullNames)
@@ -103,9 +103,9 @@ public static class TrainingScheduleBlockFactory
                 .OrderBy(name => name, StringComparer.Ordinal)
                 .ToList(),
             TrainingTypeLocationSummaries = DistinctOrdered(items.Select(item =>
-                string.IsNullOrWhiteSpace(item.Location)
+                string.IsNullOrWhiteSpace(item.LocationName)
                     ? item.TrainingTypeName
-                    : $"{item.TrainingTypeName} - {item.Location}")),
+                    : $"{item.TrainingTypeName} - {item.LocationName}")),
             CategorySegments = items
                 .Select(item => new TrainingScheduleCategorySegment
                 {

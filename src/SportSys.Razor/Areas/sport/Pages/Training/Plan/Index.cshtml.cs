@@ -115,8 +115,12 @@ public class IndexModel : PageModel
             ct);
 
         var byDay = plans
-            .GroupBy(p => p.DayOfWeek)
-            .ToDictionary(g => g.Key, g => g.Cast<ITrainingScheduleItem>().ToList());
+            .GroupBy(plan => plan.DayOfWeek)
+            .ToDictionary(
+                group => group.Key,
+                group => ScheduleEventModelFactory
+                    .CreateTrainingPlans(group.ToList(), allowEditing: !MergeTrainings)
+                    .ToList());
 
         var rows = WeekDays
             .Select((day, index) => new TrainingScheduleRow

@@ -20,10 +20,10 @@ public interface ITrainingScheduleItem
     TimeOnly TimeTo { get; }
     int? DurationMinutes { get; }
     Guid? GroupId { get; }
-    Guid? VisualizationGroupId { get; }
+    Guid? VisualizationGroupId { get; set; }
     int SeasonCategoryOrder { get; }
     string SeasonCategoryName { get; }
-    string Location { get; }
+    string LocationName { get; }
     string TrainingTypeName { get; }
     string TrainingPhaseName { get; }
     IReadOnlyList<string> CoachFullNames { get; }
@@ -46,6 +46,7 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public int SeasonCategoryOrder { get; set; }
     public string SeasonCategoryName { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
+    public string LocationName => Location;
     public string TrainingTypeName { get; set; } = string.Empty;
     public string TrainingPhaseName { get; set; } = string.Empty;
     public IReadOnlyList<string> CoachFullNames { get; set; } = [];
@@ -70,7 +71,15 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     }
 }
 
-public class TrainingScheduleItemDto : TrainingPlanScheduleItemDto
+public class TrainingScheduleItemDto : SportEventDto, ITrainingScheduleItem
 {
-    public DateOnly Date { get; set; }
+    public Guid? GroupId { get; set; }
+    public Guid? VisualizationGroupId { get; set; }
+    public int LocationId { get; set; }
+    public string LocationName { get; set; } = string.Empty;
+    public string TrainingTypeName { get; set; } = string.Empty;
+    public string TrainingPhaseName { get; set; } = string.Empty;
+    public IReadOnlyList<string> CoachFullNames { get; set; } = [];
+    public int? TrainingStateId { get; set; }
+    public string? TrainingStateName { get; set; }
 }

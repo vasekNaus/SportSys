@@ -27,7 +27,7 @@ reálnými tréninky a plány nekopíruje.
 
 | Stránka | Route | Zdroj dat |
 |---|---|---|
-| Reálný rozvrh | `/sport/Training/Schedule` | `sport.Training` |
+| Reálný rozvrh | `/sport/Training/Schedule` | `sport.Training`, `sport.Match` |
 | Obecný týdenní plán | `/sport/Training/Plan` | `sport.TrainingPlan` |
 | Požadavky na tréninky | `/sport/Training/Requirement` | `sport.TrainingRequirement` |
 
@@ -52,15 +52,19 @@ Prázdný výběr kategorií, typů nebo fází znamená všechny hodnoty. Nepla
 hodnoty z URL se před načtením dat odstraní. Stránka data pouze čte a nemění
 databázové schéma ani obsah tabulek.
 
-### Společný datový kontrakt
+### Společné datové kontrakty
 
-`ITrainingScheduleItem` definuje vlastnosti potřebné pro vykreslení bloku na
-časové ose. `TrainingPlanScheduleItemDto` interface implementuje a obsahuje navíc
-období `From–To` a `DayName`.
+`SportEventDto` je Contract předek skutečných datovaných sportovních událostí.
+`TrainingScheduleItemDto` a `MatchScheduleItemDto` z něj dědí a sdílejí datum,
+časový interval, sezonu, kategorii a poznámku. Tréninkový plán není sportovní
+událostí a používá samostatný `TrainingPlanScheduleItemDto`.
 
-`TrainingScheduleItemDto` přímo dědí z `TrainingPlanScheduleItemDto` a přidává
-konkrétní `Date`. U reálného tréninku jsou zděděné hodnoty nastaveny jako plán
-platný právě v den tréninku.
+`ITrainingScheduleItem` zůstává technickým kontraktem pro seskupování tréninků
+a tréninkových plánů. Zápasy se do tréninkových skupin nikdy nezapojují.
+
+Zápasy načítá samostatná `MatchScheduleService`. Soupeře a domácí/venkovní roli
+určuje podle `SeasonCategory.CompetitionTeamName`; nekonzistentní zápas bez
+jednoznačně určeného vlastního týmu vyvolá explicitní chybu.
 
 ### Sdílená ViewComponent
 
@@ -70,9 +74,10 @@ Obě stránky předávají data přes `ITrainingScheduleViewModel` komponentě:
 - view: `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/Default.cshtml`,
 - prezentační modely: `src/SportSys.Razor/Models/TrainingSchedule/`.
 
-Komponenta pouze vykresluje předaná data. Zajišťuje časové markery, dynamický
-rozsah osy, rozdělení překryvů do lanes, barvy kategorií a bezpečně HTML
-enkódované tooltipy. Data načítají PageModely přes `TrainingScheduleService`.
+Komponenta pouze vykresluje obecné `ScheduleEventModel`. Zajišťuje časové
+markery, dynamický rozsah osy, společné rozdělení tréninků a zápasů do lanes,
+barvy kategorií a bezpečně HTML enkódované tooltipy. DTO se na renderovací
+model převádějí před vstupem do ViewComponenty.
 
 Obě stránky mají výchozí vypnutý GET filtr **Spojovat tréninky**. Po jeho
 zapnutí `TrainingScheduleService` nad již načtenými DTO spojí položky ve
@@ -113,6 +118,11 @@ jejichž interval platnosti se překrývá s intervalem `TrainingPlan.From–To`
 Osobní číslo je dočasným identifikátorem do zavedení vazby `hr.Coach` na
 `identity.User`.
 
+Zápasový blok používá stejnou časovou osu, ale zobrazuje kategorii, čas,
+soupeře a výsledek. Neznámý výsledek se zobrazuje jako `-`. Zápas nemá
+editační odkaz ani stavovou ikonu. Překryv zápasu s tréninkem nebo jiným
+zápasem vytvoří další lane.
+
 Při materializaci více reálných tréninků z propojených plánů se pro vzniklé
 tréninky vytvoří nová skupina v `TrainingGroup`. Identifikátor skupiny z
 `TrainingPlanGroup` se mezi tabulkami nekopíruje.
@@ -151,6 +161,9 @@ víkendovým zvýrazněním.
 - volitelné spojování časově překrývajících se nebo navazujících tréninků.
 
 Řádky odpovídají konkrétním datům z vybraného intervalu, včetně dnů bez tréninku.
+Sezóna, kategorie a datum omezují tréninky i zápasy. Typ tréninku, stav,
+lokalita vybraná podle jejího ID a volba spojování se vztahují pouze na tréninky; zápasy se
+nikdy neslučují s tréninky ani mezi sebou.
 
 Pokud rozvrh obsahuje alespoň jeden blok, lze aktuálně vyfiltrovaná data
 exportovat do souboru `.xlsx`. Export obsahuje sloupce Kategorie, Datum, Čas od,
@@ -166,6 +179,17 @@ dočasné intervalové skupiny jako vizualizace, takže jeden zobrazený blok
 odpovídá jednomu řádku exportu. Při vypnutém filtru zůstává seskupování omezené
 na explicitní `sport.TrainingGroup`.
 
+Export zůstává výhradně exportem tréninků. Zápasy se do XLSX nezapisují a den
+obsahující pouze zápasy exportní akci nenabízí.
+
+### Časový interval zápasu
+
+`Match` ukládá `TimeFrom` a `TimeTo`; `DurationMinutes` je persisted computed
+sloupec. Import svazového CSV obsahuje pouze začátek, proto novému zápasu
+nastaví `TimeTo = TimeFrom`. Takový zápas má délku `0` a koncový čas lze
+následně ručně upřesnit. Vizualizace nulový interval vykreslí minimální
+čitelnou šířkou a dvě bodové události ve stejném čase rozdělí do různých lanes.
+
 ### Editace tréninku a tréninkového plánu
 
 Kliknutím na blok reálného tréninku v `/sport/Training/Schedule` se v novém
@@ -174,6 +198,9 @@ obecného plánu v `/sport/Training/Plan` se obdobně otevře
 `/sport/Training/Plan/Edit?id={id}`.
 
 Formulář umožňuje měnit pouze datum, čas od, čas do, lokalitu a poznámku.
+Lokalita je povinný výběr ze společného číselníku; nově zvolená neaktivní
+lokalita nebo neexistující ID jsou odmítnuty i Contract službou. Aktuálně
+přiřazená neaktivní lokalita zůstává při editaci dostupná.
 Kategorie a typ tréninku jsou pouze informativní; fáze, stav, trenéři, vazba na
 plán a členství ve skupině se nemění.
 
@@ -216,7 +243,7 @@ další podmínkou spojení. Platnost je uvedena v tooltipu.
 
 | Číselník | Databázová entita | Administrační stránky |
 |---|---|---|
-| Zimní stadiony | `sport.IceRink` | `Areas/sport/Pages/IceRink/` |
+| Lokality | `sport.Location` | `Areas/sport/Pages/Location/` |
 | Týmy | `sport.Team` | `Areas/sport/Pages/Team/` |
 | Sezóny | `sport.Season` | `Areas/sport/Pages/Season/` |
 | Kategorie sezón | `sport.SeasonCategory` | `Areas/sport/Pages/SeasonCategory/` |
@@ -238,7 +265,7 @@ metadata jsou definována pomocí DataAnnotations na DTO v `SportSys.Contract`.
 
 ## Aktivita místo mazání
 
-Entity `IceRink`, `Team`, `Season` a `SeasonCategory` mají příznak `IsActive`.
+Entity `Location`, `Team`, `Season` a `SeasonCategory` mají příznak `IsActive`.
 Fyzické mazání se v administraci nepoužívá.
 
 - Výchozí hodnota `IsActive` je `true`.
@@ -251,16 +278,18 @@ Fyzické mazání se v administraci nepoužívá.
 
 ## Specifika entit
 
-### IceRink
+### Location
 
-Administrace spravuje `Name`, `Street`, `City`, `ZipCode` a `IsActive`.
-Geografické pole `Location` není součástí formuláře.
+Administrace spravuje `Name`, volitelně `Street`, `City`, `ZipCode` a
+`IsActive`. Geografické pole `GeographicLocation` není součástí formuláře.
+Dosavadní stadiony zůstávají lokacemi včetně adresních údajů; lokality
+vzniklé převodem textových tréninků adresu nemají.
 
 ### Team
 
-Administrace spravuje `Code`, `Name`, `Address`, `City`, `HomeIceRinkId` a
-`IsActive`. Výběr domácího stadionu nabízí aktivní stadiony a při editaci zachová
-i aktuálně přiřazený neaktivní stadion.
+Administrace spravuje `Code`, `Name`, `Address`, `City`, `HomeLocationId` a
+`IsActive`. Výběr domácí lokality nabízí aktivní lokality a při editaci zachová
+i aktuálně přiřazenou neaktivní lokalitu.
 
 ### Season
 
@@ -277,7 +306,7 @@ klíče povinné; při editaci jsou neměnné. Formulář dále spravuje `Order`
 
 | Služba | Odpovědnost |
 |---|---|
-| `IceRinkService` | CRUD bez fyzického mazání, filtrování, seznam stadionů |
+| `SportLocationService` | CRUD bez fyzického mazání, filtrování a seznam sportovních lokalit |
 | `TeamService` | CRUD bez fyzického mazání a filtrování týmů |
 | `SeasonService` | CRUD bez fyzického mazání, filtrování, seznam sezón |
 | `SeasonCategoryService` | CRUD bez změny složeného klíče a filtrování kategorií |
@@ -293,6 +322,21 @@ nevracejí databázové entity do Razor vrstvy.
 4. Sdílená ViewComponent vykreslí časovou osu.
 5. Editace tréninků, editace tréninkových plánů a export znovu načtou data
    v Contract vrstvě a ověří invarianty.
+
+## Ruční převod databáze pro #16
+
+EF Core migrace se pro sjednocení lokalit nevytváří. Na záloze produkční
+databáze se spustí v tomto pořadí:
+
+1. `src/DB Model/Migration/16_00_location_preflight.sql`;
+2. `src/DB Model/Migration/16_01_location_migration.sql` nejprve s
+   `@Commit = 0`, potom po kontrole s `@Commit = 1`;
+3. `src/DB Model/Migration/16_02_location_verify.sql`.
+
+Preflight záměrně zastaví převod při prázdných, příliš dlouhých nebo
+nejednoznačně přiřaditelných textových lokalitách tréninku. Skripty přejmenují
+stadiony na lokality, vytvoří chybějící lokality z textů tréninků a zachovají
+vazby zápasů i domácích lokalit týmů.
 
 ## Klíčové komponenty
 

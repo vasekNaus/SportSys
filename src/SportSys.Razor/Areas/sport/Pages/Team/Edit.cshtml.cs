@@ -9,12 +9,12 @@ namespace SportSys.Razor.Areas.sport.Pages.Team;
 public class EditModel : PageModel
 {
     private readonly TeamService _service;
-    private readonly IceRinkService _iceRinkService;
+    private readonly SportLocationService _locationService;
 
-    public EditModel(TeamService service, IceRinkService iceRinkService)
+    public EditModel(TeamService service, SportLocationService locationService)
     {
         _service = service;
-        _iceRinkService = iceRinkService;
+        _locationService = locationService;
     }
 
     [BindProperty]
@@ -23,7 +23,7 @@ public class EditModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
-    public List<SelectListItem> HomeIceRinkIdItems { get; private set; } = [];
+    public List<SelectListItem> HomeLocationIdItems { get; private set; } = [];
 
     public bool IsNew => Input.Id == 0;
 
@@ -38,7 +38,7 @@ public class EditModel : PageModel
             Input = dto;
         }
 
-        await LoadIceRinksAsync(ct);
+        await LoadLocationsAsync(ct);
         return Page();
     }
 
@@ -46,19 +46,28 @@ public class EditModel : PageModel
     {
         if (!ModelState.IsValid)
         {
-            await LoadIceRinksAsync(ct);
+            await LoadLocationsAsync(ct);
             return Page();
         }
 
-        if (Input.Id == 0)
+        try
         {
-            await _service.CreateAsync(Input, ct);
-            StatusMessage = "Tým byl vytvořen.";
+            if (Input.Id == 0)
+            {
+                await _service.CreateAsync(Input, ct);
+                StatusMessage = "Tým byl vytvořen.";
+            }
+            else
+            {
+                await _service.UpdateAsync(Input, ct);
+                StatusMessage = "Tým byl uložen.";
+            }
         }
-        else
+        catch (HomeLocationUnavailableException exception)
         {
-            await _service.UpdateAsync(Input, ct);
-            StatusMessage = "Tým byl uložen.";
+            ModelState.AddModelError(nameof(Input.HomeLocationId), exception.Message);
+            await LoadLocationsAsync(ct);
+            return Page();
         }
 
         return RedirectToPage("Index");
@@ -71,13 +80,13 @@ public class EditModel : PageModel
         return RedirectToPage("Index");
     }
 
-    private async Task LoadIceRinksAsync(CancellationToken ct)
+    private async Task LoadLocationsAsync(CancellationToken ct)
     {
-        var iceRinks = await _iceRinkService.GetSelectListAsync(Input.HomeIceRinkId, ct);
-        HomeIceRinkIdItems =
+        var locations = await _locationService.GetSelectListAsync(Input.HomeLocationId, ct);
+        HomeLocationIdItems =
         [
             new SelectListItem("— nevybráno —", string.Empty),
-            .. iceRinks.Select(r => new SelectListItem(r.Name, r.Id.ToString())),
+            .. locations.Select(location => new SelectListItem(location.Name, location.Id.ToString())),
         ];
     }
 }

@@ -1,7 +1,7 @@
 @page
 @model EditModel
 @{
-    ViewData["Title"] = Model.IsNew ? "Nový zimní stadion" : "Upravit zimní stadion";
+    ViewData["Title"] = Model.IsNew ? "Nová lokalita" : "Upravit lokalitu";
 }
 
 <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
@@ -23,7 +23,7 @@
                     name="isActive"
                     value="@(!Model.Input.IsActive)"
                     class="button tertiary"
-                    onclick="@(Model.Input.IsActive ? "return confirm('Opravdu chcete zimní stadion zneaktivnit?')" : null)">
+                    onclick="@(Model.Input.IsActive ? "return confirm('Opravdu chcete lokalitu zneaktivnit?')" : null)">
                 <i class="fa-solid @(Model.Input.IsActive ? "fa-trash" : "fa-rotate-left") fa-fw"></i>
                 @(Model.Input.IsActive ? "Zneaktivnit" : "Aktivovat")
             </button>

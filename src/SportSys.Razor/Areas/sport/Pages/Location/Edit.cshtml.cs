@@ -3,19 +3,19 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using SportSys.Contract.Models;
 using SportSys.Contract.Services;
 
-namespace SportSys.Razor.Areas.sport.Pages.IceRink;
+namespace SportSys.Razor.Areas.sport.Pages.Location;
 
 public class EditModel : PageModel
 {
-    private readonly IceRinkService _service;
+    private readonly SportLocationService _service;
 
-    public EditModel(IceRinkService service)
+    public EditModel(SportLocationService service)
     {
         _service = service;
     }
 
     [BindProperty]
-    public IceRinkDto Input { get; set; } = new();
+    public LocationDto Input { get; set; } = new();
 
     [TempData]
     public string? StatusMessage { get; set; }
@@ -43,12 +43,12 @@ public class EditModel : PageModel
         if (Input.Id == 0)
         {
             await _service.CreateAsync(Input, ct);
-            StatusMessage = "Zimní stadion byl vytvořen.";
+            StatusMessage = "Lokalita byla vytvořena.";
         }
         else
         {
             await _service.UpdateAsync(Input, ct);
-            StatusMessage = "Zimní stadion byl uložen.";
+            StatusMessage = "Lokalita byla uložena.";
         }
 
         return RedirectToPage("Index");
@@ -58,8 +58,8 @@ public class EditModel : PageModel
     {
         await _service.SetActiveAsync(Input.Id, isActive, ct);
         StatusMessage = isActive
-            ? "Zimní stadion byl aktivován."
-            : "Zimní stadion byl zneaktivněn.";
+            ? "Lokalita byla aktivována."
+            : "Lokalita byla zneaktivněna.";
         return RedirectToPage("Index");
     }
 }

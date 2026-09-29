@@ -29,8 +29,8 @@ public class TeamDto
     public string? City { get; set; }
 
     [UIHint("Select")]
-    [Display(Name = "Domácí stadion")]
-    public int? HomeIceRinkId { get; set; }
+    [Display(Name = "Domácí lokalita")]
+    public int? HomeLocationId { get; set; }
 
     [Display(Name = "Aktivní")]
     public bool IsActive { get; set; } = true;
@@ -42,6 +42,6 @@ public class TeamListItem
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
-    public string? HomeIceRinkName { get; set; }
+    public string? HomeLocationName { get; set; }
     public bool IsActive { get; set; }
 }

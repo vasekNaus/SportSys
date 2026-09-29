@@ -28,11 +28,11 @@ public partial class Team
     [StringLength(100)]
     public required string City { get; set; }
 
-    public int? HomeIceRinkId { get; set; }
+    public int? HomeLocationId { get; set; }
 
     public bool IsActive { get; set; } = true;
 
-    public virtual IceRink? HomeIceRink { get; set; }
+    public virtual Location? HomeLocation { get; set; }
 
     [InverseProperty(nameof(Match.HomeTeam))]
     public virtual ICollection<Match> HomeMatches { get; set; } = new List<Match>();

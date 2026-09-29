@@ -48,7 +48,8 @@ public class TrainingService
                 Date = training.Date,
                 TimeFrom = training.TimeFrom,
                 TimeTo = training.TimeTo,
-                Location = training.Location,
+                LocationId = training.LocationId,
+                LocationName = training.Location.Name,
                 Note = training.Note,
             })
             .ToListAsync(ct);
@@ -67,7 +68,7 @@ public class TrainingService
                 Date = selected.Date,
                 TimeFrom = selected.TimeFrom,
                 TimeTo = selected.TimeTo,
-                Location = selected.Location,
+                LocationId = selected.LocationId,
                 Note = selected.Note,
             },
             Members = members,
@@ -111,7 +112,8 @@ public class TrainingService
                 Date = training.Date,
                 TimeFrom = training.TimeFrom,
                 TimeTo = training.TimeTo,
-                Location = training.Location,
+                LocationId = training.LocationId,
+                LocationName = training.Location.Name,
                 Note = training.Note,
             })
             .ToList();
@@ -126,12 +128,21 @@ public class TrainingService
         if (!HaveConsistentEditableValues(trainings))
             return TrainingUpdateResult.GroupInconsistent;
 
+        var retainsSelectedInactiveLocation = trainings.All(
+            training => training.LocationId == dto.LocationId);
+        var locationAvailable = await _db.SportLocations.AnyAsync(
+            location => location.Id == dto.LocationId &&
+                (location.IsActive || retainsSelectedInactiveLocation),
+            ct);
+        if (!locationAvailable)
+            return TrainingUpdateResult.LocationUnavailable;
+
         foreach (var training in trainings)
         {
             training.Date = dto.Date;
             training.TimeFrom = dto.TimeFrom;
             training.TimeTo = dto.TimeTo;
-            training.Location = dto.Location;
+            training.LocationId = dto.LocationId;
             training.Note = dto.Note ?? string.Empty;
         }
 
@@ -155,7 +166,7 @@ public class TrainingService
             member.Date == first.Date &&
             member.TimeFrom == first.TimeFrom &&
             member.TimeTo == first.TimeTo &&
-            string.Equals(member.Location, first.Location, StringComparison.Ordinal) &&
+            member.LocationId == first.LocationId &&
             string.Equals(member.Note, first.Note, StringComparison.Ordinal));
     }
 
@@ -166,15 +177,14 @@ public class TrainingService
             training.Date == first.Date &&
             training.TimeFrom == first.TimeFrom &&
             training.TimeTo == first.TimeTo &&
-            string.Equals(training.Location, first.Location, StringComparison.Ordinal) &&
+            training.LocationId == first.LocationId &&
             string.Equals(training.Note, first.Note, StringComparison.Ordinal));
     }
 
     private static bool IsValid(TrainingEditDto dto)
         => dto.Id > 0 &&
            dto.TimeFrom < dto.TimeTo &&
-           !string.IsNullOrWhiteSpace(dto.Location) &&
-           dto.Location.Length <= 100 &&
+           dto.LocationId > 0 &&
            (dto.Note?.Length ?? 0) <= 50 &&
            !string.IsNullOrEmpty(dto.OriginalVersion);
 
@@ -191,7 +201,7 @@ public class TrainingService
                     member.Date,
                     member.TimeFrom,
                     member.TimeTo,
-                    member.Location,
+                    member.LocationId,
                     member.Note))
                 .ToList());
 
@@ -209,6 +219,6 @@ public class TrainingService
         DateOnly Date,
         TimeOnly TimeFrom,
         TimeOnly TimeTo,
-        string Location,
+        int LocationId,
         string Note);
 }

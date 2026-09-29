@@ -1,10 +1,9 @@
-using SportSys.Contract.Models;
-using System.Globalization;
-
 namespace SportSys.Razor.Models.TrainingSchedule;
 
 public class TrainingScheduleComponentModel
 {
+    private const double MinimumBlockWidthPercent = 0.5;
+    private const double PointEventWidthPercent = 3;
     private readonly double _totalTimelineMinutes;
 
     private TrainingScheduleComponentModel(ITrainingScheduleViewModel source)
@@ -76,17 +75,22 @@ public class TrainingScheduleComponentModel
     }
 
     private IReadOnlyList<IReadOnlyList<TrainingScheduleBlock>> CreateLanes(
-        IReadOnlyList<ITrainingScheduleItem> items)
+        IReadOnlyList<ScheduleEventModel> items)
     {
         var lanes = new List<List<TrainingScheduleBlock>>();
 
-        var blocks = TrainingScheduleBlockFactory.CreateBlocks(items)
+        var blocks = items
+            .OrderBy(item => item.TimeFrom)
+            .ThenBy(item => item.TimeTo)
+            .ThenBy(item => item.SeasonCategoryOrder)
+            .ThenBy(item => item.EventType)
+            .ThenBy(item => item.SourceId)
             .Select(CreateBlock);
 
         foreach (var block in blocks)
         {
             var lane = lanes.FirstOrDefault(existing =>
-                existing.Count == 0 || existing[^1].TimeTo <= block.TimeFrom);
+                existing.Count == 0 || CanFollow(existing[^1], block));
 
             if (lane is null)
             {
@@ -100,61 +104,44 @@ public class TrainingScheduleComponentModel
         return lanes;
     }
 
-    private TrainingScheduleBlock CreateBlock(TrainingScheduleBlockData block)
+    private static bool CanFollow(
+        TrainingScheduleBlock previous,
+        TrainingScheduleBlock current)
     {
-        var primaryItem = block.Items[0];
-        var editPage = AllowEditing
-            ? GetEditPage(block.Items)
-            : null;
+        if (previous.TimeTo < current.TimeFrom)
+            return true;
 
-        var stateIcon = block.HasMixedState
-            ? TrainingStateVisual.UnknownIcon
-            : block.UniformStateIcon;
-        var stateTooltip = block.HasMixedState
-            ? string.Join(
-                "\n",
-                block.CategorySegments.Select(segment =>
-                    $"{segment.StateIcon} {segment.CategoryName}".Trim()))
-            : null;
+        if (previous.TimeTo > current.TimeFrom)
+            return false;
 
-        return new TrainingScheduleBlock
-        {
-            Items = block.Items,
-            Title = block.Title,
-            TrainingTypeSummary = block.TrainingTypeLocationSummary,
-            CoachSummary = block.CoachSummary,
-            TimeFrom = block.TimeFrom,
-            TimeTo = block.TimeTo,
-            SeasonCategoryOrder = block.SeasonCategoryOrder,
-            MinimumItemId = block.MinimumItemId,
-            EditItemId = editPage is null ? null : block.MinimumItemId,
-            EditPage = editPage,
-            Left = GetLeft(block.TimeFrom),
-            Width = GetWidth(block.TimeFrom, block.TimeTo),
-            Color = CategoryColors.TryGetValue(primaryItem.SeasonCategoryName, out var color)
-                ? color
-                : "var(--color-text-muted)",
-            Tooltip = string.Join(" | ", block.Items.Select(CreateTooltip)),
-            CategorySegments = block.CategorySegments,
-            IsUniformState = block.IsUniformState,
-            StateIcon = stateIcon,
-            StateTooltip = stateTooltip,
-        };
+        var previousIsPoint = previous.TimeFrom == previous.TimeTo;
+        var currentIsPoint = current.TimeFrom == current.TimeTo;
+        return !previousIsPoint && !currentIsPoint;
     }
 
-    private static string? GetEditPage(IReadOnlyList<ITrainingScheduleItem> items)
+    private TrainingScheduleBlock CreateBlock(ScheduleEventModel item)
     {
-        if (items.All(item => item is TrainingScheduleItemDto))
-            return "/Training/Schedule/Edit";
-
-        if (items.All(item =>
-                item is TrainingPlanScheduleItemDto &&
-                item is not TrainingScheduleItemDto))
+        return new TrainingScheduleBlock
         {
-            return "/Training/Plan/Edit";
-        }
-
-        return null;
+            EventType = item.EventType,
+            Title = item.TitleLine,
+            DetailLine1 = item.DetailLine1,
+            DetailLine2 = item.DetailLine2,
+            TimeFrom = item.TimeFrom,
+            TimeTo = item.TimeTo,
+            SeasonCategoryOrder = item.SeasonCategoryOrder,
+            MinimumItemId = item.SourceId,
+            EditItemId = item.EditItemId,
+            EditPage = item.EditPage,
+            Left = GetLeft(item.TimeFrom),
+            Width = GetWidth(item.TimeFrom, item.TimeTo),
+            Color = CategoryColors.TryGetValue(item.ColorKey, out var color)
+                ? color
+                : "var(--color-text-muted)",
+            Tooltip = item.Tooltip,
+            StateIcon = item.StateIcon,
+            StateTooltip = item.StateTooltip,
+        };
     }
 
     private double GetLeft(TimeOnly time)
@@ -166,39 +153,12 @@ public class TrainingScheduleComponentModel
     private double GetWidth(TimeOnly timeFrom, TimeOnly timeTo)
     {
         var duration = (timeTo.ToTimeSpan() - timeFrom.ToTimeSpan()).TotalMinutes;
-        return Math.Clamp(duration / _totalTimelineMinutes * 100, 0.5, 100);
+        var minimumWidth = duration == 0
+            ? PointEventWidthPercent
+            : MinimumBlockWidthPercent;
+        return Math.Clamp(duration / _totalTimelineMinutes * 100, minimumWidth, 100);
     }
 
-    private static string CreateTooltip(ITrainingScheduleItem item)
-    {
-        var parts = new List<string>
-        {
-            item.SeasonCategoryName,
-        };
-
-        if (item.TrainingStateName is not null)
-            parts.Add(item.TrainingStateName);
-
-        parts.Add(item.TrainingTypeName);
-        parts.Add(item.TrainingPhaseName);
-        parts.Add(item.Location);
-
-        if (item is TrainingPlanScheduleItemDto plan &&
-            item is not TrainingScheduleItemDto)
-        {
-            parts.Add(
-                $"Platnost {plan.From.ToString("d. M. yyyy", CultureInfo.CurrentCulture)}–" +
-                plan.To.ToString("d. M. yyyy", CultureInfo.CurrentCulture));
-        }
-
-        if (!string.IsNullOrWhiteSpace(item.Note))
-            parts.Add(item.Note);
-
-        if (item.CoachFullNames.Count > 0)
-            parts.Add($"Trenéři: {string.Join(", ", item.CoachFullNames)}");
-
-        return string.Join(" · ", parts);
-    }
 }
 
 public class TrainingScheduleComponentRow
@@ -212,10 +172,10 @@ public class TrainingScheduleComponentRow
 
 public class TrainingScheduleBlock
 {
-    public required IReadOnlyList<ITrainingScheduleItem> Items { get; init; }
+    public required ScheduleEventType EventType { get; init; }
     public required string Title { get; init; }
-    public required string TrainingTypeSummary { get; init; }
-    public required string CoachSummary { get; init; }
+    public required string DetailLine1 { get; init; }
+    public required string DetailLine2 { get; init; }
     public TimeOnly TimeFrom { get; init; }
     public TimeOnly TimeTo { get; init; }
     public int SeasonCategoryOrder { get; init; }
@@ -226,8 +186,6 @@ public class TrainingScheduleBlock
     public required string Tooltip { get; init; }
     public double Left { get; init; }
     public double Width { get; init; }
-    public required IReadOnlyList<TrainingScheduleCategorySegment> CategorySegments { get; init; }
-    public bool IsUniformState { get; init; }
     public string? StateIcon { get; init; }
     public string? StateTooltip { get; init; }
 }

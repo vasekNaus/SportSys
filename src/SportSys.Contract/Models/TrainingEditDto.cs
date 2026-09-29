@@ -23,10 +23,10 @@ public class TrainingEditDto : IValidatableObject
     [Display(Name = "Čas do")]
     public TimeOnly TimeTo { get; set; }
 
-    [Required(ErrorMessage = "Lokalita je povinná.")]
-    [StringLength(100, ErrorMessage = "Lokalita nesmí přesáhnout 100 znaků.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Lokalita je povinná.")]
+    [UIHint("Select")]
     [Display(Name = "Lokalita")]
-    public string Location { get; set; } = string.Empty;
+    public int LocationId { get; set; }
 
     [StringLength(50, ErrorMessage = "Poznámka nesmí přesáhnout 50 znaků.")]
     [DataType(DataType.MultilineText)]
@@ -66,7 +66,8 @@ public class TrainingEditMemberDto
     public DateOnly Date { get; init; }
     public TimeOnly TimeFrom { get; init; }
     public TimeOnly TimeTo { get; init; }
-    public required string Location { get; init; }
+    public int LocationId { get; init; }
+    public required string LocationName { get; init; }
     public required string Note { get; init; }
 }
 
@@ -75,6 +76,7 @@ public enum TrainingUpdateResult
     Success,
     NotFound,
     GroupInconsistent,
+    LocationUnavailable,
     Conflict,
     InvalidInput,
 }

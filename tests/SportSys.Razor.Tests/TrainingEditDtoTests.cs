@@ -44,6 +44,20 @@ public class TrainingEditDtoTests
         Assert.Empty(results);
     }
 
+    [Fact]
+    public void Validate_RejectsMissingLocation()
+    {
+        var dto = CreateDto(
+            new TimeOnly(17, 0),
+            new TimeOnly(18, 0));
+        dto.LocationId = 0;
+
+        var results = Validate(dto);
+
+        Assert.Contains(results, result =>
+            result.MemberNames.Contains(nameof(TrainingEditDto.LocationId)));
+    }
+
     private static TrainingEditDto CreateDto(TimeOnly timeFrom, TimeOnly timeTo)
         => new()
         {
@@ -51,7 +65,7 @@ public class TrainingEditDtoTests
             Date = new DateOnly(2026, 9, 8),
             TimeFrom = timeFrom,
             TimeTo = timeTo,
-            Location = "Zimní stadion",
+            LocationId = 1,
             Note = string.Empty,
         };
 

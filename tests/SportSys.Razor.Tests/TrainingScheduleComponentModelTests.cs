@@ -142,11 +142,8 @@ public class TrainingScheduleComponentModelTests
         var model = TrainingScheduleComponentModel.Create(source);
 
         var block = GetSingleBlock(model);
-        Assert.True(block.IsUniformState);
         Assert.Equal("❌", block.StateIcon);
         Assert.Null(block.StateTooltip);
-        Assert.Single(block.CategorySegments);
-        Assert.Equal("❌", block.CategorySegments[0].StateIcon);
     }
 
     [Fact]
@@ -164,7 +161,6 @@ public class TrainingScheduleComponentModelTests
         var model = TrainingScheduleComponentModel.Create(source);
 
         var block = GetSingleBlock(model);
-        Assert.False(block.IsUniformState);
         Assert.Equal(TrainingStateVisual.UnknownIcon, block.StateIcon);
         Assert.Equal("❌ U12\n📅 U14", block.StateTooltip);
     }
@@ -214,17 +210,27 @@ public class TrainingScheduleComponentModelTests
     private static TrainingScheduleViewModel CreateViewModel(
         bool allowEditing,
         params ITrainingScheduleItem[] items)
-        => new(
+    {
+        var events = items.All(item => item is TrainingScheduleItemDto)
+            ? ScheduleEventModelFactory.CreateTrainings(
+                items.Cast<TrainingScheduleItemDto>().ToList(),
+                allowEditing)
+            : ScheduleEventModelFactory.CreateTrainingPlans(
+                items.Cast<TrainingPlanScheduleItemDto>().ToList(),
+                allowEditing);
+
+        return new(
             [
                 new TrainingScheduleRow
                 {
                     PrimaryLabel = "Út",
                     Parity = TrainingScheduleRowParity.Even,
-                    Items = items,
+                    Items = events,
                 },
             ],
             items.Select(item => item.SeasonCategoryName).ToList(),
             allowEditing);
+    }
 
     private static TrainingScheduleBlock GetSingleBlock(
         TrainingScheduleComponentModel model)

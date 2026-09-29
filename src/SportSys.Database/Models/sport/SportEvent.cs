@@ -23,6 +23,8 @@ public abstract class SportEvent
     [Precision(0)]
     public TimeOnly TimeFrom { get; set; }
 
+    public int LocationId { get; set; }
+
     [StringLength(50)]
     [Unicode(false)]
     public required string Note { get; set; }
@@ -34,4 +36,7 @@ public abstract class SportEvent
     [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryName))]
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]
     public virtual SeasonCategory SeasonCategory { get; set; } = null!;
+
+    [DeleteBehavior(DeleteBehavior.ClientSetNull)]
+    public virtual Location Location { get; set; } = null!;
 }

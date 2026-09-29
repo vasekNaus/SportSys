@@ -11,13 +11,16 @@ namespace SportSys.Razor.Areas.sport.Pages.Training.Schedule;
 public class IndexModel : PageModel
 {
     private readonly TrainingScheduleService _service;
+    private readonly MatchScheduleService _matchService;
     private readonly TrainingScheduleExcelExporter _excelExporter;
 
     public IndexModel(
         TrainingScheduleService service,
+        MatchScheduleService matchService,
         TrainingScheduleExcelExporter excelExporter)
     {
         _service = service;
+        _matchService = matchService;
         _excelExporter = excelExporter;
     }
 
@@ -25,7 +28,7 @@ public class IndexModel : PageModel
     public List<SeasonCategoryDto> SeasonCategories { get; private set; } = [];
     public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
     public List<LookupSelectItem> TrainingStates { get; private set; } = [];
-    public List<string> Locations { get; private set; } = [];
+    public List<LookupSelectItem> Locations { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? SeasonId { get; set; }
@@ -40,7 +43,7 @@ public class IndexModel : PageModel
     public List<int> SelectedTrainingStateIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
-    public List<string> SelectedLocations { get; set; } = [];
+    public List<int> SelectedLocationIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public DateOnly? DateFrom { get; set; }
@@ -55,6 +58,7 @@ public class IndexModel : PageModel
     public bool MergeTrainings { get; set; }
 
     public ITrainingScheduleViewModel? ScheduleView { get; private set; }
+    public bool HasExportableTrainings { get; private set; }
     public string? ExportErrorMessage { get; private set; }
 
     public async Task OnGetAsync(CancellationToken ct)
@@ -63,8 +67,16 @@ public class IndexModel : PageModel
             return;
 
         var filter = GetNormalizedFilter();
-        var trainings = await LoadTrainingsAsync(filter, ct);
-        ScheduleView = CreateScheduleView(trainings, filter);
+        var categories = GetSelectedCategoryNames();
+        var trainings = await LoadTrainingsAsync(filter, categories, ct);
+        var matches = await _matchService.GetMatchesAsync(
+            filter.SeasonId,
+            categories,
+            filter.DateFrom,
+            filter.DateTo,
+            ct);
+        HasExportableTrainings = trainings.Count > 0;
+        ScheduleView = CreateScheduleView(trainings, matches, filter);
     }
 
     public async Task<IActionResult> OnGetExportAsync(CancellationToken ct)
@@ -76,8 +88,16 @@ public class IndexModel : PageModel
         }
 
         var filter = GetNormalizedFilter();
-        var trainings = await LoadTrainingsAsync(filter, ct);
-        ScheduleView = CreateScheduleView(trainings, filter);
+        var categories = GetSelectedCategoryNames();
+        var trainings = await LoadTrainingsAsync(filter, categories, ct);
+        var matches = await _matchService.GetMatchesAsync(
+            filter.SeasonId,
+            categories,
+            filter.DateFrom,
+            filter.DateTo,
+            ct);
+        HasExportableTrainings = trainings.Count > 0;
+        ScheduleView = CreateScheduleView(trainings, matches, filter);
 
         if (trainings.Count == 0)
         {
@@ -99,7 +119,7 @@ public class IndexModel : PageModel
         Seasons = await _service.GetSeasonsAsync(ct);
         TrainingTypes = await _service.GetTrainingTypesAsync(ct);
         TrainingStates = await _service.GetTrainingStatesAsync(ct);
-        Locations = await _service.GetTrainingLocationsAsync(ct);
+        Locations = await _service.GetTrainingLocationsAsync(SelectedLocationIds, ct);
 
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
         {
@@ -119,9 +139,10 @@ public class IndexModel : PageModel
             .Select(s => s.Id)
             .ToList();
 
-        var requestedLocations = SelectedLocations.ToHashSet();
-        SelectedLocations = Locations
-            .Where(requestedLocations.Contains)
+        var requestedLocationIds = SelectedLocationIds.ToHashSet();
+        SelectedLocationIds = Locations
+            .Where(location => requestedLocationIds.Contains(location.Id))
+            .Select(location => location.Id)
             .ToList();
 
         if (SeasonId.HasValue)
@@ -153,15 +174,14 @@ public class IndexModel : PageModel
 
     private Task<List<TrainingScheduleItemDto>> LoadTrainingsAsync(
         NormalizedScheduleFilter filter,
+        IReadOnlyCollection<string> categories,
         CancellationToken ct)
         => _service.GetTrainingsAsync(
             filter.SeasonId,
-            SelectedCategories.Count > 0
-                ? SelectedCategories
-                : SeasonCategories.Select(c => c.Name).ToList(),
+            categories,
             SelectedTrainingTypeIds,
             SelectedTrainingStateIds,
-            SelectedLocations,
+            SelectedLocationIds,
             filter.DateFrom,
             filter.DateTo,
             MergeTrainings,
@@ -169,11 +189,27 @@ public class IndexModel : PageModel
 
     private ITrainingScheduleViewModel CreateScheduleView(
         IReadOnlyList<TrainingScheduleItemDto> trainings,
+        IReadOnlyList<MatchScheduleItemDto> matches,
         NormalizedScheduleFilter filter)
     {
         var byDate = trainings
-            .GroupBy(t => t.Date)
-            .ToDictionary(g => g.Key, g => g.Cast<ITrainingScheduleItem>().ToList());
+            .GroupBy(training => training.Date)
+            .SelectMany(group => ScheduleEventModelFactory
+                .CreateTrainings(group.ToList(), allowEditing: !MergeTrainings)
+                .Select(scheduleEvent => new
+                {
+                    Date = group.Key,
+                    Event = scheduleEvent,
+                }))
+            .Concat(matches.Select(match => new
+            {
+                match.Date,
+                Event = ScheduleEventModelFactory.CreateMatch(match),
+            }))
+            .GroupBy(entry => entry.Date)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(entry => entry.Event).ToList());
 
         var rows = new List<TrainingScheduleRow>();
         for (var date = filter.DateFrom; date <= filter.DateTo; date = date.AddDays(1))
@@ -203,6 +239,11 @@ public class IndexModel : PageModel
             categoryOrder,
             allowEditing: !MergeTrainings);
     }
+
+    private IReadOnlyCollection<string> GetSelectedCategoryNames()
+        => SelectedCategories.Count > 0
+            ? SelectedCategories
+            : SeasonCategories.Select(category => category.Name).ToList();
 
     private readonly record struct NormalizedScheduleFilter(
         int SeasonId,
