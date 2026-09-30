@@ -20,10 +20,6 @@ public partial class Training : SportEvent
 
   public int? TrainingPlanId { get; set; }
 
-  [StringLength(100)]
-  [Unicode(false)]
-  public required string Location { get; set; }
-
   [Precision(0)]
   public TimeOnly TimeTo { get; set; }
 

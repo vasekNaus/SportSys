@@ -9,8 +9,6 @@ namespace SportSys.Database.Models.sport;
 [Table(nameof(Match), Schema = Schemas.Sport)]
 public partial class Match : SportEvent
 {
-    public int IceRinkId { get; set; }
-
     [StringLength(10)]
     [Unicode(false)]
     public string? MatchCode { get; set; }
@@ -19,12 +17,14 @@ public partial class Match : SportEvent
 
     public int AwayTeamId { get; set; }
 
+    [Precision(0)]
+    public TimeOnly TimeTo { get; set; }
+
+    public int? DurationMinutes { get; set; }
+
     public MatchResult? Result { get; set; }
 
     public int MatchTypeId { get; set; }
-
-    [DeleteBehavior(DeleteBehavior.ClientSetNull)]
-    public virtual IceRink IceRink { get; set; } = null!;
 
     [ForeignKey(nameof(HomeTeamId))]
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]

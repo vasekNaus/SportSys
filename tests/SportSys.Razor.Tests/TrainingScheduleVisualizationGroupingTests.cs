@@ -150,9 +150,6 @@ public class TrainingScheduleVisualizationGroupingTests
         {
             Id = id,
             Date = trainingDate,
-            From = trainingDate,
-            To = trainingDate,
-            DayName = trainingDate.DayOfWeek.ToString(),
             TimeFrom = timeFrom,
             TimeTo = timeTo,
             GroupId = groupId,

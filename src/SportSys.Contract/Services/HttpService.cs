@@ -11,7 +11,7 @@ namespace SportSys.Contract.Services;
 
 public class HttpService : Apollo.HttpService.HttpJsonService
 {
-  public static string IceRinkLabel { get; } = "Zimní stadion";
+  public static string SportLocationLabel { get; } = "Zimní stadion";
 
   private readonly IMapyCom config;
 
@@ -40,7 +40,7 @@ public class HttpService : Apollo.HttpService.HttpJsonService
     throw new NotImplementedException();
   }
 
-  public async Task<SportSys.Model.IceRink?> Search(string query)
+  public async Task<SportSys.Model.SportLocation?> Search(string query)
   {
     var result = await SearchInternal(query);
     if (result is not null)
@@ -51,13 +51,13 @@ public class HttpService : Apollo.HttpService.HttpJsonService
     if (commaIdx > 0)
     {
       var city = query[..commaIdx].Trim();
-      result = await SearchInternal($"{city}, {IceRinkLabel}");
+      result = await SearchInternal($"{city}, {SportLocationLabel}");
     }
 
     return result;
   }
 
-  private async Task<SportSys.Model.IceRink?> SearchInternal(string query)
+  private async Task<SportSys.Model.SportLocation?> SearchInternal(string query)
   {
     var qs = new Dictionary<string, string>()
     {
@@ -70,12 +70,12 @@ public class HttpService : Apollo.HttpService.HttpJsonService
     if (!response.IsSuccess || !response.IsValid || response.Response is null)
       throw new InvalidOperationException($"Search request failed: {response}");
 
-    var item = response.Response.Items.FirstOrDefault(x => x.Label == IceRinkLabel) ?? response.Response.Items.FirstOrDefault();
+    var item = response.Response.Items.FirstOrDefault(x => x.Label == SportLocationLabel) ?? response.Response.Items.FirstOrDefault();
 
     if (item is null)
       return null;
 
-    return new SportSys.Model.IceRink(
+    return new SportSys.Model.SportLocation(
       item.Name,
       item.RegionalStructure.FirstOrDefault(r => r.Type == "regional.street")?.Name ?? "",
       item.Zip ?? "",

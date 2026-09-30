@@ -12,6 +12,7 @@ using SportSys.Database.Models.dbo;
 using SportSys.Database.Models.hr;
 using SportSys.Database.Models.sport;
 using SportSys.Database.Models.inventory;
+using InventoryLocation = SportSys.Database.Models.inventory.Location;
 
 namespace SportSys.Database.Context;
 
@@ -42,7 +43,7 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
 
   public virtual DbSet<CoachTrainingPlan> CoachTrainingPlans { get; set; }
 
-  public virtual DbSet<IceRink> IceRinks { get; set; }
+  public virtual DbSet<SportSys.Database.Models.sport.Location> SportLocations { get; set; }
 
   public virtual DbSet<Match> Matches { get; set; }
 
@@ -84,7 +85,7 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
   public virtual DbSet<Manufacturer> Manufacturers { get; set; }
 
   // inventory – lookup
-  public virtual DbSet<Location> Locations { get; set; }
+  public virtual DbSet<InventoryLocation> Locations { get; set; }
   public virtual DbSet<Category> InventoryCategories { get; set; }
 
   public virtual DbSet<ItemKind> InventoryItemKinds { get; set; }

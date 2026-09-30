@@ -97,11 +97,11 @@ Nutné pouze při více vztazích mezi stejnou dvojicí entit.
 ## `HasDefaultValue` — vždy pojmenovat constraint
 
 ```csharp
-builder.Property(e => e.ZipCode).HasDefaultValue("", "DF_IceRink_ZipCode");
+builder.Property(e => e.ZipCode).HasDefaultValue("", "DF_Location_ZipCode");
 // vzor: DF_{TabulkaBezSchématu}_{Sloupec}
 ```
 
-EF Core bez explicitního názvu generuje náhodný hash (např. `DF__IceRink__ZipCode__3A4CA8FD`) — obtížně referencovatelný v migracích.
+EF Core bez explicitního názvu generuje náhodný hash (např. `DF__Location__ZipCode__3A4CA8FD`) — obtížně referencovatelný v migracích.
 
 ---
 
@@ -193,7 +193,10 @@ sdílet fyzický řádek a PK s `identity.User`.
 
 ## Computed columns
 
-`DurationMinutes` je persisted computed column (`DATEDIFF(minute, TimeFrom, TimeTo)`) v tabulkách `Training`, `Match` i `TrainingPlan`. ❌ Nikdy počítat v C# kódu.
+`DurationMinutes` je persisted computed column (`DATEDIFF(minute, TimeFrom, TimeTo)`)
+na konkrétních modelech `Training`, `Match` a `TrainingPlan`. Hodnota se nikdy
+nenastavuje ani nepočítá v C# kódu. Import zápasu bez známého konce nastaví
+`TimeTo = TimeFrom`, takže databáze vypočte délku `0`.
 
 ---
 

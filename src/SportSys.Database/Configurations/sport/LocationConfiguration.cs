@@ -4,14 +4,14 @@ using SportSys.Database.Models.sport;
 
 namespace SportSys.Database.Configurations.sport;
 
-public class IceRinkConfiguration : IEntityTypeConfiguration<IceRink>
+public class LocationConfiguration : IEntityTypeConfiguration<Location>
 {
-    public void Configure(EntityTypeBuilder<IceRink> builder)
+    public void Configure(EntityTypeBuilder<Location> builder)
     {
         builder.Property(e => e.ZipCode)
-               .HasDefaultValue("", "DF_IceRink_ZipCode");
+               .HasDefaultValue("", "DF_Location_ZipCode");
 
         builder.Property(e => e.IsActive)
-               .HasDefaultValue(true, "DF_IceRink_IsActive");
+               .HasDefaultValue(true, "DF_Location_IsActive");
     }
 }

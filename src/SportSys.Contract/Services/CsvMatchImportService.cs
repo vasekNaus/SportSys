@@ -60,11 +60,11 @@ public class CsvMatchImportService
             StringComparer.OrdinalIgnoreCase);
 
     var teamsByName = await _db.Teams
-        .Select(o => new { o.Name, o.Id, o.HomeIceRinkId })
+        .Select(o => new { o.Name, o.Id, o.HomeLocationId })
         .ToListAsync(ct);
     var teamsByNameDict = teamsByName.ToDictionary(
         o => o.Name.Trim(),
-        o => (Id: o.Id, HomeIceRinkId: o.HomeIceRinkId),
+        o => (Id: o.Id, HomeLocationId: o.HomeLocationId),
         StringComparer.OrdinalIgnoreCase);
 
     var matchTypeIds = (await _db.MatchTypes
@@ -167,7 +167,7 @@ public class CsvMatchImportService
       }
 
       // ── Teams (domácí + hosté) ────────────────────────────────────
-      var (homeTeamId, homeIceRinkId, homeTeamWarning) = LookupTeam(domaci.Trim(), teamsByNameDict);
+      var (homeTeamId, homeLocationId, homeTeamWarning) = LookupTeam(domaci.Trim(), teamsByNameDict);
       if (homeTeamId < 0)
       {
         result.AddWarning($"Řádek {lineNumber}: {homeTeamWarning} ({date}), přeskočen.");
@@ -175,9 +175,9 @@ public class CsvMatchImportService
         continue;
       }
 
-      if (homeIceRinkId is null)
+      if (homeLocationId is null)
       {
-        result.AddWarning($"Řádek {lineNumber}: tým '{Truncate(domaci.Trim(), 50)}' nemá přiřazen zimní stadion (HomeIceRinkId), přeskočen.");
+        result.AddWarning($"Řádek {lineNumber}: tým '{Truncate(domaci.Trim(), 50)}' nemá přiřazenou domácí lokalitu (HomeLocationId), přeskočen.");
         result.Skipped++;
         continue;
       }
@@ -208,9 +208,10 @@ public class CsvMatchImportService
         Id = newId,
         SeasonId = seasonId,
         SeasonCategoryName = seasonCategoryName!,
-        IceRinkId = homeIceRinkId.Value,
+        LocationId = homeLocationId.Value,
         Date = date.Value,
         TimeFrom = timeFrom.Value,
+        TimeTo = ResolveImportedTimeTo(timeFrom.Value),
         Note = Truncate(note, 50),
         MatchCode = string.IsNullOrEmpty(matchCode) ? null : Truncate(matchCode, 10),
         HomeTeamId = homeTeamId,
@@ -237,20 +238,23 @@ public class CsvMatchImportService
     return result;
   }
 
+  internal static TimeOnly ResolveImportedTimeTo(TimeOnly timeFrom)
+    => timeFrom;
+
   // ── Lookup / create helpers ───────────────────────────────────────────────
 
-  private (int Id, int? HomeIceRinkId, string Warning) LookupTeam(
+  private (int Id, int? HomeLocationId, string Warning) LookupTeam(
       string name,
-      Dictionary<string, (int Id, int? HomeIceRinkId)> dict)
+      Dictionary<string, (int Id, int? HomeLocationId)> dict)
   {
-    if (dict.TryGetValue(name, out var entry)) return (entry.Id, entry.HomeIceRinkId, string.Empty);
+    if (dict.TryGetValue(name, out var entry)) return (entry.Id, entry.HomeLocationId, string.Empty);
 
     // Fallback: odebrat suffix " B" / " C" / " D" a zkusit znovu
     if (name.Length > 2 && name[^2] == ' ' && "BCD".Contains(name[^1], StringComparison.OrdinalIgnoreCase))
     {
       string stripped = name[..^2].TrimEnd();
       if (dict.TryGetValue(stripped, out entry))
-        return (entry.Id, entry.HomeIceRinkId, string.Empty);
+        return (entry.Id, entry.HomeLocationId, string.Empty);
     }
 
     _logger.LogWarning("Tým '{Name}' nenalezen v tabulce Team.", name);

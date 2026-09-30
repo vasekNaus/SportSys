@@ -2,7 +2,7 @@
 @model IndexModel
 @using SportSys.Razor.Models.TrainingSchedule
 @{
-    ViewData["Title"] = "Rozvrh tréninků";
+    ViewData["Title"] = "Rozvrh tréninků a zápasů";
     var selectedTrainingTypeNames = Model.TrainingTypes
         .Where(type => Model.SelectedTrainingTypeIds.Contains(type.Id))
         .Select(type => type.Name)
@@ -13,11 +13,15 @@
         1 => selectedTrainingTypeNames[0],
         _ => $"Vybráno: {selectedTrainingTypeNames.Count}",
     };
-    var locationSummary = Model.SelectedLocations.Count switch
+    var selectedLocationNames = Model.Locations
+        .Where(location => Model.SelectedLocationIds.Contains(location.Id))
+        .Select(location => location.Name)
+        .ToList();
+    var locationSummary = selectedLocationNames.Count switch
     {
         0 => "Všechny lokality",
-        1 => Model.SelectedLocations[0],
-        _ => $"Vybráno: {Model.SelectedLocations.Count}",
+        1 => selectedLocationNames[0],
+        _ => $"Vybráno: {selectedLocationNames.Count}",
     };
 }
 
@@ -85,10 +89,10 @@
                         {
                             <label class="schedule-multiselect-option">
                                 <input type="checkbox"
-                                       name="SelectedLocations"
-                                       value="@location"
-                                       checked="@Model.SelectedLocations.Contains(location)" />
-                                <span data-multiselect-option-label>@location</span>
+                                       name="SelectedLocationIds"
+                                       value="@location.Id"
+                                       checked="@Model.SelectedLocationIds.Contains(location.Id)" />
+                                <span data-multiselect-option-label>@location.Name</span>
                             </label>
                         }
                     </div>
@@ -181,7 +185,7 @@
             <button type="submit" class="button">
                 <i class="fa-solid fa-calendar-days fa-fw"></i> Zobrazit rozvrh
             </button>
-            @if (Model.ScheduleView?.HasItems == true)
+            @if (Model.HasExportableTrainings)
             {
                 <button type="submit"
                         name="handler"
@@ -203,7 +207,7 @@
 {
     @if (!Model.ScheduleView.HasItems)
     {
-        <p class="text-muted">Pro zadané parametry nebyly nalezeny žádné tréninky.</p>
+        <p class="text-muted">Pro zadané parametry nebyly nalezeny žádné tréninky ani zápasy.</p>
     }
 
     @await Component.InvokeAsync(

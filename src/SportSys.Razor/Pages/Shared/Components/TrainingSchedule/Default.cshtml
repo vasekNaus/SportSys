@@ -76,9 +76,9 @@
                                     <span class="schedule-block-time">
                                         @block.TimeFrom.ToString("H:mm")–@block.TimeTo.ToString("H:mm")
                                     </span>
-                                    <span class="schedule-block-type">@block.TrainingTypeSummary</span>
-                                    <span class="schedule-block-coaches">@block.CoachSummary</span>
-                                    @if (Model.AllowEditing && !string.IsNullOrEmpty(block.StateIcon))
+                                    <span class="schedule-block-type">@block.DetailLine1</span>
+                                    <span class="schedule-block-coaches">@block.DetailLine2</span>
+                                    @if (!string.IsNullOrEmpty(block.StateIcon))
                                     {
                                         <span class="schedule-block-state-icon"
                                               aria-hidden="@(block.StateTooltip is null ? "true" : "false")"
@@ -95,9 +95,9 @@
                                     <span class="schedule-block-time">
                                         @block.TimeFrom.ToString("H:mm")–@block.TimeTo.ToString("H:mm")
                                     </span>
-                                    <span class="schedule-block-type">@block.TrainingTypeSummary</span>
-                                    <span class="schedule-block-coaches">@block.CoachSummary</span>
-                                    @if (Model.AllowEditing && !string.IsNullOrEmpty(block.StateIcon))
+                                    <span class="schedule-block-type">@block.DetailLine1</span>
+                                    <span class="schedule-block-coaches">@block.DetailLine2</span>
+                                    @if (!string.IsNullOrEmpty(block.StateIcon))
                                     {
                                         <span class="schedule-block-state-icon"
                                               aria-hidden="@(block.StateTooltip is null ? "true" : "false")"

@@ -73,13 +73,18 @@ public class TrainingScheduleService
             .ToListAsync(ct);
     }
 
-    public async Task<List<string>> GetTrainingLocationsAsync(CancellationToken ct = default)
+    public async Task<List<LookupSelectItem>> GetTrainingLocationsAsync(
+        IReadOnlyCollection<int> includeIds,
+        CancellationToken ct = default)
     {
-        return await _db.Training
-            .Where(t => t.Location != string.Empty)
-            .Select(t => t.Location)
-            .Distinct()
-            .OrderBy(location => location)
+        return await _db.SportLocations
+            .Where(location => location.IsActive || includeIds.Contains(location.Id))
+            .OrderBy(location => location.Name)
+            .Select(location => new LookupSelectItem
+            {
+                Id = location.Id,
+                Name = location.Name,
+            })
             .ToListAsync(ct);
     }
 
@@ -98,7 +103,7 @@ public class TrainingScheduleService
         IReadOnlyCollection<string> categoryNames,
         IReadOnlyCollection<int> trainingTypeIds,
         IReadOnlyCollection<int> trainingStateIds,
-        IReadOnlyCollection<string> locations,
+        IReadOnlyCollection<int> locationIds,
         DateOnly dateFrom,
         DateOnly dateTo,
         bool mergeOverlapping,
@@ -116,8 +121,8 @@ public class TrainingScheduleService
         if (trainingStateIds.Count > 0)
             query = query.Where(t => trainingStateIds.Contains(t.TrainingStateId));
 
-        if (locations.Count > 0)
-            query = query.Where(t => locations.Contains(t.Location));
+        if (locationIds.Count > 0)
+            query = query.Where(t => locationIds.Contains(t.LocationId));
 
         var trainings = await query
             .OrderBy(t => t.Date)
@@ -125,9 +130,8 @@ public class TrainingScheduleService
             .Select(t => new TrainingScheduleItemDto
             {
                 Id = t.Id,
+                SeasonId = t.SeasonId,
                 Date = t.Date,
-                From = t.Date,
-                To = t.Date,
                 TimeFrom = t.TimeFrom,
                 TimeTo = t.TimeTo,
                 DurationMinutes = t.DurationMinutes,
@@ -136,22 +140,20 @@ public class TrainingScheduleService
                     : t.GroupMembership.GroupId,
                 SeasonCategoryOrder = t.SeasonCategory.Order,
                 SeasonCategoryName = t.SeasonCategoryName,
-                Location = t.Location,
+                LocationId = t.LocationId,
+                LocationName = t.Location.Name,
                 TrainingTypeName = t.TrainingType.Name,
                 TrainingPhaseName = t.TrainingPhase.Name,
                 TrainingStateId = t.TrainingStateId,
                 TrainingStateName = t.TrainingState.Name,
                 CoachFullNames = t.CoachTrainings
-                    .Select(c => c.Coach.DisplayName)
+                    .Select(c => c.Coach.DisplayName ?? string.Empty)
                     .Distinct()
                     .OrderBy(x => x)
                     .ToList(),
                 Note = t.Note,
             })
             .ToListAsync(ct);
-
-        foreach (var training in trainings)
-            training.DayName = training.Date.DayOfWeek.ToString();
 
         ApplyVisualizationGrouping(trainings, mergeOverlapping);
 
@@ -201,15 +203,15 @@ public class TrainingScheduleService
                 Location = p.Location,
                 TrainingTypeName = p.TrainingType.Name,
                 TrainingPhaseName = p.TrainingPhase.Name,
-                CoachFullNames = p.CoachTrainingPlans
-                    .Where(c => c.ValidFrom <= p.To && c.ValidTo >= p.From)
-                    .Select(c => c.Coach.DisplayName)
-                    .Distinct()
-                    .OrderBy(x => x)
-                    .ToList(),
+                CoachFullNames = new List<string>(),
                 Note = string.Empty,
             })
             .ToListAsync(ct);
+
+        // Přiřazení trenérů se řeší samostatným dotazem, protože EF Core
+        // neumí přeložit korelovaný poddotaz filtrovaný na rozsah datumů
+        // (ValidFrom/ValidTo), pokud je zároveň součástí kompozitního klíče.
+        await AssignCoachFullNamesAsync(plans, ct);
 
         var orderedPlans = plans
             .OrderBy(p => p.DayOfWeek)
@@ -220,6 +222,40 @@ public class TrainingScheduleService
         ApplyVisualizationGrouping(orderedPlans, mergeOverlapping);
 
         return orderedPlans;
+    }
+
+    private async Task AssignCoachFullNamesAsync(
+        IReadOnlyList<TrainingPlanScheduleItemDto> plans,
+        CancellationToken ct)
+    {
+        if (plans.Count == 0)
+            return;
+
+        var planIds = plans.Select(p => p.Id).ToList();
+
+        var assignments = await _db.CoachTrainingPlans
+            .Where(c => planIds.Contains(c.TrainingPlanId))
+            .Select(c => new
+            {
+                c.TrainingPlanId,
+                c.ValidFrom,
+                c.ValidTo,
+                CoachFullName = c.Coach.DisplayName ?? string.Empty,
+            })
+            .ToListAsync(ct);
+
+        var assignmentsByPlanId = assignments
+            .ToLookup(a => a.TrainingPlanId);
+
+        foreach (var plan in plans)
+        {
+            plan.CoachFullNames = assignmentsByPlanId[plan.Id]
+                .Where(a => a.ValidFrom <= plan.To && a.ValidTo >= plan.From)
+                .Select(a => a.CoachFullName)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+        }
     }
 
     internal static void ApplyVisualizationGrouping(
@@ -242,7 +278,7 @@ public class TrainingScheduleService
         IReadOnlyList<TItem> items,
         bool mergeOverlapping,
         Func<TItem, TRow> rowSelector)
-        where TItem : TrainingPlanScheduleItemDto
+        where TItem : ITrainingScheduleItem
         where TRow : notnull
     {
         foreach (var item in items)

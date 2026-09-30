@@ -5,6 +5,14 @@ using DbTeam = SportSys.Database.Models.sport.Team;
 
 namespace SportSys.Contract.Services;
 
+public sealed class HomeLocationUnavailableException : InvalidOperationException
+{
+    public HomeLocationUnavailableException(string message)
+        : base(message)
+    {
+    }
+}
+
 public class TeamService
 {
     private readonly SportSysDbContext _db;
@@ -38,7 +46,7 @@ public class TeamService
                 Code = t.Code,
                 Name = t.Name,
                 City = t.City,
-                HomeIceRinkName = t.HomeIceRink != null ? t.HomeIceRink.Name : null,
+                HomeLocationName = t.HomeLocation != null ? t.HomeLocation.Name : null,
                 IsActive = t.IsActive,
             })
             .ToListAsync(ct);
@@ -55,7 +63,7 @@ public class TeamService
                 Name = t.Name,
                 Address = t.Address,
                 City = t.City,
-                HomeIceRinkId = t.HomeIceRinkId,
+                HomeLocationId = t.HomeLocationId,
                 IsActive = t.IsActive,
             })
             .FirstOrDefaultAsync(ct);
@@ -63,13 +71,15 @@ public class TeamService
 
     public async Task<TeamDto> CreateAsync(TeamDto dto, CancellationToken ct = default)
     {
+        await EnsureHomeLocationCanBeAssignedAsync(dto.HomeLocationId, null, ct);
+
         var entity = new DbTeam
         {
             Code = dto.Code!,
             Name = dto.Name!,
             Address = dto.Address!,
             City = dto.City!,
-            HomeIceRinkId = dto.HomeIceRinkId,
+            HomeLocationId = dto.HomeLocationId,
             IsActive = dto.IsActive,
         };
 
@@ -84,11 +94,16 @@ public class TeamService
         var entity = await _db.Teams.FindAsync([dto.Id], ct)
             ?? throw new InvalidOperationException($"Tým s ID {dto.Id} nebyl nalezen.");
 
+        await EnsureHomeLocationCanBeAssignedAsync(
+            dto.HomeLocationId,
+            entity.HomeLocationId,
+            ct);
+
         entity.Code = dto.Code!;
         entity.Name = dto.Name!;
         entity.Address = dto.Address!;
         entity.City = dto.City!;
-        entity.HomeIceRinkId = dto.HomeIceRinkId;
+        entity.HomeLocationId = dto.HomeLocationId;
         entity.IsActive = dto.IsActive;
 
         await _db.SaveChangesAsync(ct);
@@ -101,5 +116,26 @@ public class TeamService
 
         entity.IsActive = isActive;
         await _db.SaveChangesAsync(ct);
+    }
+
+    private async Task EnsureHomeLocationCanBeAssignedAsync(
+        int? locationId,
+        int? currentLocationId,
+        CancellationToken ct)
+    {
+        if (!locationId.HasValue)
+            return;
+
+        var location = await _db.SportLocations
+            .Where(location => location.Id == locationId.Value)
+            .Select(location => new { location.IsActive })
+            .SingleOrDefaultAsync(ct);
+        if (location is null)
+            throw new HomeLocationUnavailableException(
+                $"Lokalita s ID {locationId.Value} nebyla nalezena.");
+
+        if (!location.IsActive && locationId != currentLocationId)
+            throw new HomeLocationUnavailableException(
+                "Jako domácí lokalitu lze vybrat pouze aktivní lokalitu.");
     }
 }

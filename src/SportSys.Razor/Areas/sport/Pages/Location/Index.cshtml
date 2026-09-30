@@ -1,7 +1,7 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Zimní stadiony";
+    ViewData["Title"] = "Lokality";
 }
 
 @if (Model.StatusMessage is not null)
@@ -15,7 +15,7 @@
     <div class="filter-row">
         <div class="field">
             <label asp-for="Search">Název nebo město</label>
-            <input asp-for="Search" type="search" placeholder="Hledat stadion…" />
+            <input asp-for="Search" type="search" placeholder="Hledat lokalitu…" />
         </div>
         <div class="field">
             <label asp-for="IsActive">Stav</label>
@@ -38,13 +38,13 @@
 
 <p>
     <a class="button" asp-page="Edit">
-        <i class="fa-solid fa-plus fa-fw"></i> Přidat zimní stadion
+        <i class="fa-solid fa-plus fa-fw"></i> Přidat lokalitu
     </a>
 </p>
 
-@if (Model.IceRinks.Count == 0)
+@if (Model.Locations.Count == 0)
 {
-    <p class="text-muted">Žádné zimní stadiony nejsou zadány.</p>
+    <p class="text-muted">Žádné lokality nejsou zadány.</p>
 }
 else
 {
@@ -60,30 +60,30 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var rink in Model.IceRinks)
+            @foreach (var location in Model.Locations)
             {
-                <tr class="@(!rink.IsActive ? "inactive-row" : null)">
-                    <td>@rink.Name</td>
-                    <td>@rink.Street</td>
-                    <td>@rink.City</td>
-                    <td>@rink.ZipCode</td>
-                    <td>@(rink.IsActive ? "Aktivní" : "Neaktivní")</td>
+                <tr class="@(!location.IsActive ? "inactive-row" : null)">
+                    <td>@location.Name</td>
+                    <td>@location.Street</td>
+                    <td>@location.City</td>
+                    <td>@location.ZipCode</td>
+                    <td>@(location.IsActive ? "Aktivní" : "Neaktivní")</td>
                     <td class="buttons">
-                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@rink.Id"
+                        <a class="button secondary icon-btn" asp-page="Edit" asp-route-id="@location.Id"
                            title="Upravit">
                             <i class="fa-solid fa-pen fa-fw"></i>
                         </a>
                         <form method="post"
                               asp-page-handler="SetActive"
-                              asp-route-id="@rink.Id"
-                              asp-route-isActive="@(!rink.IsActive)"
+                              asp-route-id="@location.Id"
+                              asp-route-isActive="@(!location.IsActive)"
                               asp-route-search="@Model.Search"
                               style="display:inline">
                             <button type="submit"
                                     class="button tertiary icon-btn"
-                                    title="@(rink.IsActive ? "Zneaktivnit" : "Aktivovat")"
-                                    onclick="@(rink.IsActive ? "return confirm('Opravdu chcete zimní stadion zneaktivnit?')" : null)">
-                                <i class="fa-solid @(rink.IsActive ? "fa-trash" : "fa-rotate-left") fa-fw"></i>
+                                    title="@(location.IsActive ? "Zneaktivnit" : "Aktivovat")"
+                                    onclick="@(location.IsActive ? "return confirm('Opravdu chcete lokalitu zneaktivnit?')" : null)">
+                                <i class="fa-solid @(location.IsActive ? "fa-trash" : "fa-rotate-left") fa-fw"></i>
                             </button>
                         </form>
                     </td>

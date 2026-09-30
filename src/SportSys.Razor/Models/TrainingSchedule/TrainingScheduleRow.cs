@@ -1,5 +1,3 @@
-using SportSys.Contract.Models;
-
 namespace SportSys.Razor.Models.TrainingSchedule;
 
 public class TrainingScheduleRow
@@ -8,5 +6,5 @@ public class TrainingScheduleRow
     public string? SecondaryLabel { get; init; }
     public required TrainingScheduleRowParity Parity { get; init; }
     public bool IsWeekend { get; init; }
-    public IReadOnlyList<ITrainingScheduleItem> Items { get; init; } = [];
+    public IReadOnlyList<ScheduleEventModel> Items { get; init; } = [];
 }

@@ -10,8 +10,8 @@ using SportSys.Database.Models.dboSchema;
 
 namespace SportSys.Database.Models.sport;
 
-[Table(nameof(IceRink), Schema = Schemas.Sport)]
-public partial class IceRink
+[Table(nameof(Location), Schema = Schemas.Sport)]
+public partial class Location
 {
   [Key]
   public int Id { get; set; }
@@ -20,19 +20,22 @@ public partial class IceRink
   public required string Name { get; set; }
 
   [StringLength(200)]
-  public required string Street { get; set; }
+  public string? Street { get; set; }
 
   [StringLength(100)]
-  public required string City { get; set; }
+  public string? City { get; set; }
 
   [StringLength(100)]
-  public required string ZipCode { get; set; }
+  public string? ZipCode { get; set; }
 
   public bool IsActive { get; set; } = true;
 
-  public Geometry? Location { get; set; }
+  [Column("Location")]
+  public Geometry? GeographicLocation { get; set; }
 
   public virtual ICollection<Match> Matches { get; set; } = new List<Match>();
 
-  public virtual ICollection<Team> Teams { get; set; } = new List<Team>();
+  public virtual ICollection<Team> HomeTeams { get; set; } = new List<Team>();
+
+  public virtual ICollection<Training> Trainings { get; set; } = new List<Training>();
 }

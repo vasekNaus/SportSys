@@ -1,6 +1,6 @@
 namespace SportSys.Model;
 
-public record class IceRink(
+public record class SportLocation(
   string Name,
   string Street,
   string ZipCode,

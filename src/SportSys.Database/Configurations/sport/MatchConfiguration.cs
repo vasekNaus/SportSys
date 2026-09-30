@@ -13,6 +13,9 @@ public class MatchConfiguration : IEntityTypeConfiguration<Match>
         builder.Property(e => e.Id)
                .HasDefaultValueSql("(NEXT VALUE FOR [sport].[SportEventSeq])");
 
+        builder.Property(e => e.DurationMinutes)
+               .HasComputedColumnSql("(datediff(minute,[TimeFrom],[TimeTo]))", stored: true);
+
         // Výsledek zápasu jako JSON sloupec přes value converter.
         // OwnsOne...ToJson není kompatibilní s TPC dědičností (EF Core omezení).
         builder.Property(e => e.Result)
@@ -23,4 +26,3 @@ public class MatchConfiguration : IEntityTypeConfiguration<Match>
                    v => v == null ? null : JsonSerializer.Deserialize<MatchResult>(v, (JsonSerializerOptions?)null));
     }
 }
-

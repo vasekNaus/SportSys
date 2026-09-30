@@ -61,11 +61,12 @@ public static class ServiceCollectionExtensions
     });
 
     services.AddScoped<CsvMatchImportService>();
-    services.AddScoped<IceRinkService>();
+    services.AddScoped<SportLocationService>();
     services.AddScoped<TeamService>();
     services.AddScoped<SeasonService>();
     services.AddScoped<SeasonCategoryService>();
     services.AddScoped<TrainingScheduleService>();
+    services.AddScoped<MatchScheduleService>();
     services.AddScoped<TrainingService>();
     services.AddScoped<TrainingPlanService>();
     services.AddScoped<TrainingRequirementService>();

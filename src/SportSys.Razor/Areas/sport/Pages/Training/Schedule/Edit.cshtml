@@ -70,7 +70,7 @@
                         <td>@member.Date.ToString("d")</td>
                         <td>@member.TimeFrom.ToString("H:mm")</td>
                         <td>@member.TimeTo.ToString("H:mm")</td>
-                        <td>@member.Location</td>
+                        <td>@member.LocationName</td>
                         <td>@member.Note</td>
                     </tr>
                 }
@@ -84,7 +84,7 @@
 @if (Model.Context.CanEdit)
 {
     <form method="post">
-        @Html.EditorFor(model => model.Input)
+        @Html.EditorFor(model => model.Input, new { LocationIdItems = Model.LocationIdItems })
 
         <footer>
             <button type="submit" class="button">
