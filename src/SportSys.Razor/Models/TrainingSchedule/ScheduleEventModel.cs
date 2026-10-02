@@ -60,8 +60,13 @@ public static class ScheduleEventModelFactory
             match.LocationName,
         };
 
+        if (match.MatchStateName is not null)
+            tooltipParts.Add(match.MatchStateName);
+
         if (!string.IsNullOrWhiteSpace(match.Note))
             tooltipParts.Add(match.Note);
+
+        var stateInfo = MatchStateVisual.Get(match.MatchStateId);
 
         return new ScheduleEventModel
         {
@@ -75,6 +80,8 @@ public static class ScheduleEventModelFactory
             TimeFrom = match.TimeFrom,
             TimeTo = match.TimeTo,
             Tooltip = string.Join(" · ", tooltipParts),
+            StateIcon = stateInfo?.Icon,
+            StateTooltip = match.MatchStateName,
         };
     }
 

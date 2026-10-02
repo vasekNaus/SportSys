@@ -26,6 +26,8 @@ public partial class Match : SportEvent
 
     public int MatchTypeId { get; set; }
 
+    public int? MatchStateId { get; set; }
+
     [ForeignKey(nameof(HomeTeamId))]
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]
     public virtual Team HomeTeam { get; set; } = null!;
@@ -36,4 +38,7 @@ public partial class Match : SportEvent
 
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]
     public virtual sportSchema.MatchType MatchType { get; set; } = null!;
+
+    [DeleteBehavior(DeleteBehavior.ClientSetNull)]
+    public virtual sportSchema.MatchState? MatchState { get; set; }
 }

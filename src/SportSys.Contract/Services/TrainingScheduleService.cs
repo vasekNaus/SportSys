@@ -146,14 +146,16 @@ public class TrainingScheduleService
                 TrainingPhaseName = t.TrainingPhase.Name,
                 TrainingStateId = t.TrainingStateId,
                 TrainingStateName = t.TrainingState.Name,
-                CoachFullNames = t.CoachTrainings
-                    .Select(c => c.Coach.DisplayName ?? string.Empty)
-                    .Distinct()
-                    .OrderBy(x => x)
-                    .ToList(),
                 Note = t.Note,
             })
             .ToListAsync(ct);
+
+        // CoachFullNames se načítá samostatným dotazem, protože EF Core
+        // neumí přeložit korelovaný poddotaz s Distinct/OrderBy uvnitř
+        // projekce, pokud stejná projekce obsahuje i podmíněnou (ternary)
+        // referenční navigaci (GroupMembership) — viz stejný vzor u
+        // AssignCoachFullNamesAsync pro tréninkové plány.
+        await AssignCoachFullNamesAsync(trainings, ct);
 
         ApplyVisualizationGrouping(trainings, mergeOverlapping);
 
@@ -222,6 +224,36 @@ public class TrainingScheduleService
         ApplyVisualizationGrouping(orderedPlans, mergeOverlapping);
 
         return orderedPlans;
+    }
+
+    private async Task AssignCoachFullNamesAsync(
+        IReadOnlyList<TrainingScheduleItemDto> trainings,
+        CancellationToken ct)
+    {
+        if (trainings.Count == 0)
+            return;
+
+        var trainingIds = trainings.Select(t => t.Id).ToList();
+
+        var assignments = await _db.CoachTrainings
+            .Where(c => trainingIds.Contains(c.TrainingId))
+            .Select(c => new
+            {
+                c.TrainingId,
+                CoachFullName = c.Coach.DisplayName ?? string.Empty,
+            })
+            .ToListAsync(ct);
+
+        var assignmentsByTrainingId = assignments
+            .ToLookup(a => a.TrainingId, a => a.CoachFullName);
+
+        foreach (var training in trainings)
+        {
+            training.CoachFullNames = assignmentsByTrainingId[training.Id]
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+        }
     }
 
     private async Task AssignCoachFullNamesAsync(

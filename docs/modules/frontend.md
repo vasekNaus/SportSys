@@ -213,6 +213,34 @@ Vanilla JS bez frameworků. JS pouze tam, kde server-side logiku nelze použít.
 
 ---
 
+## Fulltextový multiselect (`<search-multiselect>`)
+
+Pro víceformový výběr s fulltextovým hledáním nad položkami (např. výběr
+trenérů) se používá vlastní TagHelper postavený nad knihovnou
+[Tom Select](https://tom-select.js.org/) (CDN, verze `2.6.2`,
+`tom-select.complete.min.js` — zahrnuje plugin `remove_button`).
+
+```cshtml
+<search-multiselect asp-for="Input.MemberCoachAssignments[i].CoachIds"
+                     asp-items="Model.Context.AvailableCoachItems"
+                     placeholder="Vyber trenéry..."
+                     aria-labelledby="CoachesLabel" />
+```
+
+- Chová se jako standardní `<select multiple>` generovaný přes
+  `IHtmlGenerator.GenerateSelect` — respektuje ModelState i validační chyby
+  (aria-invalid, zachování odeslaného výběru po neúspěšné validaci).
+- Atributy: `asp-for` (povinný, kolekce hodnot), `asp-items` (`IEnumerable<SelectListItem>`),
+  `placeholder` (nepovinný), `remove-label` (výchozí `"Odebrat"`), `disabled`.
+- Klientská inicializace se spouští automaticky v `site.js` pro
+  `select[data-search-multiselect]`, vzhled definuje `Styles/_multiselect.scss`
+  nad existujícími `--color-*` tokeny (bez výchozího Tom Select CSS).
+- Implementace: `src/SportSys.Razor/TagHelpers/SearchMultiSelectTagHelper.cs`.
+- TagHelper je registrován globálně (`@addTagHelper *, SportSys.Razor` ve
+  všech `_ViewImports.cshtml`), lze jej použít v libovolné oblasti.
+
+---
+
 ## Klíčové komponenty
 
 | Komponenta | Cesta |
@@ -222,6 +250,7 @@ Vanilla JS bez frameworků. JS pouze tam, kde server-side logiku nelze použít.
 | Design tokeny | `src/SportSys.Razor/Styles/_vars.scss` |
 | EditorTemplates | `src/SportSys.Razor/Pages/Shared/EditorTemplates/` |
 | Rozvrhová komponenta | `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/` |
+| Fulltextový multiselect | `src/SportSys.Razor/TagHelpers/SearchMultiSelectTagHelper.cs` |
 
 ## Rozhraní
 
@@ -233,6 +262,7 @@ jednotlivých modulech. Sdílené CSS kontrakty tvoří třídy `button`, `grid`
 
 - Razor závisí pouze na `SportSys.Contract`.
 - Font Awesome 6 je načítán z CDN.
+- Tom Select 2.6.2 (`<search-multiselect>`) je načítán z CDN.
 
 ## Závislosti
 

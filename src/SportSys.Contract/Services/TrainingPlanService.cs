@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using SportSys.Contract.Models;
+using SportSys.Contract.Models.hr;
 using SportSys.Database.Context;
 using SportSys.Database.Models.sport;
 using System.Data;
@@ -35,30 +36,51 @@ public class TrainingPlanService
         if (target is null)
             return null;
 
-        var members = await CreateMembersQuery(id, target.GroupId)
+        var memberRows = await CreateMembersQuery(id, target.GroupId)
             .AsNoTracking()
             .OrderBy(plan => plan.SeasonCategory.Order)
             .ThenBy(plan => plan.SeasonCategoryName)
             .ThenBy(plan => plan.Id)
-            .Select(plan => new TrainingPlanEditMemberDto
-            {
-                Id = plan.Id,
-                SeasonCategoryOrder = plan.SeasonCategory.Order,
-                SeasonCategoryName = plan.SeasonCategoryName,
-                TrainingTypeName = plan.TrainingType.Name,
-                From = plan.From,
-                To = plan.To,
-                DayName = plan.DayName,
-                TimeFrom = plan.TimeFrom,
-                TimeTo = plan.TimeTo,
-                Location = plan.Location,
-            })
+            .Select(plan => new MemberRow(
+                plan.Id,
+                plan.SeasonCategory.Order,
+                plan.SeasonCategoryName,
+                plan.TrainingType.Name,
+                plan.From,
+                plan.To,
+                plan.DayName,
+                plan.TimeFrom,
+                plan.TimeTo,
+                plan.Location))
             .ToListAsync(ct);
 
-        if (members.Count == 0)
+        if (memberRows.Count == 0)
             return null;
 
+        var memberIds = memberRows.Select(row => row.Id).ToList();
+        var coachIdsByMember = await LoadCoachIdsByMemberAsync(memberIds, ct);
+
+        var members = memberRows
+            .Select(row => new TrainingPlanEditMemberDto
+            {
+                Id = row.Id,
+                SeasonCategoryOrder = row.SeasonCategoryOrder,
+                SeasonCategoryName = row.SeasonCategoryName,
+                TrainingTypeName = row.TrainingTypeName,
+                From = row.From,
+                To = row.To,
+                DayName = row.DayName,
+                TimeFrom = row.TimeFrom,
+                TimeTo = row.TimeTo,
+                Location = row.Location,
+                CoachIds = coachIdsByMember.TryGetValue(row.Id, out var coachIds)
+                    ? coachIds
+                    : [],
+            })
+            .ToList();
+
         var selected = members.First(member => member.Id == id);
+        var availableCoaches = await GetAvailableCoachesAsync(ct);
 
         return new TrainingPlanEditContextDto
         {
@@ -72,11 +94,53 @@ public class TrainingPlanService
                 TimeFrom = selected.TimeFrom,
                 TimeTo = selected.TimeTo,
                 Location = selected.Location,
+                SelectedCoachIds = selected.CoachIds.ToList(),
+                MemberCoachAssignments = target.GroupId.HasValue
+                    ? members
+                        .Select(member => new TrainingPlanMemberCoachInputDto
+                        {
+                            TrainingPlanId = member.Id,
+                            CoachIds = member.CoachIds.ToList(),
+                        })
+                        .ToList()
+                    : [],
             },
             Members = members,
+            AvailableCoaches = availableCoaches,
             IsGrouped = target.GroupId.HasValue,
             CanEdit = HaveConsistentEditableValues(members),
         };
+    }
+
+    private Task<List<CoachSelectItem>> GetAvailableCoachesAsync(CancellationToken ct)
+        => _db.Coaches
+            .AsNoTracking()
+            .OrderBy(coach => coach.DisplayName ?? coach.UserName ?? coach.Email)
+            .ThenBy(coach => coach.PersonalNumber)
+            .Select(coach => new CoachSelectItem
+            {
+                Id = coach.Id,
+                DisplayName = coach.DisplayName ?? coach.UserName ?? coach.Email ?? coach.Id.ToString(),
+                Email = coach.Email,
+                PersonalNumber = coach.PersonalNumber,
+            })
+            .ToListAsync(ct);
+
+    private async Task<Dictionary<int, List<int>>> LoadCoachIdsByMemberAsync(
+        IReadOnlyCollection<int> memberIds,
+        CancellationToken ct)
+    {
+        var assignments = await _db.CoachTrainingPlans
+            .AsNoTracking()
+            .Where(assignment => memberIds.Contains(assignment.TrainingPlanId))
+            .Select(assignment => new { assignment.TrainingPlanId, assignment.CoachId })
+            .ToListAsync(ct);
+
+        return assignments
+            .GroupBy(assignment => assignment.TrainingPlanId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(assignment => assignment.CoachId).Distinct().ToList());
     }
 
     public async Task<TrainingPlanUpdateResult> UpdateAsync(
@@ -123,6 +187,12 @@ public class TrainingPlanService
             .OrderBy(plan => plan.Id)
             .ToListAsync(ct);
 
+        var memberIds = plans.Select(plan => plan.Id).ToList();
+        var existingAssignments = await _db.CoachTrainingPlans
+            .Where(assignment => memberIds.Contains(assignment.TrainingPlanId))
+            .ToListAsync(ct);
+        var assignmentsByPlan = existingAssignments.ToLookup(assignment => assignment.TrainingPlanId);
+
         var currentMembers = plans
             .Select(plan => new TrainingPlanEditMemberDto
             {
@@ -136,6 +206,10 @@ public class TrainingPlanService
                 TimeFrom = plan.TimeFrom,
                 TimeTo = plan.TimeTo,
                 Location = plan.Location,
+                CoachIds = assignmentsByPlan[plan.Id]
+                    .Select(assignment => assignment.CoachId)
+                    .Distinct()
+                    .ToList(),
             })
             .ToList();
 
@@ -149,6 +223,19 @@ public class TrainingPlanService
         if (!HaveConsistentEditableValues(currentMembers))
             return TrainingPlanUpdateResult.GroupInconsistent;
 
+        var availableCoachIds = await _db.Coaches
+            .Select(coach => coach.Id)
+            .ToListAsync(ct);
+
+        var requestedCoachIdsByPlan = BuildRequestedCoachIdsByPlan(
+            dto,
+            groupId,
+            memberIds,
+            availableCoachIds);
+
+        if (HasDuplicateCoachAcrossPlans(requestedCoachIdsByPlan))
+            return TrainingPlanUpdateResult.DuplicateCoachAssignment;
+
         foreach (var plan in plans)
         {
             plan.From = dto.From;
@@ -159,10 +246,153 @@ public class TrainingPlanService
             plan.Location = dto.Location;
         }
 
+        foreach (var plan in plans)
+        {
+            var selectedCoachIds = requestedCoachIdsByPlan.TryGetValue(plan.Id, out var ids)
+                ? ids
+                : [];
+
+            SynchronizeCoachAssignments(
+                plan.Id,
+                dto.From,
+                dto.To,
+                selectedCoachIds,
+                assignmentsByPlan[plan.Id].ToList());
+        }
+
         await _db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return TrainingPlanUpdateResult.Success;
     }
+
+    /// <summary>
+    /// Sestaví normalizovaný výběr trenérů pro každý `TrainingPlanId` ve
+    /// skupině. U spojeného plánu se vstup čte z
+    /// <see cref="TrainingPlanEditDto.MemberCoachAssignments"/>, a to jen
+    /// pro ID skutečně existujících členů (<paramref name="memberIds"/>) —
+    /// položky pro cizí/neexistující ID z requestu se ignorují. U
+    /// nespojeného plánu se použije <see cref="TrainingPlanEditDto.SelectedCoachIds"/>
+    /// pro jediný `dto.Id`.
+    /// </summary>
+    internal static Dictionary<int, List<int>> BuildRequestedCoachIdsByPlan(
+        TrainingPlanEditDto dto,
+        Guid? groupId,
+        IReadOnlyCollection<int> memberIds,
+        IEnumerable<int> availableCoachIds)
+    {
+        var available = availableCoachIds.ToList();
+
+        if (!groupId.HasValue)
+        {
+            return new Dictionary<int, List<int>>
+            {
+                [dto.Id] = NormalizeCoachIds(dto.SelectedCoachIds, available),
+            };
+        }
+
+        var memberIdSet = memberIds.ToHashSet();
+        var result = memberIds.ToDictionary(id => id, _ => new List<int>());
+
+        foreach (var assignment in dto.MemberCoachAssignments)
+        {
+            if (!memberIdSet.Contains(assignment.TrainingPlanId))
+                continue;
+
+            result[assignment.TrainingPlanId] = NormalizeCoachIds(assignment.CoachIds, available);
+        }
+
+        return result;
+    }
+
+    internal static bool HasDuplicateCoachAcrossPlans(
+        IReadOnlyDictionary<int, List<int>> coachIdsByPlan)
+    {
+        var seen = new HashSet<int>();
+        foreach (var coachIds in coachIdsByPlan.Values)
+        {
+            foreach (var coachId in coachIds)
+            {
+                if (!seen.Add(coachId))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void SynchronizeCoachAssignments(
+        int trainingPlanId,
+        DateOnly validFrom,
+        DateOnly validTo,
+        IReadOnlyCollection<int> selectedCoachIds,
+        IReadOnlyCollection<CoachTrainingPlan> existingAssignments)
+    {
+        var diff = ComputeCoachAssignmentDiff(
+            selectedCoachIds,
+            existingAssignments.Select(assignment => assignment.CoachId).Distinct().ToList());
+
+        var assignmentsByCoach = existingAssignments.ToLookup(assignment => assignment.CoachId);
+
+        foreach (var coachId in diff.ToRemove)
+            _db.CoachTrainingPlans.RemoveRange(assignmentsByCoach[coachId]);
+
+        foreach (var coachId in diff.ToKeep)
+        {
+            var rows = assignmentsByCoach[coachId].ToList();
+            var matching = rows.FirstOrDefault(
+                assignment => assignment.ValidFrom == validFrom && assignment.ValidTo == validTo);
+
+            _db.CoachTrainingPlans.RemoveRange(
+                matching is null ? rows : rows.Where(assignment => assignment != matching));
+
+            if (matching is null)
+                _db.CoachTrainingPlans.Add(
+                    CreateCoachTrainingPlan(trainingPlanId, validFrom, validTo, coachId));
+        }
+
+        _db.CoachTrainingPlans.AddRange(
+            diff.ToAdd.Select(coachId =>
+                CreateCoachTrainingPlan(trainingPlanId, validFrom, validTo, coachId)));
+    }
+
+    private static CoachTrainingPlan CreateCoachTrainingPlan(
+        int trainingPlanId, DateOnly validFrom, DateOnly validTo, int coachId)
+        => new()
+        {
+            CoachId = coachId,
+            TrainingPlanId = trainingPlanId,
+            ValidFrom = validFrom,
+            ValidTo = validTo,
+        };
+
+    internal static List<int> NormalizeCoachIds(
+        IEnumerable<int> requestedCoachIds,
+        IEnumerable<int> availableCoachIds)
+    {
+        var available = availableCoachIds.ToHashSet();
+        return requestedCoachIds
+            .Where(available.Contains)
+            .Distinct()
+            .ToList();
+    }
+
+    internal static CoachAssignmentDiff ComputeCoachAssignmentDiff(
+        IReadOnlyCollection<int> selectedCoachIds,
+        IReadOnlyCollection<int> existingCoachIds)
+    {
+        var selected = selectedCoachIds.ToHashSet();
+        var existing = existingCoachIds.ToHashSet();
+
+        return new CoachAssignmentDiff(
+            ToAdd: selected.Where(id => !existing.Contains(id)).ToList(),
+            ToKeep: selected.Where(existing.Contains).ToList(),
+            ToRemove: existing.Where(id => !selected.Contains(id)).ToList());
+    }
+
+    internal sealed record CoachAssignmentDiff(
+        List<int> ToAdd,
+        List<int> ToKeep,
+        List<int> ToRemove);
 
     private IQueryable<TrainingPlan> CreateMembersQuery(int id, Guid? groupId)
         => groupId.HasValue
@@ -208,7 +438,8 @@ public class TrainingPlanService
                     member.DayName,
                     member.TimeFrom,
                     member.TimeTo,
-                    member.Location))
+                    member.Location,
+                    member.CoachIds.Distinct().OrderBy(id => id).ToList()))
                 .ToList());
 
         var bytes = SHA256.HashData(
@@ -217,6 +448,17 @@ public class TrainingPlanService
     }
 
     private sealed record TrainingPlanTarget(Guid? GroupId);
+    private sealed record MemberRow(
+        int Id,
+        int SeasonCategoryOrder,
+        string SeasonCategoryName,
+        string TrainingTypeName,
+        DateOnly From,
+        DateOnly To,
+        string DayName,
+        TimeOnly TimeFrom,
+        TimeOnly TimeTo,
+        string Location);
     private sealed record TrainingPlanVersionSnapshot(
         Guid? GroupId,
         IReadOnlyList<TrainingPlanMemberVersion> Members);
@@ -227,5 +469,6 @@ public class TrainingPlanService
         string DayName,
         TimeOnly TimeFrom,
         TimeOnly TimeTo,
-        string Location);
+        string Location,
+        IReadOnlyList<int> CoachIds);
 }

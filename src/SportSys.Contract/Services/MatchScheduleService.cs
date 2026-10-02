@@ -19,13 +19,28 @@ public sealed class MatchScheduleService
         IReadOnlyCollection<string> categoryNames,
         DateOnly dateFrom,
         DateOnly dateTo,
+        IReadOnlyCollection<int>? matchStateIds = null,
+        IReadOnlyCollection<int>? locationIds = null,
+        IReadOnlyCollection<int>? matchTypeIds = null,
         CancellationToken ct = default)
     {
-        var matches = await _db.Matches
+        var query = _db.Matches
             .Where(match => match.SeasonId == seasonId
                 && categoryNames.Contains(match.SeasonCategoryName)
                 && match.Date >= dateFrom
-                && match.Date <= dateTo)
+                && match.Date <= dateTo);
+
+        if (matchStateIds is { Count: > 0 })
+            query = query.Where(match => match.MatchStateId.HasValue
+                && matchStateIds.Contains(match.MatchStateId.Value));
+
+        if (locationIds is { Count: > 0 })
+            query = query.Where(match => locationIds.Contains(match.LocationId));
+
+        if (matchTypeIds is { Count: > 0 })
+            query = query.Where(match => matchTypeIds.Contains(match.MatchTypeId));
+
+        var matches = await query
             .OrderBy(match => match.Date)
             .ThenBy(match => match.TimeFrom)
             .Select(match => new MatchProjection
@@ -46,10 +61,36 @@ public sealed class MatchScheduleService
                 HomeTeamName = match.HomeTeam.Name,
                 AwayTeamName = match.AwayTeam.Name,
                 Result = match.Result,
+                MatchStateId = match.MatchStateId,
+                MatchStateName = match.MatchState == null ? null : match.MatchState.Name,
             })
             .ToListAsync(ct);
 
         return matches.Select(CreateDto).ToList();
+    }
+
+    public async Task<List<LookupSelectItem>> GetMatchStatesAsync(CancellationToken ct = default)
+    {
+        return await _db.MatchStates
+            .OrderBy(state => state.Id)
+            .Select(state => new LookupSelectItem
+            {
+                Id = state.Id,
+                Name = state.Name,
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<LookupSelectItem>> GetMatchTypesAsync(CancellationToken ct = default)
+    {
+        return await _db.MatchTypes
+            .OrderBy(type => type.Id)
+            .Select(type => new LookupSelectItem
+            {
+                Id = type.Id,
+                Name = type.Name,
+            })
+            .ToListAsync(ct);
     }
 
     internal static MatchScheduleItemDto CreateDto(MatchProjection match)
@@ -91,6 +132,8 @@ public sealed class MatchScheduleService
             IsHome = homeIsOwnTeam,
             HomeGoals = match.Result?.HomeGoals,
             AwayGoals = match.Result?.AwayGoals,
+            MatchStateId = match.MatchStateId,
+            MatchStateName = match.MatchStateName,
         };
     }
 
@@ -134,5 +177,7 @@ public sealed class MatchScheduleService
         public required string HomeTeamName { get; init; }
         public required string AwayTeamName { get; init; }
         public MatchResult? Result { get; init; }
+        public int? MatchStateId { get; init; }
+        public string? MatchStateName { get; init; }
     }
 }

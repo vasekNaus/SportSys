@@ -66,6 +66,12 @@ public class EditModel : PageModel
                     "Spojené tréninkové plány nemají stejné hodnoty a nelze je společně editovat.");
                 return await ReloadPageAsync(Input.Id, ct);
 
+            case TrainingPlanUpdateResult.DuplicateCoachAssignment:
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Stejný trenér je vybrán u více spojených tréninků. Každý trenér může být přiřazen jen k jednomu tréninku ve skupině.");
+                return await ReloadPageAsync(Input.Id, ct);
+
             case TrainingPlanUpdateResult.Conflict:
                 ModelState.Clear();
                 ModelState.AddModelError(

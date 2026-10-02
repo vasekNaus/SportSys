@@ -11,4 +11,6 @@ public sealed class MatchScheduleItemDto : SportEventDto
     public bool IsHome { get; set; }
     public int? HomeGoals { get; set; }
     public int? AwayGoals { get; set; }
+    public int? MatchStateId { get; set; }
+    public string? MatchStateName { get; set; }
 }

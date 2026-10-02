@@ -81,10 +81,49 @@ public class MatchScheduleServiceTests
         Assert.NotNull(matchType?.FindProperty(nameof(Match.TimeTo)));
     }
 
+    [Fact]
+    public void CreateDto_PropagatesMatchState()
+    {
+        var projection = CreateProjection(
+            homeTeam: "HC Klatovy",
+            awayTeam: "HC Plzeň",
+            matchStateId: 2,
+            matchStateName: "Potvrzený");
+
+        var dto = MatchScheduleService.CreateDto(projection);
+
+        Assert.Equal(2, dto.MatchStateId);
+        Assert.Equal("Potvrzený", dto.MatchStateName);
+    }
+
+    [Fact]
+    public void CreateDto_WhenMatchStateIsNotSet_ReturnsNull()
+    {
+        var dto = MatchScheduleService.CreateDto(
+            CreateProjection(homeTeam: "HC Klatovy", awayTeam: "HC Plzeň"));
+
+        Assert.Null(dto.MatchStateId);
+        Assert.Null(dto.MatchStateName);
+    }
+
+    [Fact]
+    public void Model_ConfiguresMatchStateIdWithDefaultValueOfPlan()
+    {
+        using var db = CreateDbContext();
+        var matchType = db.Model.FindEntityType(typeof(Match));
+        var matchStateId = matchType?.FindProperty(nameof(Match.MatchStateId));
+
+        Assert.NotNull(matchStateId);
+        Assert.True(matchStateId.IsNullable);
+        Assert.Equal("(1)", matchStateId.GetDefaultValueSql());
+    }
+
     private static MatchScheduleService.MatchProjection CreateProjection(
         string homeTeam,
         string awayTeam,
-        string competitionTeamName = "HC Klatovy")
+        string competitionTeamName = "HC Klatovy",
+        int? matchStateId = null,
+        string? matchStateName = null)
         => new()
         {
             Id = 15,
@@ -107,6 +146,8 @@ public class MatchScheduleServiceTests
                 HomeGoals = 3,
                 AwayGoals = 2,
             },
+            MatchStateId = matchStateId,
+            MatchStateName = matchStateName,
         };
 
     private static SportSysDbContext CreateDbContext()

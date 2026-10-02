@@ -126,3 +126,27 @@
         });
     });
 })();
+
+// ── Víceúběr s fulltextovým vyhledáváním (Tom Select) ────────────────────────
+
+(function () {
+    if (typeof TomSelect === 'undefined') return;
+
+    document.querySelectorAll('select[data-search-multiselect]').forEach(function (select) {
+        new TomSelect(select, {
+            plugins: {
+                remove_button: { title: select.dataset.removeLabel || 'Odebrat' },
+                // Vyhledávací pole se šíří jen podle zadaného textu, takže
+                // zůstává v řádku s vybranými hodnotami místo vlastního řádku.
+                input_autogrow: {},
+            },
+            placeholder: select.dataset.placeholder || '',
+            searchField: ['text'],
+            maxItems: null,
+            closeAfterSelect: false,
+            // Po výběru položky vymaže rozepsaný hledaný text (jinak
+            // zůstává viditelný i po přidání položky do výběru).
+            clearAfterSelect: true,
+        });
+    });
+})();

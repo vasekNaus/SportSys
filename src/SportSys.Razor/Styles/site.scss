@@ -4,6 +4,7 @@
 @use 'vars';      // CSS Custom Properties (tokeny) + SCSS proměnné
 @use 'layout';    // Reset, html/body, header, nav, main, footer
 @use 'forms';     // Tlačítka, formuláře, validace
+@use 'multiselect'; // Víceúběr s fulltextovým vyhledáváním (Tom Select)
 @use 'grid';      // table.grid
 @use 'details';   // table.details
 @use 'modal';     // CSS :target modály

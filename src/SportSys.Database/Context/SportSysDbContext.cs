@@ -49,6 +49,8 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
 
   public virtual DbSet<MatchType> MatchTypes { get; set; }
 
+  public virtual DbSet<MatchState> MatchStates { get; set; }
+
   public virtual DbSet<Team> Teams { get; set; }
 
   public virtual DbSet<ParticipationType> ParticipationTypes { get; set; }

@@ -1,0 +1,146 @@
+@use 'vars' as *;
+
+// =================================================================
+// Víceúběr s fulltextovým vyhledáváním (Tom Select)
+// Vlastní téma nad vygenerovanými třídami Tom Select — výchozí
+// tom-select.css se nenačítá, veškerý vzhled vychází z barevných
+// tokenů definovaných v _vars.scss (shoda se zbytkem formulářů).
+// =================================================================
+
+// Po inicializaci přidá Tom Select původnímu <select> třídu
+// ts-hidden-accessible — bez výchozího tom-select.css ale zůstává
+// viditelný. Skrýt ho vizuálně, při zachování pro čtečky obrazovky
+// (standardní "visually hidden" vzor, žádné display:none).
+.ts-hidden-accessible {
+  position:    absolute !important;
+  width:       1px !important;
+  height:      1px !important;
+  padding:     0 !important;
+  margin:      -1px !important;
+  overflow:    hidden !important;
+  clip:        rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border:      0 !important;
+}
+
+.ts-wrapper {
+  display:     block;
+  width:       100%;
+  font-family: $FontFamily;
+
+  .ts-control {
+    display:          flex;
+    width:            100%;
+    flex-wrap:        wrap;
+    gap:               .25rem;
+    align-items:       center;
+    min-height:        2.4rem;
+    padding:           .25rem .5rem;
+    border:            1px solid var(--color-border-strong);
+    border-radius:     4px;
+    background-color:  var(--color-surface-1);
+    color:             var(--color-text-primary);
+    cursor:            text;
+    transition:        border-color .15s;
+
+    input {
+      flex:            0 1 auto;
+      min-width:       1px;
+      width:           auto;
+      padding:         0;
+      border:          none;
+      border-radius:   0;
+      color:           var(--color-text-primary);
+      background:      transparent;
+
+      &:focus {
+        border-color: transparent;
+        outline:      none;
+      }
+    }
+
+    > * {
+      margin: .1rem 0;
+    }
+  }
+
+  // Dokud nejsou vybrané žádné hodnoty, ať pole zabírá celý řádek — je
+  // na něm vidět placeholder jako u běžného textového vstupu. Plugin
+  // input_autogrow ho jinak zmenší jen na šířku psaného textu, aby se
+  // vešel vedle existujících položek na stejný řádek.
+  &:not(.has-items) .ts-control input {
+    flex:      1 1 auto;
+    min-width: 100%;
+  }
+
+  &.focus .ts-control {
+    outline:        3px solid var(--color-border-focus);
+    outline-offset: 1px;
+    border-color:   var(--color-border-focus);
+  }
+
+  &.disabled .ts-control {
+    background-color: var(--color-surface-2);
+    color:            var(--color-text-disabled);
+    cursor:           not-allowed;
+  }
+
+  .item {
+    display:          inline-flex;
+    align-items:       center;
+    gap:               .35rem;
+    padding:          .15rem .5rem;
+    border-radius:     999px;
+    background-color: var(--color-interactive-selected);
+    color:            var(--color-text-primary);
+    font-size:        .9rem;
+
+    .remove {
+      display:         inline-flex;
+      align-items:      center;
+      justify-content:  center;
+      border-left:      1px solid var(--color-border-default);
+      padding-left:      .35rem;
+      color:            var(--color-text-muted);
+      text-decoration:  none;
+      cursor:           pointer;
+
+      &:hover {
+        color: var(--color-error-text);
+      }
+    }
+  }
+
+  .ts-dropdown {
+    border:            1px solid var(--color-border-strong);
+    border-radius:     4px;
+    background-color:  var(--color-surface-1);
+    box-shadow:        var(--shadow-md);
+    margin-top:        .25rem;
+
+    .option {
+      padding:  .4rem .6rem;
+      color:    var(--color-text-primary);
+      cursor:   pointer;
+    }
+
+    .active {
+      background-color: var(--color-interactive-hover);
+    }
+
+    .selected {
+      background-color: var(--color-interactive-selected);
+    }
+
+    .no-results {
+      padding: .4rem .6rem;
+      color:   var(--color-text-muted);
+    }
+  }
+}
+
+// Validační chybový stav — shoda s .input-validation-error u ostatních
+// formulářových prvků v _forms.scss
+select.input-validation-error + .ts-wrapper .ts-control {
+  border-color: var(--color-error);
+}

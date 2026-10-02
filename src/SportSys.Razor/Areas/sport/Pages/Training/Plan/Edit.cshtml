@@ -47,38 +47,6 @@
             Dokud nebudou hodnoty sjednocené, nelze skupinu editovat.
         </div>
     }
-
-    <div class="training-edit-members">
-        <table class="details">
-            <thead>
-                <tr>
-                    <th>Kategorie</th>
-                    <th>Typ</th>
-                    <th>Platnost od</th>
-                    <th>Platnost do</th>
-                    <th>Den</th>
-                    <th>Čas od</th>
-                    <th>Čas do</th>
-                    <th>Lokalita</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var member in Model.Context.Members)
-                {
-                    <tr>
-                        <td>@member.SeasonCategoryName</td>
-                        <td>@member.TrainingTypeName</td>
-                        <td>@member.From.ToString("d")</td>
-                        <td>@member.To.ToString("d")</td>
-                        <td>@member.DayDisplayName</td>
-                        <td>@member.TimeFrom.ToString("H:mm")</td>
-                        <td>@member.TimeTo.ToString("H:mm")</td>
-                        <td>@member.Location</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
 }
 
 <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
@@ -86,9 +54,53 @@
 @if (Model.Context.CanEdit)
 {
     <form method="post">
+        @if (Model.Context.IsGrouped)
+        {
+            <div class="training-edit-members">
+                <table class="details">
+                    <thead>
+                        <tr>
+                            <th>Kategorie</th>
+                            <th>Trenér</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Context.Members.Count; i++)
+                        {
+                            var member = Model.Context.Members[i];
+                            var memberLabelId = $"MemberCoachesLabel_{member.Id}";
+                            <tr>
+                                <td>@member.SeasonCategoryName</td>
+                                <td>
+                                    <input type="hidden"
+                                           name="Input.MemberCoachAssignments[@i].TrainingPlanId"
+                                           value="@member.Id" />
+                                    <search-multiselect asp-for="Input.MemberCoachAssignments[i].CoachIds"
+                                                         asp-items="Model.Context.AvailableCoachItems"
+                                                         placeholder="Vyber trenéry..."
+                                                         aria-labelledby="@memberLabelId" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
         @Html.EditorFor(
             model => model.Input,
             new { DayNameItems = Model.DayNameItems })
+
+        @if (!Model.Context.IsGrouped)
+        {
+            <div class="field">
+                <span class="schedule-filter-label" id="CoachesLabel">Trenéři</span>
+                <search-multiselect asp-for="Input.SelectedCoachIds"
+                                     asp-items="Model.Context.AvailableCoachItems"
+                                     placeholder="Vyber trenéry..."
+                                     aria-labelledby="CoachesLabel" />
+            </div>
+        }
 
         <footer>
             <button type="submit" class="button">

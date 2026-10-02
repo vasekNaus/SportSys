@@ -29,6 +29,8 @@ public class IndexModel : PageModel
     public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
     public List<LookupSelectItem> TrainingStates { get; private set; } = [];
     public List<LookupSelectItem> Locations { get; private set; } = [];
+    public List<LookupSelectItem> MatchStates { get; private set; } = [];
+    public List<LookupSelectItem> MatchTypes { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? SeasonId { get; set; }
@@ -46,6 +48,12 @@ public class IndexModel : PageModel
     public List<int> SelectedLocationIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
+    public List<int> SelectedMatchStateIds { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public List<int> SelectedMatchTypeIds { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
     public DateOnly? DateFrom { get; set; }
 
     [BindProperty(SupportsGet = true)]
@@ -56,6 +64,12 @@ public class IndexModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public bool MergeTrainings { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public bool ShowTrainings { get; set; } = true;
+
+    [BindProperty(SupportsGet = true)]
+    public bool ShowMatches { get; set; } = true;
 
     public ITrainingScheduleViewModel? ScheduleView { get; private set; }
     public bool HasExportableTrainings { get; private set; }
@@ -68,13 +82,20 @@ public class IndexModel : PageModel
 
         var filter = GetNormalizedFilter();
         var categories = GetSelectedCategoryNames();
-        var trainings = await LoadTrainingsAsync(filter, categories, ct);
-        var matches = await _matchService.GetMatchesAsync(
-            filter.SeasonId,
-            categories,
-            filter.DateFrom,
-            filter.DateTo,
-            ct);
+        var trainings = ShowTrainings
+            ? await LoadTrainingsAsync(filter, categories, ct)
+            : [];
+        var matches = ShowMatches
+            ? await _matchService.GetMatchesAsync(
+                filter.SeasonId,
+                categories,
+                filter.DateFrom,
+                filter.DateTo,
+                SelectedMatchStateIds,
+                SelectedLocationIds,
+                SelectedMatchTypeIds,
+                ct)
+            : [];
         HasExportableTrainings = trainings.Count > 0;
         ScheduleView = CreateScheduleView(trainings, matches, filter);
     }
@@ -89,13 +110,20 @@ public class IndexModel : PageModel
 
         var filter = GetNormalizedFilter();
         var categories = GetSelectedCategoryNames();
-        var trainings = await LoadTrainingsAsync(filter, categories, ct);
-        var matches = await _matchService.GetMatchesAsync(
-            filter.SeasonId,
-            categories,
-            filter.DateFrom,
-            filter.DateTo,
-            ct);
+        var trainings = ShowTrainings
+            ? await LoadTrainingsAsync(filter, categories, ct)
+            : [];
+        var matches = ShowMatches
+            ? await _matchService.GetMatchesAsync(
+                filter.SeasonId,
+                categories,
+                filter.DateFrom,
+                filter.DateTo,
+                SelectedMatchStateIds,
+                SelectedLocationIds,
+                SelectedMatchTypeIds,
+                ct)
+            : [];
         HasExportableTrainings = trainings.Count > 0;
         ScheduleView = CreateScheduleView(trainings, matches, filter);
 
@@ -120,6 +148,8 @@ public class IndexModel : PageModel
         TrainingTypes = await _service.GetTrainingTypesAsync(ct);
         TrainingStates = await _service.GetTrainingStatesAsync(ct);
         Locations = await _service.GetTrainingLocationsAsync(SelectedLocationIds, ct);
+        MatchStates = await _matchService.GetMatchStatesAsync(ct);
+        MatchTypes = await _matchService.GetMatchTypesAsync(ct);
 
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
         {
@@ -143,6 +173,18 @@ public class IndexModel : PageModel
         SelectedLocationIds = Locations
             .Where(location => requestedLocationIds.Contains(location.Id))
             .Select(location => location.Id)
+            .ToList();
+
+        var requestedMatchStateIds = SelectedMatchStateIds.ToHashSet();
+        SelectedMatchStateIds = MatchStates
+            .Where(state => requestedMatchStateIds.Contains(state.Id))
+            .Select(state => state.Id)
+            .ToList();
+
+        var requestedMatchTypeIds = SelectedMatchTypeIds.ToHashSet();
+        SelectedMatchTypeIds = MatchTypes
+            .Where(type => requestedMatchTypeIds.Contains(type.Id))
+            .Select(type => type.Id)
             .ToList();
 
         if (SeasonId.HasValue)
