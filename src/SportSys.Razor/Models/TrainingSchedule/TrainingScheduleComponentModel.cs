@@ -135,6 +135,7 @@ public class TrainingScheduleComponentModel
             EditPage = item.EditPage,
             Left = GetLeft(item.TimeFrom),
             Width = GetWidth(item.TimeFrom, item.TimeTo),
+            IsDryTraining = item.IsDryTraining,
             Color = CategoryColors.TryGetValue(item.ColorKey, out var color)
                 ? color
                 : "var(--color-text-muted)",
@@ -186,6 +187,7 @@ public class TrainingScheduleBlock
     public required string Tooltip { get; init; }
     public double Left { get; init; }
     public double Width { get; init; }
+    public bool IsDryTraining { get; init; }
     public string? StateIcon { get; init; }
     public string? StateTooltip { get; init; }
 }

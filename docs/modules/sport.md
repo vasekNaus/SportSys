@@ -110,13 +110,26 @@ Legenda se sestavuje z výsledných bloků, nikoliv přímo ze seznamu vybranýc
 kategorií. Spojený blok se proto v legendě zobrazí pod stejným názvem jako
 v rozvrhu, například `U12 + U14`, a každá kombinace je uvedena pouze jednou.
 
-Každý blok zobrazuje čtyři řádky: kategorie, čas, unikátní typy tréninku a
-unikátní osobní čísla přiřazených trenérů. Údaje spojeného bloku se agregují ze
-všech jeho členů a oddělují čárkou. Pokud trénink nemá přiřazeného trenéra,
-zobrazí se `-`. U plánů se zahrnou přiřazení z `CoachTrainingPlan`,
-jejichž interval platnosti se překrývá s intervalem `TrainingPlan.From–To`.
-Osobní číslo je dočasným identifikátorem do zavedení vazby `hr.Coach` na
-`identity.User`.
+Každý blok zobrazuje čtyři pevné řádky v tomto pořadí: kategorie, čas od–do
+(tučně, nejvýraznější informace v bloku), příjmení přiřazených trenérů a
+název lokality. Typ tréninku (led / suchá příprava) se v bloku nevypisuje
+textem — rozlišuje ho vizuální vykreslení pozadí: led má plnou barvu podle
+kategorie beze změny, suchá příprava stejnou barvu doplněnou o jemné
+diagonální šrafování (modifikátor `schedule-block--dry`, CSS
+`repeating-linear-gradient`, bez obrázků a bez JS). Příjmení trenéra se
+odvozuje jako poslední mezerou oddělené slovo z `User.DisplayName` — výpočet
+provádí jednou `TrainingScheduleService` (Contract) a předává přes DTO
+`SimpleCoachDto` (`FullName` + `LastName`), Razor vrstva už žádný řetězec
+neparsuje. Údaje spojeného bloku se agregují ze všech jeho členů a oddělují
+čárkou. Pokud trénink nemá přiřazeného trenéra, zobrazí se `-`. U plánů se
+zahrnou přiřazení z `CoachTrainingPlan`, jejichž interval platnosti se
+překrývá s intervalem `TrainingPlan.From–To`. Pokud spojený blok obsahuje
+položky s různým typem tréninku (led i suchá příprava), šrafování se
+nezobrazí a blok se vykreslí jako plná barva — stejný bezpečný fallback jako
+u smíšeného stavu tréninku (`HasMixedState`). Celá jména trenérů i text typu
+tréninku zůstávají dostupné v tooltipu bloku a v Excel exportu rozvrhu
+(`TrainingScheduleBlockData.CoachSummary`/`TrainingTypeSummary`), export se
+touto úpravou nemění.
 
 Zápasový blok používá stejnou časovou osu, ale zobrazuje kategorii, čas,
 soupeře a výsledek. Neznámý výsledek se zobrazuje jako `-`. Zápas nemá
@@ -162,6 +175,13 @@ ViewComponent převádí paritu na CSS variantu řádku a kombinuje ji s nezávi
 víkendovým zvýrazněním.
 
 ### Filtry Schedule
+
+Formulář je vizuálně seskupen do panelů: přepínač „Zobrazit v rozvrhu“ nahoře,
+pod ním panel „Společné filtry“ a dále (podle stavu přepínače) panely
+„Tréninky“ a „Zápasy“ vedle sebe s jemným barevným akcentem (bez vlivu na
+filtrovací logiku). Pod panely je akční lišta s odkazem „Vymazat filtry“
+(GET navigace na stránku bez parametrů, obnoví výchozí hodnoty všech filtrů)
+a tlačítkem „Použít filtry“.
 
 - přepínač „Zobrazit v rozvrhu“ — dva nezávislé checkboxy „Tréninky“ /
   „Zápasy“ (výchozí oba zapnuté); podle nich se zobrazují jen relevantní
@@ -266,6 +286,14 @@ skupiny, takže souběžná změna trenéra u jiného člena skupiny je detekov�
 jako konflikt.
 
 ### Filtry Plan
+
+Celý filtr je vizuálně obalen jedním panelem „Tréninky“ (ikona
+`fa-person-skating`, levý barevný akcent `--color-brand-primary`), shodně se
+stejnojmenným panelem na stránce Schedule — stránka Plan řeší jen tréninky,
+takže není potřeba dělit filtry na společné/specifické jako na Schedule.
+Vnořené Kategorie používají stejnou třídu `schedule-filter-categories--nested`
+jako na Schedule. Tlačítko „Zobrazit plán“ zůstává beze změny; stránka
+Plan nemá akci „Vymazat filtry“.
 
 - aktivní sezóna,
 - jedna nebo více aktivních kategorií,

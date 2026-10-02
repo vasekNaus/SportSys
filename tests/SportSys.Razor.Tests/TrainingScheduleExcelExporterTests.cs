@@ -262,8 +262,26 @@ public class TrainingScheduleExcelExporterTests
             LocationName = location,
             TrainingTypeName = trainingType,
             TrainingPhaseName = "Season",
-            CoachFullNames = coaches ?? [],
+            Coaches = (coaches ?? [])
+                .Select(fullName => new SimpleCoachDto
+                {
+                    FullName = fullName,
+                    LastName = ExtractLastName(fullName),
+                })
+                .ToList(),
             TrainingStateId = trainingStateId,
             TrainingStateName = trainingStateName,
         };
+
+    private static string ExtractLastName(string fullName)
+    {
+        var trimmed = fullName.Trim();
+        if (trimmed.Length == 0)
+            return string.Empty;
+
+        var lastSpaceIndex = trimmed.LastIndexOf(' ');
+        return lastSpaceIndex < 0
+            ? trimmed
+            : trimmed[(lastSpaceIndex + 1)..];
+    }
 }

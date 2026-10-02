@@ -195,6 +195,65 @@ $header-height:   1.75rem;
   }
 }
 
+// Vnořený fieldset uvnitř .schedule-filter-panel — bez vlastního rámečku,
+// aby nevznikl efekt "rámeček v rámečku".
+.schedule-filter-categories--nested {
+  border:        none;
+  padding:       0;
+  margin-bottom: 0;
+}
+
+// ── Panely filtrů (Společné / Tréninky / Zápasy) ─────────────────
+
+.schedule-filter-panel {
+  border:            1px solid var(--color-border-default);
+  border-left:       4px solid var(--color-border-default);
+  border-radius:     4px;
+  padding:           1rem;
+  margin-bottom:     1rem;
+  background-color:  var(--color-surface-1);
+}
+
+.schedule-filter-panel--training {
+  border-left-color: var(--color-brand-primary);
+
+  .schedule-filter-panel-title i {
+    color: var(--color-brand-primary);
+  }
+}
+
+.schedule-filter-panel--match {
+  border-left-color: var(--color-brand-secondary);
+
+  .schedule-filter-panel-title i {
+    color: var(--color-brand-secondary);
+  }
+}
+
+.schedule-filter-panel-title {
+  margin:      0 0 .75rem;
+  font-size:   1rem;
+  font-weight: 700;
+  color:       var(--color-text-primary);
+
+  i {
+    margin-right: .5rem;
+  }
+}
+
+// Panely Tréninky/Zápasy vedle sebe; osamocený panel vyplní celou šířku
+.schedule-filter-specific {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       1rem;
+
+  > .schedule-filter-panel {
+    flex:          1 1 320px;
+    min-width:     280px;
+    margin-bottom: 0;
+  }
+}
+
 .schedule-filter-checkboxes {
   display:   flex;
   flex-wrap: wrap;
@@ -221,7 +280,18 @@ $header-height:   1.75rem;
 }
 
 .schedule-filter-actions {
-  margin-top: .5rem;
+  display:         flex;
+  flex-wrap:       wrap;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             .75rem;
+  margin-top:      .5rem;
+}
+
+.schedule-filter-actions-primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap:     .75rem;
 }
 
 // ── Legenda kategorií ────────────────────────────────────────────
@@ -428,6 +498,16 @@ $header-height:   1.75rem;
   text-shadow: none;
 }
 
+.schedule-block--dry {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, .22) 0,
+    rgba(255, 255, 255, .22) 3px,
+    transparent 3px,
+    transparent 9px
+  );
+}
+
 // ── Editace tréninku ────────────────────────────────────────────
 
 .training-edit-summary {
@@ -465,9 +545,17 @@ $header-height:   1.75rem;
   }
 }
 
-.schedule-block-time,
-.schedule-block-type,
-.schedule-block-coaches {
+.schedule-block-time {
+  font-weight:   700;
+  font-size:     .6rem;
+  line-height:   1.2;
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-block-coaches,
+.schedule-block-location {
   font-size:    .6875rem;
   line-height:  1.2;
   opacity:      .9;

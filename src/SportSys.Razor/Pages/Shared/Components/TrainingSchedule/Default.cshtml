@@ -64,7 +64,7 @@
                         {
                             @if (block.EditItemId.HasValue)
                             {
-                                <a class="schedule-block schedule-block--editable"
+                                <a class="schedule-block schedule-block--editable @(block.IsDryTraining ? "schedule-block--dry" : null)"
                                    asp-area="sport"
                                    asp-page="@block.EditPage"
                                    asp-route-id="@block.EditItemId.Value"
@@ -76,8 +76,8 @@
                                     <span class="schedule-block-time">
                                         @block.TimeFrom.ToString("H:mm")–@block.TimeTo.ToString("H:mm")
                                     </span>
-                                    <span class="schedule-block-type">@block.DetailLine1</span>
-                                    <span class="schedule-block-coaches">@block.DetailLine2</span>
+                                    <span class="schedule-block-coaches">@block.DetailLine1</span>
+                                    <span class="schedule-block-location">@block.DetailLine2</span>
                                     @if (!string.IsNullOrEmpty(block.StateIcon))
                                     {
                                         <span class="schedule-block-state-icon"
@@ -88,15 +88,15 @@
                             }
                             else
                             {
-                                <div class="schedule-block"
+                                <div class="schedule-block @(block.IsDryTraining ? "schedule-block--dry" : null)"
                                      style="left: @block.Left.ToString("F2", invariant)%; width: @block.Width.ToString("F2", invariant)%; background-color: @block.Color"
                                      title="@block.Tooltip">
                                     <span class="schedule-block-cat">@block.Title</span>
                                     <span class="schedule-block-time">
                                         @block.TimeFrom.ToString("H:mm")–@block.TimeTo.ToString("H:mm")
                                     </span>
-                                    <span class="schedule-block-type">@block.DetailLine1</span>
-                                    <span class="schedule-block-coaches">@block.DetailLine2</span>
+                                    <span class="schedule-block-coaches">@block.DetailLine1</span>
+                                    <span class="schedule-block-location">@block.DetailLine2</span>
                                     @if (!string.IsNullOrEmpty(block.StateIcon))
                                     {
                                         <span class="schedule-block-state-icon"

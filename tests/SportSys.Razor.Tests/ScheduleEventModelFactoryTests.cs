@@ -102,6 +102,48 @@ public class ScheduleEventModelFactoryTests
         Assert.All(row.Lanes, lane => Assert.True(Assert.Single(lane).Width >= 3));
     }
 
+    [Fact]
+    public void CreateTrainings_MapsCoachSurnamesLocationAndIsDryTraining()
+    {
+        var events = ScheduleEventModelFactory.CreateTrainings(
+            [
+                CreateTraining(
+                    1,
+                    "U12",
+                    1,
+                    groupId: null,
+                    stateId: 1,
+                    stateName: "Plán",
+                    location: "Zimní stadion Klatovy",
+                    coaches: ["Jan Novák"],
+                    isDryTraining: true),
+            ],
+            allowEditing: false);
+
+        var scheduleEvent = Assert.Single(events);
+        Assert.Equal("Novák", scheduleEvent.DetailLine1);
+        Assert.Equal("Zimní stadion Klatovy", scheduleEvent.DetailLine2);
+        Assert.True(scheduleEvent.IsDryTraining);
+    }
+
+    [Fact]
+    public void CreateMatch_IsNeverDryTraining()
+    {
+        var scheduleEvent = ScheduleEventModelFactory.CreateMatch(new MatchScheduleItemDto
+        {
+            Id = 10,
+            SeasonCategoryName = "Dorost",
+            OpponentName = "HC Plzeň",
+            HomeTeamName = "HC Klatovy",
+            AwayTeamName = "HC Plzeň",
+            IsHome = true,
+            LocationName = "ZS Klatovy",
+            MatchTypeName = "Liga",
+        });
+
+        Assert.False(scheduleEvent.IsDryTraining);
+    }
+
     private static TrainingScheduleComponentModel CreateComponent(
         params ScheduleEventModel[] items)
         => TrainingScheduleComponentModel.Create(new TrainingScheduleViewModel(
@@ -139,9 +181,12 @@ public class ScheduleEventModelFactoryTests
         int id,
         string category,
         int categoryOrder,
-        Guid groupId,
+        Guid? groupId,
         int stateId,
-        string stateName)
+        string stateName,
+        string location = "",
+        IReadOnlyList<string>? coaches = null,
+        bool isDryTraining = false)
         => new()
         {
             Id = id,
@@ -151,9 +196,30 @@ public class ScheduleEventModelFactoryTests
             GroupId = groupId,
             SeasonCategoryName = category,
             SeasonCategoryOrder = categoryOrder,
+            LocationName = location,
             TrainingTypeName = "Led",
+            IsDryTraining = isDryTraining,
             TrainingPhaseName = "Sezóna",
+            Coaches = (coaches ?? [])
+                .Select(fullName => new SimpleCoachDto
+                {
+                    FullName = fullName,
+                    LastName = ExtractLastName(fullName),
+                })
+                .ToList(),
             TrainingStateId = stateId,
             TrainingStateName = stateName,
         };
+
+    private static string ExtractLastName(string fullName)
+    {
+        var trimmed = fullName.Trim();
+        if (trimmed.Length == 0)
+            return string.Empty;
+
+        var lastSpaceIndex = trimmed.LastIndexOf(' ');
+        return lastSpaceIndex < 0
+            ? trimmed
+            : trimmed[(lastSpaceIndex + 1)..];
+    }
 }

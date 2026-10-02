@@ -55,7 +55,7 @@ public class TrainingScheduleBlockFactoryTests
         Assert.Equal(new TimeOnly(18, 30), block.TimeTo);
         Assert.Equal(["A", "B"], block.TrainingTypeNames);
         Assert.Equal(["Led", "Suchá"], block.Locations);
-        Assert.Equal(["Novák", "Svoboda"], block.CoachNames);
+        Assert.Equal(["Novák", "Svoboda"], block.Coaches.Select(coach => coach.FullName));
         Assert.Equal(1, block.MinimumItemId);
     }
 
@@ -102,6 +102,97 @@ public class TrainingScheduleBlockFactoryTests
             TrainingScheduleBlockFactory.CreateBlocks([item]));
 
         Assert.Equal("-", block.CoachSummary);
+    }
+
+    [Fact]
+    public void CreateBlocks_CoachSurnameSummaryUsesLastNameNotFullName()
+    {
+        var item = CreateTraining(
+            1,
+            "U12",
+            1,
+            new TimeOnly(16, 0),
+            new TimeOnly(17, 0),
+            coaches: ["Jan Novák", "Svoboda"]);
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks([item]));
+
+        Assert.Equal("Jan Novák, Svoboda", block.CoachSummary);
+        Assert.Equal("Novák, Svoboda", block.CoachSurnameSummary);
+    }
+
+    [Fact]
+    public void CreateBlocks_SingleTrainingPropagatesIsDryTraining()
+    {
+        var item = CreateTraining(
+            1,
+            "U12",
+            1,
+            new TimeOnly(16, 0),
+            new TimeOnly(17, 0),
+            isDryTraining: true);
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks([item]));
+
+        Assert.True(block.IsDryTraining);
+    }
+
+    [Fact]
+    public void CreateBlocks_MergedTrainingsWithSameTrainingTypeKeepIsDryTraining()
+    {
+        var groupId = Guid.NewGuid();
+        var items = new ITrainingScheduleItem[]
+        {
+            CreateTraining(
+                2,
+                "U14",
+                2,
+                new TimeOnly(17, 0),
+                new TimeOnly(18, 0),
+                groupId,
+                isDryTraining: true),
+            CreateTraining(
+                1,
+                "U12",
+                1,
+                new TimeOnly(16, 0),
+                new TimeOnly(17, 0),
+                groupId,
+                isDryTraining: true),
+        };
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks(items));
+
+        Assert.True(block.IsDryTraining);
+    }
+
+    [Fact]
+    public void CreateBlocks_MergedTrainingsWithMixedTrainingTypeFallBackToNotDry()
+    {
+        var groupId = Guid.NewGuid();
+        var items = new ITrainingScheduleItem[]
+        {
+            CreateTraining(
+                2,
+                "U14",
+                2,
+                new TimeOnly(17, 0),
+                new TimeOnly(18, 0),
+                groupId,
+                isDryTraining: true),
+            CreateTraining(
+                1,
+                "U12",
+                1,
+                new TimeOnly(16, 0),
+                new TimeOnly(17, 0),
+                groupId,
+                isDryTraining: false),
+        };
+
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks(items));
+
+        Assert.False(block.IsDryTraining);
     }
 
     [Fact]
@@ -228,7 +319,8 @@ public class TrainingScheduleBlockFactoryTests
         IReadOnlyList<string>? coaches = null,
         Guid? visualizationGroupId = null,
         int? trainingStateId = null,
-        string? trainingStateName = null)
+        string? trainingStateName = null,
+        bool isDryTraining = false)
         => new()
         {
             Id = id,
@@ -242,9 +334,28 @@ public class TrainingScheduleBlockFactoryTests
             LocationId = 1,
             LocationName = location,
             TrainingTypeName = trainingType,
+            IsDryTraining = isDryTraining,
             TrainingPhaseName = "Season",
-            CoachFullNames = coaches ?? [],
+            Coaches = (coaches ?? [])
+                .Select(fullName => new SimpleCoachDto
+                {
+                    FullName = fullName,
+                    LastName = ExtractLastName(fullName),
+                })
+                .ToList(),
             TrainingStateId = trainingStateId,
             TrainingStateName = trainingStateName,
         };
+
+    private static string ExtractLastName(string fullName)
+    {
+        var trimmed = fullName.Trim();
+        if (trimmed.Length == 0)
+            return string.Empty;
+
+        var lastSpaceIndex = trimmed.LastIndexOf(' ');
+        return lastSpaceIndex < 0
+            ? trimmed
+            : trimmed[(lastSpaceIndex + 1)..];
+    }
 }

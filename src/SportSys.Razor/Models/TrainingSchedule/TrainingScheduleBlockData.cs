@@ -14,7 +14,7 @@ public sealed class TrainingScheduleBlockData
     public required string Title { get; init; }
     public required IReadOnlyList<string> TrainingTypeNames { get; init; }
     public required IReadOnlyList<string> Locations { get; init; }
-    public required IReadOnlyList<string> CoachNames { get; init; }
+    public required IReadOnlyList<SimpleCoachDto> Coaches { get; init; }
     public required IReadOnlyList<string> TrainingTypeLocationSummaries { get; init; }
     public required IReadOnlyList<TrainingScheduleCategorySegment> CategorySegments { get; init; }
     public TimeOnly TimeFrom { get; init; }
@@ -26,10 +26,16 @@ public sealed class TrainingScheduleBlockData
     public string? UniformStateCssClass { get; init; }
     public string? UniformStateIcon { get; init; }
     public string? UniformStateName { get; init; }
+    public bool IsDryTraining { get; init; }
 
     public string TrainingTypeSummary => string.Join(", ", TrainingTypeNames);
     public string LocationSummary => string.Join(", ", Locations);
-    public string CoachSummary => CoachNames.Count == 0 ? "-" : string.Join(", ", CoachNames);
+    public string CoachSummary => Coaches.Count == 0
+        ? "-"
+        : string.Join(", ", Coaches.Select(coach => coach.FullName));
+    public string CoachSurnameSummary => Coaches.Count == 0
+        ? "-"
+        : string.Join(", ", Coaches.Select(coach => coach.LastName));
     public string TrainingTypeLocationSummary => string.Join(", ", TrainingTypeLocationSummaries);
 }
 
@@ -78,6 +84,10 @@ public static class TrainingScheduleBlockFactory
             && stateIds.Distinct().Count() == 1;
         var hasMixedState = hasAnyState && !isUniformState;
 
+        var dryFlags = items.Select(item => item.IsDryTraining).Distinct().ToList();
+        var isUniformTrainingType = dryFlags.Count == 1;
+        var isDryTraining = isUniformTrainingType && dryFlags[0];
+
         string? uniformStateCssClass = null;
         string? uniformStateIcon = null;
         string? uniformStateName = null;
@@ -97,10 +107,10 @@ public static class TrainingScheduleBlockFactory
             Locations = DistinctOrdered(items
                 .Select(item => item.LocationName)
                 .Where(location => !string.IsNullOrWhiteSpace(location))),
-            CoachNames = items
-                .SelectMany(item => item.CoachFullNames)
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(name => name, StringComparer.Ordinal)
+            Coaches = items
+                .SelectMany(item => item.Coaches)
+                .DistinctBy(coach => coach.FullName, StringComparer.Ordinal)
+                .OrderBy(coach => coach.FullName, StringComparer.Ordinal)
                 .ToList(),
             TrainingTypeLocationSummaries = DistinctOrdered(items.Select(item =>
                 string.IsNullOrWhiteSpace(item.LocationName)
@@ -118,6 +128,7 @@ public static class TrainingScheduleBlockFactory
             UniformStateCssClass = uniformStateCssClass,
             UniformStateIcon = uniformStateIcon,
             UniformStateName = uniformStateName,
+            IsDryTraining = isDryTraining,
             TimeFrom = items.Min(item => item.TimeFrom),
             TimeTo = items.Max(item => item.TimeTo),
             SeasonCategoryOrder = primaryItem.SeasonCategoryOrder,

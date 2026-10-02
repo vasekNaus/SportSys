@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Models;
 using SportSys.Database.Context;
+using SportSys.Database.Enums;
 using SportSys.Database.Models.sport;
 
 namespace SportSys.Contract.Services;
@@ -143,6 +144,7 @@ public class TrainingScheduleService
                 LocationId = t.LocationId,
                 LocationName = t.Location.Name,
                 TrainingTypeName = t.TrainingType.Name,
+                IsDryTraining = t.TrainingTypeId == (int)ETrainingType.Dry,
                 TrainingPhaseName = t.TrainingPhase.Name,
                 TrainingStateId = t.TrainingStateId,
                 TrainingStateName = t.TrainingState.Name,
@@ -150,12 +152,12 @@ public class TrainingScheduleService
             })
             .ToListAsync(ct);
 
-        // CoachFullNames se načítá samostatným dotazem, protože EF Core
+        // Trenéři se načítají samostatným dotazem, protože EF Core
         // neumí přeložit korelovaný poddotaz s Distinct/OrderBy uvnitř
         // projekce, pokud stejná projekce obsahuje i podmíněnou (ternary)
         // referenční navigaci (GroupMembership) — viz stejný vzor u
-        // AssignCoachFullNamesAsync pro tréninkové plány.
-        await AssignCoachFullNamesAsync(trainings, ct);
+        // AssignCoachesAsync pro tréninkové plány.
+        await AssignCoachesAsync(trainings, ct);
 
         ApplyVisualizationGrouping(trainings, mergeOverlapping);
 
@@ -204,8 +206,9 @@ public class TrainingScheduleService
                 SeasonCategoryName = p.SeasonCategoryName,
                 Location = p.Location,
                 TrainingTypeName = p.TrainingType.Name,
+                IsDryTraining = p.TrainingTypeId == (int)ETrainingType.Dry,
                 TrainingPhaseName = p.TrainingPhase.Name,
-                CoachFullNames = new List<string>(),
+                Coaches = new List<SimpleCoachDto>(),
                 Note = string.Empty,
             })
             .ToListAsync(ct);
@@ -213,7 +216,7 @@ public class TrainingScheduleService
         // Přiřazení trenérů se řeší samostatným dotazem, protože EF Core
         // neumí přeložit korelovaný poddotaz filtrovaný na rozsah datumů
         // (ValidFrom/ValidTo), pokud je zároveň součástí kompozitního klíče.
-        await AssignCoachFullNamesAsync(plans, ct);
+        await AssignCoachesAsync(plans, ct);
 
         var orderedPlans = plans
             .OrderBy(p => p.DayOfWeek)
@@ -226,7 +229,7 @@ public class TrainingScheduleService
         return orderedPlans;
     }
 
-    private async Task AssignCoachFullNamesAsync(
+    private async Task AssignCoachesAsync(
         IReadOnlyList<TrainingScheduleItemDto> trainings,
         CancellationToken ct)
     {
@@ -249,14 +252,19 @@ public class TrainingScheduleService
 
         foreach (var training in trainings)
         {
-            training.CoachFullNames = assignmentsByTrainingId[training.Id]
+            training.Coaches = assignmentsByTrainingId[training.Id]
                 .Distinct()
                 .OrderBy(x => x)
+                .Select(fullName => new SimpleCoachDto
+                {
+                    FullName = fullName,
+                    LastName = ExtractLastName(fullName),
+                })
                 .ToList();
         }
     }
 
-    private async Task AssignCoachFullNamesAsync(
+    private async Task AssignCoachesAsync(
         IReadOnlyList<TrainingPlanScheduleItemDto> plans,
         CancellationToken ct)
     {
@@ -281,13 +289,36 @@ public class TrainingScheduleService
 
         foreach (var plan in plans)
         {
-            plan.CoachFullNames = assignmentsByPlanId[plan.Id]
+            plan.Coaches = assignmentsByPlanId[plan.Id]
                 .Where(a => a.ValidFrom <= plan.To && a.ValidTo >= plan.From)
                 .Select(a => a.CoachFullName)
                 .Distinct()
                 .OrderBy(x => x)
+                .Select(fullName => new SimpleCoachDto
+                {
+                    FullName = fullName,
+                    LastName = ExtractLastName(fullName),
+                })
                 .ToList();
         }
+    }
+
+    /// <summary>
+    /// Odvodí příjmení z celého jména trenéra jako poslední mezerou oddělené
+    /// slovo. <see cref="SportSys.Database.Models.identity.User.DisplayName"/>
+    /// je jediný textový sloupec se jménem, databáze nemá samostatné sloupce
+    /// jméno/příjmení.
+    /// </summary>
+    private static string ExtractLastName(string fullName)
+    {
+        var trimmed = fullName.Trim();
+        if (trimmed.Length == 0)
+            return string.Empty;
+
+        var lastSpaceIndex = trimmed.LastIndexOf(' ');
+        return lastSpaceIndex < 0
+            ? trimmed
+            : trimmed[(lastSpaceIndex + 1)..];
     }
 
     internal static void ApplyVisualizationGrouping(

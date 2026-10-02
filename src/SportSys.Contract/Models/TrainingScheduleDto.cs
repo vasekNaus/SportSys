@@ -13,6 +13,12 @@ public class SeasonCategoryDto
     public int Order { get; set; }
 }
 
+public sealed class SimpleCoachDto
+{
+    public required string FullName { get; init; }
+    public required string LastName { get; init; }
+}
+
 public interface ITrainingScheduleItem
 {
     int Id { get; }
@@ -25,8 +31,9 @@ public interface ITrainingScheduleItem
     string SeasonCategoryName { get; }
     string LocationName { get; }
     string TrainingTypeName { get; }
+    bool IsDryTraining { get; }
     string TrainingPhaseName { get; }
-    IReadOnlyList<string> CoachFullNames { get; }
+    IReadOnlyList<SimpleCoachDto> Coaches { get; }
     string Note { get; }
     int? TrainingStateId { get; }
     string? TrainingStateName { get; }
@@ -48,8 +55,9 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public string Location { get; set; } = string.Empty;
     public string LocationName => Location;
     public string TrainingTypeName { get; set; } = string.Empty;
+    public bool IsDryTraining { get; set; }
     public string TrainingPhaseName { get; set; } = string.Empty;
-    public IReadOnlyList<string> CoachFullNames { get; set; } = [];
+    public IReadOnlyList<SimpleCoachDto> Coaches { get; set; } = [];
     public string Note { get; set; } = string.Empty;
     public int? TrainingStateId { get; set; }
     public string? TrainingStateName { get; set; }
@@ -78,8 +86,9 @@ public class TrainingScheduleItemDto : SportEventDto, ITrainingScheduleItem
     public int LocationId { get; set; }
     public string LocationName { get; set; } = string.Empty;
     public string TrainingTypeName { get; set; } = string.Empty;
+    public bool IsDryTraining { get; set; }
     public string TrainingPhaseName { get; set; } = string.Empty;
-    public IReadOnlyList<string> CoachFullNames { get; set; } = [];
+    public IReadOnlyList<SimpleCoachDto> Coaches { get; set; } = [];
     public int? TrainingStateId { get; set; }
     public string? TrainingStateName { get; set; }
 }

@@ -21,6 +21,7 @@ public sealed class ScheduleEventModel
     public required string DetailLine2 { get; init; }
     public TimeOnly TimeFrom { get; init; }
     public TimeOnly TimeTo { get; init; }
+    public bool IsDryTraining { get; init; }
     public required string Tooltip { get; init; }
     public string? EditPage { get; init; }
     public int? EditItemId { get; init; }
@@ -108,10 +109,11 @@ public static class ScheduleEventModelFactory
             SeasonCategoryOrder = block.SeasonCategoryOrder,
             ColorKey = block.Items[0].SeasonCategoryName,
             TitleLine = block.Title,
-            DetailLine1 = block.TrainingTypeLocationSummary,
-            DetailLine2 = block.CoachSummary,
+            DetailLine1 = block.CoachSurnameSummary,
+            DetailLine2 = block.LocationSummary,
             TimeFrom = block.TimeFrom,
             TimeTo = block.TimeTo,
+            IsDryTraining = block.IsDryTraining,
             Tooltip = string.Join(" | ", block.Items.Select(CreateTooltip)),
             EditItemId = allowEditing ? block.MinimumItemId : null,
             EditPage = allowEditing ? "/Training/Schedule/Edit" : null,
@@ -130,10 +132,11 @@ public static class ScheduleEventModelFactory
             SeasonCategoryOrder = block.SeasonCategoryOrder,
             ColorKey = block.Items[0].SeasonCategoryName,
             TitleLine = block.Title,
-            DetailLine1 = block.TrainingTypeLocationSummary,
-            DetailLine2 = block.CoachSummary,
+            DetailLine1 = block.CoachSurnameSummary,
+            DetailLine2 = block.LocationSummary,
             TimeFrom = block.TimeFrom,
             TimeTo = block.TimeTo,
+            IsDryTraining = block.IsDryTraining,
             Tooltip = string.Join(" | ", block.Items.Select(CreateTooltip)),
             EditItemId = allowEditing ? block.MinimumItemId : null,
             EditPage = allowEditing ? "/Training/Plan/Edit" : null,
@@ -163,8 +166,8 @@ public static class ScheduleEventModelFactory
         if (!string.IsNullOrWhiteSpace(item.Note))
             parts.Add(item.Note);
 
-        if (item.CoachFullNames.Count > 0)
-            parts.Add($"Trenéři: {string.Join(", ", item.CoachFullNames)}");
+        if (item.Coaches.Count > 0)
+            parts.Add($"Trenéři: {string.Join(", ", item.Coaches.Select(coach => coach.FullName))}");
 
         return string.Join(" · ", parts);
     }
