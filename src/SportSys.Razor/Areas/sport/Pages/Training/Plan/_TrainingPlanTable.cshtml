@@ -1,0 +1,51 @@
+@model IndexModel
+@using SportSys.Razor.Models.TrainingSchedule
+
+<table class="grid">
+    <thead>
+        <tr>
+            <th>Sezóna</th>
+            <th>Kategorie</th>
+            <th>Typ tréninku</th>
+            <th>Fáze</th>
+            <th>Lokalita</th>
+            <th>Od</th>
+            <th>Do</th>
+            <th>Název</th>
+            <th>Den v týdnu</th>
+            <th>Čas od</th>
+            <th>Čas do</th>
+            <th>Doba trvání</th>
+            <th>Trenéři</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model.PlanRows)
+        {
+            <tr>
+                <td>@Model.SelectedSeasonName</td>
+                <td>@row.SeasonCategoryName</td>
+                <td>@row.TrainingTypeName</td>
+                <td>@row.TrainingPhaseName</td>
+                <td>@row.LocationName</td>
+                <td>@row.From.ToString("dd.MM.yyyy")</td>
+                <td>@row.To.ToString("dd.MM.yyyy")</td>
+                <td>@row.Title</td>
+                <td>@WeekDayNames.GetFullName(row.DayOfWeek)</td>
+                <td>@row.TimeFrom.ToString("HH:mm")</td>
+                <td>@row.TimeTo.ToString("HH:mm")</td>
+                <td>@($"{row.DurationMinutes} min")</td>
+                <td>@string.Join(", ", row.Coaches.Select(c => c.FullName))</td>
+                <td class="buttons">
+                    <a class="button secondary icon-btn"
+                       asp-page="./Edit"
+                       asp-route-id="@row.Id"
+                       title="Upravit">
+                        <i class="fa-solid fa-pen fa-fw"></i>
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

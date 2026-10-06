@@ -40,8 +40,17 @@ tréninky**.
 - `TrainingPlanScheduleItemDto` (`TrainingScheduleDto.cs:44-80`) obsahuje vše
   požadované kromě názvu sezóny:
   `SeasonCategoryName`, `TrainingPhaseName`, `From`, `To`, `Title`, `DayName`
-  (+ odvozené `DayOfWeek`), `TimeFrom`, `TimeTo`,
+  (+ odvozené `DayOfWeek`), `TimeFrom`, `TimeTo`, `DurationMinutes`,
+  `TrainingTypeName`, `LocationName`,
   `Coaches : IReadOnlyList<SimpleCoachDto>` (`FullName`, `LastName`).
+- Revize dat: porovnáním sloupců entity `sport.TrainingPlan`, hodnot
+  zobrazených v grafickém rozvrhu (blok + tooltip,
+  `EventModelFactory.CreateTooltip`) a sloupců požadovaných issue vyšlo, že
+  issue nepožaduje tři hodnoty, které jsou jinde na stránce dostupné a
+  použité jako filtry: **Typ tréninku** (`TrainingTypeName`), **Lokalita**
+  (`LocationName`) a **Doba trvání** (`DurationMinutes`, persisted computed
+  sloupec, viz `TrainingPlanConfiguration.cs:10-12`). Po konzultaci s
+  uživatelem byly všechny tři doplněny do rozsahu tabulky (viz níže).
 - Stránka podporuje výběr **jediné** sezóny najednou (`SeasonId : int?`), takže
   sloupec „Sezóna“ bude pro všechny řádky tabulky konstantní — její název lze
   dohledat z již načteného `Seasons : List<SeasonDto>` podle `SeasonId`, bez
@@ -90,14 +99,21 @@ tréninky**.
 - Jeden řádek tabulky = jeden záznam `sport.TrainingPlan`; žádná agregace podle
   kategorie, dne, času ani názvu; více trenérů v jedné buňce, bez násobení
   řádků (potvrzeno v issue).
-- Sloupce a jejich pořadí: Sezóna, Kategorie, Fáze, Od, Do, Název, Den v
-  týdnu, Čas od, Čas do, Trenéři (potvrzeno v issue), plus nesloupcová
-  editační ikona jako poslední sloupec tabulky (doplněno uživatelem nad rámec
-  původního issue).
+- Sloupce a jejich pořadí: Sezóna, Kategorie, **Typ tréninku**, Fáze,
+  **Lokalita**, Od, Do, Název, Den v týdnu, Čas od, Čas do, **Doba trvání**,
+  Trenéři (Sezóna…Trenéři bez tří tučně označených potvrzeno v issue; Typ
+  tréninku, Lokalita a Doba trvání doplněny uživatelem nad rámec issue, viz
+  Výchozí stav), plus nesloupcová editační ikona jako poslední sloupec
+  tabulky (doplněno uživatelem nad rámec původního issue).
 - Formáty: datum `dd.MM.yyyy`, čas `HH:mm`, trenéři oddělení čárkou `, `
   (potvrzeno v issue). Formát času `HH:mm` je zde explicitně požadován issue a
   bude použit přesně takto, i když grafický blok rozvrhu (jiné místo UI)
   používá kompaktnější `H:mm` — jde o samostatný, nezávislý zobrazovací kontext.
+- Doba trvání se zobrazí jako celé číslo minut s jednotkou, tj.
+  `{DurationMinutes} min` (např. „75 min“) — `DurationMinutes` je `int?` jen
+  teoreticky (viz `TrainingPlanScheduleItemDto.DurationMinutes`), v praxi je
+  vždy vyplněné, protože je to persisted computed sloupec dopočítaný z
+  `TimeFrom`/`TimeTo` při každém uložení záznamu.
 - Trenéři se v tabulce zobrazí celým jménem pomocí existujícího
   `SimpleCoachDto.FullName` (bez úpravy pořadí jméno/příjmení — to si
   zajistí uživatel mimo rozsah tohoto plánu; nepřidává se žádná nová
@@ -133,19 +149,22 @@ tréninky**.
 2. Nový partial `_TrainingPlanTable.cshtml` ve stejné složce
    (`Areas/sport/Pages/Training/Plan/`), s modelem `IndexModel` (stejně jako
    zbytek stránky), vykreslí `<table class="grid">` se sloupci v přesném
-   pořadí: Sezóna, Kategorie, Fáze, Od, Do, Název, Den v týdnu, Čas od, Čas
-   do, Trenéři, a nepojmenovaným posledním sloupcem s editační ikonou
-   (stejná konvence jako `Season/Index.cshtml`: `<th></th>` v hlavičce, bez
-   popisku).
+   pořadí: Sezóna, Kategorie, Typ tréninku, Fáze, Lokalita, Od, Do, Název,
+   Den v týdnu, Čas od, Čas do, Doba trvání, Trenéři, a nepojmenovaným
+   posledním sloupcem s editační ikonou (stejná konvence jako
+   `Season/Index.cshtml`: `<th></th>` v hlavičce, bez popisku).
    - Sezóna: `@Model.SelectedSeasonName`
    - Kategorie: `@row.SeasonCategoryName`
+   - Typ tréninku: `@row.TrainingTypeName`
    - Fáze: `@row.TrainingPhaseName`
+   - Lokalita: `@row.LocationName`
    - Od / Do: `@row.From.ToString("dd.MM.yyyy")` /
      `@row.To.ToString("dd.MM.yyyy")`
    - Název: `@row.Title`
    - Den v týdnu: `@WeekDayNames.GetFullName(row.DayOfWeek)`
    - Čas od / Čas do: `@row.TimeFrom.ToString("HH:mm")` /
      `@row.TimeTo.ToString("HH:mm")`
+   - Doba trvání: `@($"{row.DurationMinutes} min")`
    - Trenéři: `@string.Join(", ", row.Coaches.Select(c => c.FullName))` —
      použije se existující `SimpleCoachDto.FullName` beze změny formátu
      (žádné nové DTO ani vlastnost).
@@ -170,11 +189,6 @@ tréninky**.
   nastavit je ve správném pořadí (viz Technický návrh bod 1) tak, aby
   `PlanRows` odpovídal přesně tomu `plans`, který se již používá pro
   `EventModelFactory.CreateTrainingPlans`, ale **před** touto transformací.
-
-### Fáze 2: `SimpleCoachDto.SurnameFirstDisplayName`
-
-- Přidat počítanou vlastnost dle návrhu výše do
-  `src/SportSys.Contract/Models/TrainingScheduleDto.cs`.
 
 ### Fáze 2: Zobrazení tabulky
 
@@ -241,9 +255,12 @@ tréninky**.
 ## Hotovo, když
 
 - Pod grafickým rozvrhem na stránce Tréninkové plány se zobrazuje tabulka se
-  sloupci Sezóna, Kategorie, Fáze, Od, Do, Název, Den v týdnu, Čas od, Čas do,
-  Trenéři ve stanoveném pořadí, a posledním sloupcem s editační ikonou.
+  sloupci Sezóna, Kategorie, Typ tréninku, Fáze, Lokalita, Od, Do, Název,
+  Den v týdnu, Čas od, Čas do, Doba trvání, Trenéři ve stanoveném pořadí, a
+  posledním sloupcem s editační ikonou.
 - Trenéři jsou zobrazeni celým jménem pomocí existujícího `FullName`.
+- Doba trvání je zobrazena v minutách (`DurationMinutes`), Typ tréninku a
+  Lokalita odpovídají aktuálně nastaveným filtrům stránky.
 - Editační ikona u každého řádku vede na editaci odpovídajícího záznamu
   `TrainingPlan` podle jeho `Id`.
 - Počet řádků tabulky odpovídá počtu záznamů `sport.TrainingPlan` splňujících

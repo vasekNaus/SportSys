@@ -55,6 +55,16 @@ public class IndexModel : PageModel
 
     public ITrainingScheduleViewModel? ScheduleView { get; private set; }
 
+    public string? SelectedSeasonName { get; private set; }
+
+    /// <summary>
+    /// Záznamy <c>sport.TrainingPlan</c> odpovídající aktuálním filtrům, jeden
+    /// řádek = jeden záznam, bez agregace podle <see cref="MergeTrainings"/>
+    /// (ta ovlivňuje jen vykreslení grafického rozvrhu v
+    /// <see cref="EventModelFactory.CreateTrainingPlans"/>).
+    /// </summary>
+    public IReadOnlyList<TrainingPlanScheduleItemDto> PlanRows { get; private set; } = [];
+
     public async Task OnGetAsync(CancellationToken ct)
     {
         Seasons = await _service.GetSeasonsAsync(ct);
@@ -98,6 +108,8 @@ public class IndexModel : PageModel
             return;
         }
 
+        SelectedSeasonName = Seasons.FirstOrDefault(s => s.Id == SeasonId.Value)?.Name;
+
         var categories = SelectedCategories.Count > 0
             ? SelectedCategories
             : SeasonCategories.Select(c => c.Name).ToList();
@@ -113,6 +125,8 @@ public class IndexModel : PageModel
             ct);
 
         plans = WeekDayNames.FilterByDay(plans, plan => plan.DayOfWeek, SelectedDaysOfWeek);
+
+        PlanRows = plans;
 
         var byDay = plans
             .GroupBy(plan => plan.DayOfWeek)

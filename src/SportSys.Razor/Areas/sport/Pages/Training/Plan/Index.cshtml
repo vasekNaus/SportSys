@@ -208,4 +208,9 @@
     @await Component.InvokeAsync(
         "TrainingSchedule",
         new { model = Model.ScheduleView })
+
+    @if (Model.PlanRows.Count > 0)
+    {
+        <partial name="_TrainingPlanTable" model="Model" />
+    }
 }
