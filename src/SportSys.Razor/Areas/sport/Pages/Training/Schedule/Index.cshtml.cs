@@ -60,6 +60,14 @@ public class IndexModel : PageModel
     public DateOnly? DateTo { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public List<DayOfWeek> SelectedDaysOfWeek { get; set; } = [];
+
+    public IReadOnlyList<(DayOfWeek Day, string Label)> WeekDayOptions { get; } =
+        WeekDayNames.OrderedDays
+            .Select(day => (day, WeekDayNames.GetFullName(day)))
+            .ToList();
+
+    [BindProperty(SupportsGet = true)]
     public bool ShowEmptyRows { get; set; } = true;
 
     [BindProperty(SupportsGet = true)]
@@ -96,6 +104,7 @@ public class IndexModel : PageModel
                 SelectedMatchTypeIds,
                 ct)
             : [];
+        (trainings, matches) = FilterByDaysOfWeek(trainings, matches);
         HasExportableTrainings = trainings.Count > 0;
         ScheduleView = CreateScheduleView(trainings, matches, filter);
     }
@@ -124,6 +133,7 @@ public class IndexModel : PageModel
                 SelectedMatchTypeIds,
                 ct)
             : [];
+        (trainings, matches) = FilterByDaysOfWeek(trainings, matches);
         HasExportableTrainings = trainings.Count > 0;
         ScheduleView = CreateScheduleView(trainings, matches, filter);
 
@@ -229,6 +239,13 @@ public class IndexModel : PageModel
             MergeTrainings,
             ct);
 
+    private (List<TrainingScheduleItemDto> Trainings, List<MatchScheduleItemDto> Matches) FilterByDaysOfWeek(
+        List<TrainingScheduleItemDto> trainings,
+        List<MatchScheduleItemDto> matches)
+        => (
+            WeekDayNames.FilterByDay(trainings, t => t.Date.DayOfWeek, SelectedDaysOfWeek),
+            WeekDayNames.FilterByDay(matches, m => m.Date.DayOfWeek, SelectedDaysOfWeek));
+
     private ITrainingScheduleViewModel CreateScheduleView(
         IReadOnlyList<TrainingScheduleItemDto> trainings,
         IReadOnlyList<MatchScheduleItemDto> matches,
@@ -236,7 +253,7 @@ public class IndexModel : PageModel
     {
         var byDate = trainings
             .GroupBy(training => training.Date)
-            .SelectMany(group => ScheduleEventModelFactory
+            .SelectMany(group => EventModelFactory
                 .CreateTrainings(group.ToList(), allowEditing: !MergeTrainings)
                 .Select(scheduleEvent => new
                 {
@@ -246,7 +263,7 @@ public class IndexModel : PageModel
             .Concat(matches.Select(match => new
             {
                 match.Date,
-                Event = ScheduleEventModelFactory.CreateMatch(match),
+                Event = EventModelFactory.CreateMatch(match),
             }))
             .GroupBy(entry => entry.Date)
             .ToDictionary(

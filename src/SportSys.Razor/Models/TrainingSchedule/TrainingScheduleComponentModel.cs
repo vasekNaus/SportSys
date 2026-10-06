@@ -75,7 +75,7 @@ public class TrainingScheduleComponentModel
     }
 
     private IReadOnlyList<IReadOnlyList<TrainingScheduleBlock>> CreateLanes(
-        IReadOnlyList<ScheduleEventModel> items)
+        IReadOnlyList<EventModel> items)
     {
         var lanes = new List<List<TrainingScheduleBlock>>();
 
@@ -83,7 +83,6 @@ public class TrainingScheduleComponentModel
             .OrderBy(item => item.TimeFrom)
             .ThenBy(item => item.TimeTo)
             .ThenBy(item => item.SeasonCategoryOrder)
-            .ThenBy(item => item.EventType)
             .ThenBy(item => item.SourceId)
             .Select(CreateBlock);
 
@@ -119,14 +118,12 @@ public class TrainingScheduleComponentModel
         return !previousIsPoint && !currentIsPoint;
     }
 
-    private TrainingScheduleBlock CreateBlock(ScheduleEventModel item)
+    private TrainingScheduleBlock CreateBlock(EventModel item)
     {
         return new TrainingScheduleBlock
         {
-            EventType = item.EventType,
+            Source = item,
             Title = item.TitleLine,
-            DetailLine1 = item.DetailLine1,
-            DetailLine2 = item.DetailLine2,
             TimeFrom = item.TimeFrom,
             TimeTo = item.TimeTo,
             SeasonCategoryOrder = item.SeasonCategoryOrder,
@@ -135,13 +132,11 @@ public class TrainingScheduleComponentModel
             EditPage = item.EditPage,
             Left = GetLeft(item.TimeFrom),
             Width = GetWidth(item.TimeFrom, item.TimeTo),
-            IsDryTraining = item.IsDryTraining,
+            IsDryTraining = item is TrainingLikeEventModel { IsDryTraining: true },
             Color = CategoryColors.TryGetValue(item.ColorKey, out var color)
                 ? color
                 : "var(--color-text-muted)",
             Tooltip = item.Tooltip,
-            StateIcon = item.StateIcon,
-            StateTooltip = item.StateTooltip,
         };
     }
 
@@ -173,10 +168,8 @@ public class TrainingScheduleComponentRow
 
 public class TrainingScheduleBlock
 {
-    public required ScheduleEventType EventType { get; init; }
+    public required EventModel Source { get; init; }
     public required string Title { get; init; }
-    public required string DetailLine1 { get; init; }
-    public required string DetailLine2 { get; init; }
     public TimeOnly TimeFrom { get; init; }
     public TimeOnly TimeTo { get; init; }
     public int SeasonCategoryOrder { get; init; }
@@ -188,8 +181,6 @@ public class TrainingScheduleBlock
     public double Left { get; init; }
     public double Width { get; init; }
     public bool IsDryTraining { get; init; }
-    public string? StateIcon { get; init; }
-    public string? StateTooltip { get; init; }
 }
 
 public class TrainingScheduleMarker

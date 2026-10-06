@@ -121,6 +121,22 @@
             </div>
         </div>
 
+        <fieldset class="schedule-filter-categories schedule-filter-categories--nested">
+            <legend>Den</legend>
+            <div class="schedule-filter-checkboxes">
+                @foreach (var (day, label) in Model.WeekDayOptions)
+                {
+                    <label class="checkbox-label">
+                        <input type="checkbox"
+                               name="SelectedDaysOfWeek"
+                               value="@day"
+                               checked="@Model.SelectedDaysOfWeek.Contains(day)" />
+                        @label
+                    </label>
+                }
+            </div>
+        </fieldset>
+
         @if (Model.SeasonCategories.Count > 0)
         {
             <fieldset class="schedule-filter-categories schedule-filter-categories--nested">

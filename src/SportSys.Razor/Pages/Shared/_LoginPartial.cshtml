@@ -2,7 +2,7 @@
 
 @if (User.Identity?.IsAuthenticated == true)
 {
-    <span class="text-muted small">
+    <span class="header-user small">
         <i class="fa-solid fa-user fa-fw"></i> @User.Identity?.Name
     </span>
     <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut"

@@ -12,11 +12,11 @@
         1 => selectedTrainingTypeNames[0],
         _ => $"Vybráno: {selectedTrainingTypeNames.Count}",
     };
-    var locationSummary = Model.SelectedLocations.Count switch
+    var locationSummary = Model.SelectedLocationIds.Count switch
     {
         0 => "Všechny lokality",
-        1 => Model.SelectedLocations[0],
-        _ => $"Vybráno: {Model.SelectedLocations.Count}",
+        1 => Model.Locations.FirstOrDefault(location => location.Id == Model.SelectedLocationIds[0])?.Name ?? "Vybráno: 1",
+        _ => $"Vybráno: {Model.SelectedLocationIds.Count}",
     };
 }
 
@@ -89,10 +89,10 @@
                             {
                                 <label class="schedule-multiselect-option">
                                     <input type="checkbox"
-                                           name="SelectedLocations"
-                                           value="@location"
-                                           checked="@Model.SelectedLocations.Contains(location)" />
-                                    <span data-multiselect-option-label>@location</span>
+                                           name="SelectedLocationIds"
+                                           value="@location.Id"
+                                           checked="@Model.SelectedLocationIds.Contains(location.Id)" />
+                                    <span data-multiselect-option-label>@location.Name</span>
                                 </label>
                             }
                         </div>
@@ -110,7 +110,7 @@
             <div class="field">
                 <label for="TrainingPhaseId">Fáze tréninku</label>
                 <select id="TrainingPhaseId" name="TrainingPhaseId" class="textbox">
-                    <option value="">— vyberte fázi —</option>
+                    <option value="">— všechny fáze —</option>
                     @foreach (var phase in Model.TrainingPhases)
                     {
                         <option value="@phase.Id" selected="@(Model.TrainingPhaseId == phase.Id)">
@@ -130,6 +130,22 @@
                        onchange="this.form.submit()" />
             </div>
         </div>
+
+        <fieldset class="schedule-filter-categories schedule-filter-categories--nested">
+            <legend>Den</legend>
+            <div class="schedule-filter-checkboxes">
+                @foreach (var (day, label) in Model.WeekDayOptions)
+                {
+                    <label class="checkbox-label">
+                        <input type="checkbox"
+                               name="SelectedDaysOfWeek"
+                               value="@day"
+                               checked="@Model.SelectedDaysOfWeek.Contains(day)" />
+                        @label
+                    </label>
+                }
+            </div>
+        </fieldset>
 
         @if (Model.SeasonCategories.Count > 0)
         {
@@ -166,14 +182,20 @@
         }
     </section>
 
-    @if (Model.SeasonId.HasValue && Model.SeasonCategories.Count > 0)
-    {
-        <div class="schedule-filter-actions">
-            <button type="submit" class="button">
-                <i class="fa-solid fa-calendar-week fa-fw"></i> Zobrazit plán
-            </button>
-        </div>
-    }
+    <div class="schedule-filter-actions">
+        <a asp-page="./Index" class="button secondary">
+            <i class="fa-solid fa-filter-circle-xmark fa-fw"></i> Vymazat filtry
+        </a>
+
+        @if (Model.SeasonId.HasValue && Model.SeasonCategories.Count > 0)
+        {
+            <div class="schedule-filter-actions-primary">
+                <button type="submit" class="button">
+                    <i class="fa-solid fa-calendar-week fa-fw"></i> Zobrazit plán
+                </button>
+            </div>
+        }
+    </div>
 </form>
 
 @if (Model.ScheduleView is not null)

@@ -75,9 +75,13 @@ code {
 }
 
 // Header
+// Pozadí je trvale brandově červené v obou barevných režimech — veškerý
+// text/ikony proto musí používat --color-on-brand-primary (stabilní bílá),
+// NIKOLI --color-text-inverse (ta se v dark módu mění na tmavou, protože je
+// relativní k běžnému textu stránky, ne k červenému pozadí headeru).
 body > header {
   background-color: var(--color-brand-primary);
-  color:            var(--color-text-inverse);
+  color:            var(--color-on-brand-primary);
   padding:          0 $Padding;
   display:          flex;
   align-items:      center;
@@ -89,7 +93,7 @@ body > header {
   .site-title {
     font-size:       1.25rem;
     font-weight:     700;
-    color:           var(--color-text-inverse);
+    color:           var(--color-on-brand-primary);
     text-decoration: none;
     letter-spacing:  .02em;
 
@@ -102,13 +106,39 @@ body > header {
     display:     flex;
     align-items: center;
     gap:         .75rem;
+
+    // Jméno přihlášeného uživatele — bílá s mírným ztlumením místo
+    // --color-text-muted (ta je nečitelná na červeném pozadí).
+    .header-user {
+      display:     flex;
+      align-items: center;
+      gap:         .35rem;
+      color:       var(--color-on-brand-primary);
+      opacity:     .85;
+    }
+
+    // Tlačítko Odhlásit/Přihlásit — sjednoceno s ikonovými tlačítky vpravo
+    // (stejný rámeček, hover i focus), místo tmavě modré .secondary varianty.
+    .button.secondary {
+      min-width:        auto;
+      background:       none;
+      border-color:     rgba(255, 255, 255, .30);
+      color:            var(--color-on-brand-primary);
+      box-shadow:       none;
+
+      &:hover {
+        background:   rgba(255, 255, 255, .12);
+        border-color: rgba(255, 255, 255, .60);
+        color:        var(--color-on-brand-primary);
+      }
+    }
   }
 
   .btn-theme-toggle,
   .btn-layout-toggle {
     background:    none;
     border:        1px solid rgba(255, 255, 255, .30);
-    color:         var(--color-text-inverse);
+    color:         var(--color-on-brand-primary);
     border-radius: 4px;
     padding:       .35rem .6rem;
     cursor:        pointer;
@@ -119,6 +149,17 @@ body > header {
     &:hover {
       background:   rgba(255, 255, 255, .12);
       border-color: rgba(255, 255, 255, .60);
+    }
+  }
+
+  // Sjednocený focus — obecné pravidlo z _forms.scss cílí na červený obrys,
+  // ten by na červeném pozadí headeru nebyl vidět.
+  .btn-theme-toggle,
+  .btn-layout-toggle,
+  .header-actions .button {
+    &:focus-visible {
+      outline:        3px solid var(--color-on-brand-primary);
+      outline-offset: 2px;
     }
   }
 
@@ -259,11 +300,13 @@ body > footer {
   border-top: 1px solid var(--color-border-default);
   margin:     $Padding (-$Padding) 0;
   padding:    $Padding;
-  color:      var(--color-text-muted);
+  // --color-text-muted měl v obou režimech kontrast těsně pod hranicí
+  // WCAG AA (4.5:1) — nahrazeno čitelnějším --color-text-secondary.
+  color:      var(--color-text-secondary);
   font-size:  .875rem;
 
   a {
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
 
     &:hover {
       color: var(--color-brand-primary);

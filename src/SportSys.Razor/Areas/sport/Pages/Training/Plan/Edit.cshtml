@@ -89,7 +89,7 @@
 
         @Html.EditorFor(
             model => model.Input,
-            new { DayNameItems = Model.DayNameItems })
+            new { DayNameItems = Model.DayNameItems, LocationIdItems = Model.LocationIdItems })
 
         @if (!Model.Context.IsGrouped)
         {

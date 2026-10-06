@@ -13,51 +13,56 @@ namespace SportSys.Database.Models.sport;
 [Table(nameof(TrainingPlan), Schema = Schemas.Sport)]
 public partial class TrainingPlan
 {
-    [Key]
-    public int Id { get; set; }
+  [Key]
+  public int Id { get; set; }
 
-    public int SeasonId { get; set; }
+  public int SeasonId { get; set; }
 
-    [StringLength(10)]
-    [Unicode(false)]
-    public required string SeasonCategoryName { get; set; }
+  [StringLength(10)]
+  [Unicode(false)]
+  public required string SeasonCategoryName { get; set; }
 
-    public int TrainingTypeId { get; set; }
+  public int TrainingTypeId { get; set; }
 
-    public int TrainingPhaseId { get; set; }
+  public int TrainingPhaseId { get; set; }
 
-    public DateOnly From { get; set; }
+  public DateOnly From { get; set; }
 
-    public DateOnly To { get; set; }
+  public DateOnly To { get; set; }
 
-    [StringLength(100)]
-    public required string Location { get; set; }
+  public int LocationId { get; set; }
 
-    [Precision(0)]
-    public TimeOnly TimeFrom { get; set; }
+  [Precision(0)]
+  public TimeOnly TimeFrom { get; set; }
 
-    [Precision(0)]
-    public TimeOnly TimeTo { get; set; }
+  [Precision(0)]
+  public TimeOnly TimeTo { get; set; }
 
-    public int? DurationMinutes { get; set; }
+  public int? DurationMinutes { get; set; }
 
-    [StringLength(10)]
-    [Unicode(false)]
-    public required string DayName { get; set; }
+  [StringLength(10)]
+  [Unicode(false)]
+  public required string DayName { get; set; }
 
-    public virtual ICollection<CoachTrainingPlan> CoachTrainingPlans { get; set; } = new List<CoachTrainingPlan>();
+  [StringLength(100)]
+  public required string Title { get; set; }
 
-    [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryName))]
-    [DeleteBehavior(DeleteBehavior.ClientSetNull)]
-    public virtual SeasonCategory SeasonCategory { get; set; } = null!;
+  public virtual ICollection<CoachTrainingPlan> CoachTrainingPlans { get; set; } = new List<CoachTrainingPlan>();
 
-    public virtual ICollection<Training> Training { get; set; } = new List<Training>();
+  [DeleteBehavior(DeleteBehavior.ClientSetNull)]
+  public virtual Location Location { get; set; } = null!;
 
-    public virtual TrainingPlanGroup? GroupMembership { get; set; }
+  [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryName))]
+  [DeleteBehavior(DeleteBehavior.ClientSetNull)]
+  public virtual SeasonCategory SeasonCategory { get; set; } = null!;
 
-    [DeleteBehavior(DeleteBehavior.ClientSetNull)]
-    public virtual TrainingPhase TrainingPhase { get; set; } = null!;
+  public virtual ICollection<Training> Training { get; set; } = new List<Training>();
 
-    [DeleteBehavior(DeleteBehavior.ClientSetNull)]
-    public virtual TrainingType TrainingType { get; set; } = null!;
+  public virtual TrainingPlanGroup? GroupMembership { get; set; }
+
+  [DeleteBehavior(DeleteBehavior.ClientSetNull)]
+  public virtual TrainingPhase TrainingPhase { get; set; } = null!;
+
+  [DeleteBehavior(DeleteBehavior.ClientSetNull)]
+  public virtual TrainingType TrainingType { get; set; } = null!;
 }

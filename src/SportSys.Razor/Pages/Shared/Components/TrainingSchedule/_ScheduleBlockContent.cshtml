@@ -1,0 +1,41 @@
+@model SportSys.Razor.Models.TrainingSchedule.TrainingScheduleBlock
+@* Sdílený obsah bloku rozvrhu — zajišťuje stejné pořadí řádků v editovatelné
+   i needitovatelné variantě bloku (viz TrainingSchedule/Default.cshtml).
+   Specifický obsah (trenéři vs. výsledek) se řídí skutečným typem
+   Model.Source, komponenta samotná zůstává univerzální. *@
+<span class="schedule-block-cat">@Model.Title</span>
+<span class="schedule-block-time">
+  @Model.TimeFrom.ToString("H:mm")–@Model.TimeTo.ToString("H:mm")
+</span>
+@if (Model.Source is Models.TrainingSchedule.MatchEventModel match)
+{
+  <span class="schedule-block-location">@match.ResultText</span>
+  <span class="schedule-block-coaches">@match.OpponentName</span>
+  if (!string.IsNullOrEmpty(match.MatchStateIcon))
+  {
+    <span class="schedule-block-state-icon"
+          aria-hidden="@(match.MatchStateTooltip is null ? "true" : "false")"
+          title="@match.MatchStateTooltip">@match.MatchStateIcon</span>
+  }
+}
+else if (Model.Source is Models.TrainingSchedule.TrainingLikeEventModel training)
+{
+  <span class="schedule-block-location">
+    @if (training is Models.TrainingSchedule.TrainingPlanEventModel { PlanTitleSummary.Length: > 0 } plan)
+    {
+      @(plan.PlanTitleSummary + " - " + training.LocationSummary)
+    }
+    else
+    {
+      @training.LocationSummary
+    }
+  </span>
+  <span class="schedule-block-coaches schedule-block-coaches--wrap">@training.CoachSurnameSummary</span>
+  if (training is Models.TrainingSchedule.TrainingEventModel trainingEvent
+      && !string.IsNullOrEmpty(trainingEvent.StateIcon))
+  {
+    <span class="schedule-block-state-icon"
+          aria-hidden="@(trainingEvent.StateTooltip is null ? "true" : "false")"
+          title="@trainingEvent.StateTooltip">@trainingEvent.StateIcon</span>
+  }
+}

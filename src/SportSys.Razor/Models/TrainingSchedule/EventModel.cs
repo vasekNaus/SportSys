@@ -3,35 +3,66 @@ using System.Globalization;
 
 namespace SportSys.Razor.Models.TrainingSchedule;
 
-public enum ScheduleEventType
+/// <summary>
+/// Univerzální základ pro položku rozvrhu. Nese jen to, co potřebuje
+/// vykreslovací komponenta (pozice v čase, barva, editace, tooltip).
+/// Typově specifické detaily patří do konkrétních podtříd.
+/// </summary>
+public abstract class EventModel
 {
-    Training,
-    Match,
-    TrainingPlan,
-}
-
-public sealed class ScheduleEventModel
-{
-    public required ScheduleEventType EventType { get; init; }
     public int SourceId { get; init; }
     public int SeasonCategoryOrder { get; init; }
     public required string ColorKey { get; init; }
     public required string TitleLine { get; init; }
-    public required string DetailLine1 { get; init; }
-    public required string DetailLine2 { get; init; }
     public TimeOnly TimeFrom { get; init; }
     public TimeOnly TimeTo { get; init; }
-    public bool IsDryTraining { get; init; }
     public required string Tooltip { get; init; }
     public string? EditPage { get; init; }
     public int? EditItemId { get; init; }
+}
+
+public sealed class MatchEventModel : EventModel
+{
+    public required string OpponentName { get; init; }
+    public required string ResultText { get; init; }
+    public bool IsHome { get; init; }
+    public string? MatchStateIcon { get; init; }
+    public string? MatchStateTooltip { get; init; }
+}
+
+/// <summary>
+/// Společný základ pro tréninky a plány tréninků — obojí má trenéry,
+/// lokaci a příznak suché přípravy, na rozdíl od zápasu.
+/// </summary>
+public abstract class TrainingLikeEventModel : EventModel
+{
+    public required string CoachSurnameSummary { get; init; }
+    public required string LocationSummary { get; init; }
+    public bool IsDryTraining { get; init; }
+}
+
+public sealed class TrainingEventModel : TrainingLikeEventModel
+{
     public string? StateIcon { get; init; }
     public string? StateTooltip { get; init; }
 }
 
-public static class ScheduleEventModelFactory
+public sealed class TrainingPlanEventModel : TrainingLikeEventModel
 {
-    public static IReadOnlyList<ScheduleEventModel> CreateTrainings(
+    public DateOnly ValidFrom { get; init; }
+    public DateOnly ValidTo { get; init; }
+
+    /// <summary>
+    /// Sloučený a deduplikovaný text z <see cref="TrainingPlanScheduleItemDto.Title"/>
+    /// všech položek bloku. Prázdný řetězec, pokud žádná položka Title nemá
+    /// vyplněné.
+    /// </summary>
+    public required string PlanTitleSummary { get; init; }
+}
+
+public static class EventModelFactory
+{
+    public static IReadOnlyList<EventModel> CreateTrainings(
         IReadOnlyList<TrainingScheduleItemDto> trainings,
         bool allowEditing)
         => TrainingScheduleBlockFactory.CreateBlocks(
@@ -39,7 +70,7 @@ public static class ScheduleEventModelFactory
             .Select(block => CreateTrainingBlock(block, allowEditing))
             .ToList();
 
-    public static IReadOnlyList<ScheduleEventModel> CreateTrainingPlans(
+    public static IReadOnlyList<EventModel> CreateTrainingPlans(
         IReadOnlyList<TrainingPlanScheduleItemDto> plans,
         bool allowEditing)
         => TrainingScheduleBlockFactory.CreateBlocks(
@@ -47,7 +78,7 @@ public static class ScheduleEventModelFactory
             .Select(block => CreateTrainingPlanBlock(block, allowEditing))
             .ToList();
 
-    public static ScheduleEventModel CreateMatch(MatchScheduleItemDto match)
+    public static EventModel CreateMatch(MatchScheduleItemDto match)
     {
         var result = match.HomeGoals.HasValue && match.AwayGoals.HasValue
             ? $"{match.HomeGoals}:{match.AwayGoals}"
@@ -69,24 +100,24 @@ public static class ScheduleEventModelFactory
 
         var stateInfo = MatchStateVisual.Get(match.MatchStateId);
 
-        return new ScheduleEventModel
+        return new MatchEventModel
         {
-            EventType = ScheduleEventType.Match,
             SourceId = match.Id,
             SeasonCategoryOrder = match.SeasonCategoryOrder,
             ColorKey = match.SeasonCategoryName,
             TitleLine = match.SeasonCategoryName,
-            DetailLine1 = match.OpponentName,
-            DetailLine2 = result,
+            OpponentName = match.OpponentName,
+            ResultText = result,
+            IsHome = match.IsHome,
             TimeFrom = match.TimeFrom,
             TimeTo = match.TimeTo,
             Tooltip = string.Join(" · ", tooltipParts),
-            StateIcon = stateInfo?.Icon,
-            StateTooltip = match.MatchStateName,
+            MatchStateIcon = stateInfo?.Icon,
+            MatchStateTooltip = match.MatchStateName,
         };
     }
 
-    private static ScheduleEventModel CreateTrainingBlock(
+    private static EventModel CreateTrainingBlock(
         TrainingScheduleBlockData block,
         bool allowEditing)
     {
@@ -102,15 +133,14 @@ public static class ScheduleEventModelFactory
                     $"{segment.StateIcon} {segment.CategoryName}".Trim()))
             : null;
 
-        return new ScheduleEventModel
+        return new TrainingEventModel
         {
-            EventType = ScheduleEventType.Training,
             SourceId = block.MinimumItemId,
             SeasonCategoryOrder = block.SeasonCategoryOrder,
             ColorKey = block.Items[0].SeasonCategoryName,
             TitleLine = block.Title,
-            DetailLine1 = block.CoachSurnameSummary,
-            DetailLine2 = block.LocationSummary,
+            CoachSurnameSummary = block.CoachSurnameSummary,
+            LocationSummary = block.LocationSummary,
             TimeFrom = block.TimeFrom,
             TimeTo = block.TimeTo,
             IsDryTraining = block.IsDryTraining,
@@ -122,25 +152,39 @@ public static class ScheduleEventModelFactory
         };
     }
 
-    private static ScheduleEventModel CreateTrainingPlanBlock(
+    private static TrainingPlanEventModel CreateTrainingPlanBlock(
         TrainingScheduleBlockData block,
         bool allowEditing)
-        => new()
+    {
+        var planItems = block.Items.OfType<TrainingPlanScheduleItemDto>().ToList();
+
+        var planTitleSummary = string.Join(
+            ", ",
+            planItems
+                .Select(item => item.Title)
+                .Where(title => !string.IsNullOrWhiteSpace(title))
+                .Distinct(StringComparer.CurrentCulture)
+                .OrderBy(title => title, StringComparer.CurrentCulture));
+
+        return new TrainingPlanEventModel
         {
-            EventType = ScheduleEventType.TrainingPlan,
             SourceId = block.MinimumItemId,
             SeasonCategoryOrder = block.SeasonCategoryOrder,
             ColorKey = block.Items[0].SeasonCategoryName,
             TitleLine = block.Title,
-            DetailLine1 = block.CoachSurnameSummary,
-            DetailLine2 = block.LocationSummary,
+            CoachSurnameSummary = block.CoachSurnameSummary,
+            LocationSummary = block.LocationSummary,
             TimeFrom = block.TimeFrom,
             TimeTo = block.TimeTo,
             IsDryTraining = block.IsDryTraining,
+            PlanTitleSummary = planTitleSummary,
+            ValidFrom = planItems.Count > 0 ? planItems.Min(item => item.From) : default,
+            ValidTo = planItems.Count > 0 ? planItems.Max(item => item.To) : default,
             Tooltip = string.Join(" | ", block.Items.Select(CreateTooltip)),
             EditItemId = allowEditing ? block.MinimumItemId : null,
             EditPage = allowEditing ? "/Training/Plan/Edit" : null,
         };
+    }
 
     private static string CreateTooltip(ITrainingScheduleItem item)
     {

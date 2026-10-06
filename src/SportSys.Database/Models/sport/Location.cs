@@ -38,4 +38,6 @@ public partial class Location
   public virtual ICollection<Team> HomeTeams { get; set; } = new List<Team>();
 
   public virtual ICollection<Training> Trainings { get; set; } = new List<Training>();
+
+  public virtual ICollection<TrainingPlan> TrainingPlans { get; set; } = new List<TrainingPlan>();
 }

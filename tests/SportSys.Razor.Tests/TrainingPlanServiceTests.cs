@@ -23,7 +23,7 @@ public class TrainingPlanServiceTests
     [InlineData("DayName")]
     [InlineData("TimeFrom")]
     [InlineData("TimeTo")]
-    [InlineData("Location")]
+    [InlineData("LocationId")]
     public void HaveConsistentEditableValues_RejectsDifferentEditableValue(
         string changedProperty)
     {
@@ -35,7 +35,7 @@ public class TrainingPlanServiceTests
             "DayName" => Clone(changed, dayName: nameof(DayOfWeek.Tuesday)),
             "TimeFrom" => Clone(changed, timeFrom: changed.TimeFrom.AddMinutes(30)),
             "TimeTo" => Clone(changed, timeTo: changed.TimeTo.AddMinutes(30)),
-            "Location" => Clone(changed, location: "Malá hala"),
+            "LocationId" => Clone(changed, locationId: 2),
             _ => throw new ArgumentOutOfRangeException(nameof(changedProperty)),
         };
 
@@ -272,7 +272,7 @@ public class TrainingPlanServiceTests
     private static TrainingPlanEditMemberDto CreateMember(
         int id,
         string category,
-        string location = "Zimní stadion",
+        int locationId = 1,
         string dayName = nameof(DayOfWeek.Monday),
         IReadOnlyList<int>? coachIds = null)
         => new()
@@ -286,7 +286,7 @@ public class TrainingPlanServiceTests
             DayName = dayName,
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(18, 0),
-            Location = location,
+            LocationId = locationId,
             CoachIds = coachIds ?? [],
         };
 
@@ -297,7 +297,7 @@ public class TrainingPlanServiceTests
         string? dayName = null,
         TimeOnly? timeFrom = null,
         TimeOnly? timeTo = null,
-        string? location = null)
+        int? locationId = null)
         => new()
         {
             Id = source.Id,
@@ -309,6 +309,6 @@ public class TrainingPlanServiceTests
             DayName = dayName ?? source.DayName,
             TimeFrom = timeFrom ?? source.TimeFrom,
             TimeTo = timeTo ?? source.TimeTo,
-            Location = location ?? source.Location,
+            LocationId = locationId ?? source.LocationId,
         };
 }

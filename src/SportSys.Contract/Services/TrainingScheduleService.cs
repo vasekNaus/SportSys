@@ -89,13 +89,21 @@ public class TrainingScheduleService
             .ToListAsync(ct);
     }
 
-    public async Task<List<string>> GetTrainingPlanLocationsAsync(CancellationToken ct = default)
+    public async Task<List<LookupSelectItem>> GetTrainingPlanLocationsAsync(CancellationToken ct = default)
     {
         return await _db.TrainingPlans
-            .Where(p => p.Location != string.Empty)
-            .Select(p => p.Location)
+            .Select(p => p.LocationId)
             .Distinct()
-            .OrderBy(location => location)
+            .Join(
+                _db.SportLocations,
+                locationId => locationId,
+                location => location.Id,
+                (locationId, location) => new LookupSelectItem
+                {
+                    Id = location.Id,
+                    Name = location.Name,
+                })
+            .OrderBy(location => location.Name)
             .ToListAsync(ct);
     }
 
@@ -168,22 +176,24 @@ public class TrainingScheduleService
         int seasonId,
         IReadOnlyCollection<string> categoryNames,
         IReadOnlyCollection<int> trainingTypeIds,
-        IReadOnlyCollection<string> locations,
-        int trainingPhaseId,
+        IReadOnlyCollection<int> locationIds,
+        int? trainingPhaseId,
         DateOnly? validOn,
         bool mergeOverlapping,
         CancellationToken ct = default)
     {
         var query = _db.TrainingPlans
             .Where(p => p.SeasonId == seasonId
-                && categoryNames.Contains(p.SeasonCategoryName)
-                && p.TrainingPhaseId == trainingPhaseId);
+                && categoryNames.Contains(p.SeasonCategoryName));
+
+        if (trainingPhaseId.HasValue)
+            query = query.Where(p => p.TrainingPhaseId == trainingPhaseId.Value);
 
         if (trainingTypeIds.Count > 0)
             query = query.Where(p => trainingTypeIds.Contains(p.TrainingTypeId));
 
-        if (locations.Count > 0)
-            query = query.Where(p => locations.Contains(p.Location));
+        if (locationIds.Count > 0)
+            query = query.Where(p => locationIds.Contains(p.LocationId));
 
         query = ApplyValidityFilter(query, validOn);
 
@@ -196,6 +206,7 @@ public class TrainingScheduleService
                 From = p.From,
                 To = p.To,
                 DayName = p.DayName,
+                Title = p.Title,
                 TimeFrom = p.TimeFrom,
                 TimeTo = p.TimeTo,
                 DurationMinutes = p.DurationMinutes,
@@ -204,7 +215,8 @@ public class TrainingScheduleService
                     : p.GroupMembership.GroupId,
                 SeasonCategoryOrder = p.SeasonCategory.Order,
                 SeasonCategoryName = p.SeasonCategoryName,
-                Location = p.Location,
+                LocationId = p.LocationId,
+                LocationName = p.Location.Name,
                 TrainingTypeName = p.TrainingType.Name,
                 IsDryTraining = p.TrainingTypeId == (int)ETrainingType.Dry,
                 TrainingPhaseName = p.TrainingPhase.Name,

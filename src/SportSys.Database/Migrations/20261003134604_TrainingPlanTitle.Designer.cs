@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using SportSys.Database.Context;
@@ -12,9 +13,11 @@ using SportSys.Database.Context;
 namespace SportSys.Database.Migrations
 {
     [DbContext(typeof(SportSysDbContext))]
-    partial class SportSysDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261003134604_TrainingPlanTitle")]
+    partial class TrainingPlanTitle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1425,8 +1428,10 @@ namespace SportSys.Database.Migrations
                     b.Property<DateOnly>("From")
                         .HasColumnType("date");
 
-                    b.Property<int>("LocationId")
-                        .HasColumnType("int");
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("SeasonCategoryName")
                         .IsRequired()
@@ -1463,9 +1468,6 @@ namespace SportSys.Database.Migrations
 
                     b.ToTable("TrainingPlan", "sport", t =>
                         {
-                            t.Property("LocationId")
-                                .HasColumnName("Location_Id");
-
                             t.Property("SeasonCategoryName")
                                 .HasColumnName("SeasonCategory_Name");
 
@@ -2305,11 +2307,6 @@ namespace SportSys.Database.Migrations
 
             modelBuilder.Entity("SportSys.Database.Models.sport.TrainingPlan", b =>
                 {
-                    b.HasOne("SportSys.Database.Models.sport.Location", "Location")
-                        .WithMany("TrainingPlans")
-                        .HasForeignKey("LocationId")
-                        .IsRequired();
-
                     b.HasOne("SportSys.Database.Models.sportSchema.TrainingPhase", "TrainingPhase")
                         .WithMany("TrainingPlans")
                         .HasForeignKey("TrainingPhaseId")
@@ -2324,8 +2321,6 @@ namespace SportSys.Database.Migrations
                         .WithMany("TrainingPlans")
                         .HasForeignKey("SeasonId", "SeasonCategoryName")
                         .IsRequired();
-
-                    b.Navigation("Location");
 
                     b.Navigation("SeasonCategory");
 
@@ -2531,8 +2526,6 @@ namespace SportSys.Database.Migrations
                     b.Navigation("HomeTeams");
 
                     b.Navigation("Matches");
-
-                    b.Navigation("TrainingPlans");
 
                     b.Navigation("Trainings");
                 });

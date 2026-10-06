@@ -45,6 +45,7 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public DateOnly From { get; set; }
     public DateOnly To { get; set; }
     public string DayName { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
     public TimeOnly TimeFrom { get; set; }
     public TimeOnly TimeTo { get; set; }
     public int? DurationMinutes { get; set; }
@@ -52,8 +53,8 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public Guid? VisualizationGroupId { get; set; }
     public int SeasonCategoryOrder { get; set; }
     public string SeasonCategoryName { get; set; } = string.Empty;
-    public string Location { get; set; } = string.Empty;
-    public string LocationName => Location;
+    public int LocationId { get; set; }
+    public string LocationName { get; set; } = string.Empty;
     public string TrainingTypeName { get; set; } = string.Empty;
     public bool IsDryTraining { get; set; }
     public string TrainingPhaseName { get; set; } = string.Empty;

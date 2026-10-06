@@ -107,9 +107,12 @@ public static class TrainingScheduleBlockFactory
             Locations = DistinctOrdered(items
                 .Select(item => item.LocationName)
                 .Where(location => !string.IsNullOrWhiteSpace(location))),
+            // Při spojení více tréninků/plánů do jednoho bloku se stejný trenér
+            // může objevit vícekrát (každý člen skupiny má svou vlastní sadu
+            // trenérů) — duplicity se záměrně nefiltrují. V budoucnu budeme
+            // tento stav (stejný trenér u více členů skupiny) nějak zvýrazňovat.
             Coaches = items
                 .SelectMany(item => item.Coaches)
-                .DistinctBy(coach => coach.FullName, StringComparer.Ordinal)
                 .OrderBy(coach => coach.FullName, StringComparer.Ordinal)
                 .ToList(),
             TrainingTypeLocationSummaries = DistinctOrdered(items.Select(item =>

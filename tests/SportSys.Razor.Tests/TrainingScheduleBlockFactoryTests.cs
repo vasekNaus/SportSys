@@ -55,7 +55,9 @@ public class TrainingScheduleBlockFactoryTests
         Assert.Equal(new TimeOnly(18, 30), block.TimeTo);
         Assert.Equal(["A", "B"], block.TrainingTypeNames);
         Assert.Equal(["Led", "Suchá"], block.Locations);
-        Assert.Equal(["Novák", "Svoboda"], block.Coaches.Select(coach => coach.FullName));
+        Assert.Equal(
+            ["Novák", "Novák", "Svoboda"],
+            block.Coaches.Select(coach => coach.FullName));
         Assert.Equal(1, block.MinimumItemId);
     }
 

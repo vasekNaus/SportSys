@@ -2,17 +2,26 @@
 
 **Issue:** [#21 — Úprava vizualizace tréninků a tréninkových plánů v rozvrhu](https://github.com/vasekNaus/SportSys/issues/21)
 
-**Stav:** Připraveno k implementaci.
+**Stav:** Fáze 1–5 a sjednocení pořadí u zápasu jsou implementovány. Nová
+sekce **Doplnění (2026-10-05): zobrazení `TrainingPlan.Title` v řádku
+lokality** níže popisuje plán pro nejnovější komentář k issue — zatím
+**není implementováno**.
 
 ## Cíl
 
 Sjednotit obsah a vizuální hierarchii bloku tréninku i tréninkového plánu
-v komponentě rozvrhu na pevnou strukturu čtyř řádků:
+v komponentě rozvrhu na pevnou strukturu řádků. Podle doplňujícího komentáře
+k issue (viz níže) má blok nově **5 řádků**:
 
 1. kategorie (beze změny),
-2. čas od–do — nově **tučně**, nejvýraznější informace v bloku,
-3. trenéři — pouze **příjmení**, více trenérů odděleno čárkou,
-4. lokalita — pouze název, bez typu tréninku jako textu.
+2. čas od–do — **tučně**, nejvýraznější informace v bloku,
+3. lokalita — pouze název, bez typu tréninku jako textu,
+4.–5. trenéři — pouze **příjmení**, více trenérů odděleno čárkou, vizuálně
+   zalomeno/omezeno na 2 řádky, aby se vešli i trenéři u spojených tréninků
+   více kategorií.
+
+(Původní návrh issue měl pořadí trenéři → lokalita ve 4řádkové struktuře;
+komentář autora issue toto pořadí mění — viz sekce Aktualizace níže.)
 
 Typ tréninku (led / suchá příprava) se nově nerozlišuje textem, ale vizuálně
 způsobem vykreslení pozadí bloku: led = plná barva (beze změny), suchá
@@ -20,10 +29,25 @@ příprava = stejná barva s jemným diagonálním šrafováním přes CSS
 (`repeating-linear-gradient`), bez externích obrázků a beze změny stávajícího
 významu barev kategorií.
 
-Issue nemá žádné doplňující komentáře (`gh issue view 21` vrátil prázdné pole
-`comments`), zadání je tedy kompletně popsáno v těle issue.
+Doplňující komentář autora issue (2026-10-03) upřesňuje strukturu takto:
+
+> Jména trenérů i poté, co jsme odebrali jméno jsou stále hodně dlouhá a u
+> spojených tréninků se do výpisu často nevejdou. Zvětšíme blok na výšku,
+> nově bude mít blok 5 řádek. Seznam trenérů bude navržen tak, aby zabíral
+> 2 řádky. Prohodíme pořadí s lokalitou. Ta bude nově na třetím řádku a
+> poslední dva budou trenéři.
+
+Tento komentář je novější a má přednost před původním textem těla issue, kde
+bylo pořadí trenéři → lokalita a struktura měla 4 řádky.
 
 ## Výchozí stav
+
+> **Poznámka:** Následující popis odpovídá stavu **před** implementací fází
+> 1–4 (viz historie níže). Fáze 1–4 jsou k dnešnímu dni implementovány —
+> `IsDryTraining`, `SimpleCoachDto`, `CoachSurnameSummary` i přeuspořádání na
+> kategorie → čas → trenéři → lokalita už existují v kódu. Aktuální stav
+> **před Fází 5** (nově požadovanou komentářem) popisuje sekce
+> **Aktualizace podle komentáře** níže.
 
 - Blok v rozvrhu i plánu vykresluje `ScheduleEventModel` (společný
   prezentační model pro Training/TrainingPlan/Match) ve
@@ -531,3 +555,391 @@ fallback na plnou barvu při smíšeném typu spojeného bloku).
 - [x] `docs/modules/sport.md` popisuje novou strukturu bloku a vizuální
       rozlišení typu tréninku.
 - [x] Žádná EF Core migrace nebyla vytvořena ani upravena.
+
+---
+
+## Aktualizace podle komentáře (2026-10-03): blok s 5 řádky
+
+Následující sekce doplňuje a nahrazuje relevantní části plánu výše na základě
+novějšího komentáře autora issue. Datový model (`ScheduleEventModel.DetailLine1`
+= trenéři, `DetailLine2` = lokalita; `IsDryTraining`) se **nemění** — mění se
+jen pořadí vykreslení ve view a doprovodné CSS.
+
+### Aktuální stav (po fázích 1–4)
+
+Ověřeno přímo v kódu:
+
+- `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/Default.cshtml`
+  vykresluje (obě větve `<a>` i `<div>`) v pořadí: `schedule-block-cat`
+  (kategorie), `schedule-block-time` (tučný čas), `schedule-block-coaches`
+  (`block.DetailLine1` = příjmení trenérů), `schedule-block-location`
+  (`block.DetailLine2` = lokalita).
+- `src/SportSys.Razor/Styles/_schedule.scss`: `$track-height: 5rem`;
+  `.schedule-block-coaches`/`.schedule-block-location` sdílejí jednořádkový
+  styl (`white-space: nowrap`, `overflow: hidden`, `text-overflow: ellipsis`).
+- Zápasový blok (`ScheduleEventType.Match`) používá stejný markup s
+  `DetailLine1` = soupeř, `DetailLine2` = výsledek — **mimo rozsah** této
+  aktualizace, pořadí se u zápasu nesmí měnit.
+
+### Nově potvrzené požadavky
+
+1. Blok tréninku/tréninkového plánu se zvětší na výšku na **5 řádků**:
+   kategorie, čas (tučně), lokalita, trenéři (2 řádky).
+2. Pořadí lokalita ↔ trenéři se oproti současnému stavu **prohazuje**:
+   lokalita je nově 3. řádek, trenéři 4.–5. řádek.
+3. Seznam trenérů je vizuálně navržen tak, aby zabíral přesně 2 řádky
+   (zalomení/omezení počtu řádků), ne jeden řádek s ořezem jako dosud.
+4. Zápasový blok zůstává beze změny pořadí (soupeř, výsledek) — nutno
+   rozlišit podle `block.EventType` v šabloně, aby se úprava netýkala zápasů.
+5. Led/suchá příprava (`schedule-block--dry`) zůstává beze změny chování,
+   jen je potřeba ověřit, že šrafování zůstává čitelné i na vyšším bloku.
+
+### Technický návrh Fáze 5
+
+**View** — `Default.cshtml`: aby se pořadí neudržovalo duplicitně ve dvou
+větvích (`<a>` i `<div>`), vyextrahovat vykreslení 4 vnitřních `span` prvků +
+stavové ikony do sdíleného partialu
+`_ScheduleBlockContent.cshtml` (`@model TrainingScheduleBlock`) a v obou
+větvích jej includovat. Partial rozhodne o pořadí `DetailLine1`/`DetailLine2`
+podle `Model.EventType`:
+
+```cshtml
+<span class="schedule-block-cat">@Model.Title</span>
+<span class="schedule-block-time">@Model.TimeFrom.ToString("H:mm")–@Model.TimeTo.ToString("H:mm")</span>
+@if (Model.EventType == SportSys.Razor.Models.TrainingSchedule.ScheduleEventType.Match)
+{
+    <span class="schedule-block-coaches">@Model.DetailLine1</span>
+    <span class="schedule-block-location">@Model.DetailLine2</span>
+}
+else
+{
+    <span class="schedule-block-location">@Model.DetailLine2</span>
+    <span class="schedule-block-coaches schedule-block-coaches--wrap">@Model.DetailLine1</span>
+}
+```
+
+**SCSS** — `_schedule.scss`:
+
+- Zvýšit `$track-height` z `5rem` na hodnotu pokrývající 5 řádků textu s
+  rezervou (návrh `6.25rem`, doladit vizuální kontrolou).
+- Přidat modifikátor `.schedule-block-coaches--wrap` pro víceřádkové
+  zalomení na max. 2 řádky s ořezem:
+  ```scss
+  .schedule-block-coaches--wrap {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  ```
+  (Zápasový řádek `.schedule-block-coaches` beze změny — jednořádkový,
+  `white-space: nowrap`.)
+- `.schedule-block-location` zůstává jednořádková, beze změny stylu.
+- Vizuálně ověřit po `npm run build:css`, že zvýšený blok se šrafováním
+  (`schedule-block--dry`) nerozbije layout vícero drah (lanes) ve stejném
+  dni a že text zůstává čitelný.
+
+### Implementační kroky Fáze 5
+
+1. Vytvořit partial
+   `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/_ScheduleBlockContent.cshtml`
+   podle návrhu výše a nahradit jím duplikovaný obsah obou větví bloku v
+   `Default.cshtml` (zachovat obalový element, `style`, `title`, `asp-*`
+   atributy beze změny).
+2. Upravit `_schedule.scss`: `$track-height`, nový modifikátor
+   `.schedule-block-coaches--wrap`.
+3. Spustit `npm run build:css` ve `src/SportSys.Razor` a ověřit vizuálně
+   obě stránky rozvrhu (včetně spojených tréninků s dlouhým seznamem
+   trenérů a dlouhým názvem lokality).
+4. Spustit `dotnet test tests/SportSys.Razor.Tests -c Release` — žádný C#
+   model se nemění, testy by měly projít beze změny; pokud existuje test
+   ověřující strukturu vykresleného HTML, doplnit/upravit jej o nové pořadí
+   pro Training/TrainingPlan a zachované pořadí pro Match.
+5. Aktualizovat `docs/modules/sport.md` (odstavec o struktuře bloku) na
+   5řádkový popis s novým pořadím.
+
+### Soubory ke změně (Fáze 5)
+
+- `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/Default.cshtml`
+- `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/_ScheduleBlockContent.cshtml`
+  (nový soubor)
+- `src/SportSys.Razor/Styles/_schedule.scss`
+- `docs/modules/sport.md`
+
+### Beze změny (Fáze 5)
+
+- `ScheduleEventModel`, `TrainingScheduleBlockData`,
+  `ScheduleEventModelFactory`, `TrainingScheduleBlockFactory` — žádná změna
+  datového modelu, mění se jen vykreslení.
+- Pořadí a struktura zápasového bloku.
+- Databázové schéma — žádná migrace.
+
+### Manuální akceptace Fáze 5
+
+- Trénink/plán zobrazuje 5 řádků v pořadí kategorie → tučný čas → lokalita
+  → trenéři (max. 2 řádky).
+- Zápasový blok používá stejné pozice řádků (kategorie, čas, 3. a 4. řádek
+  shodně umístěné jako u tréninku), i když obsah 3./4. řádku je u zápasu
+  jiný (soupeř/výsledek) — viz Doplnění níže.
+- Dlouhý seznam trenérů u spojeného tréninku více kategorií se zalomí na
+  2 řádky a nerozbije výšku dráhy rozvrhu.
+- Led/suchá příprava zůstávají vizuálně rozlišeny i po zvětšení bloku.
+
+### Hotovo, když (Fáze 5)
+
+- [x] Blok tréninku a tréninkového plánu zobrazuje 5 řádků v pořadí
+      kategorie → čas (tučně) → lokalita → trenéři (až 2 řádky).
+- [x] Zápasový blok používá stejné pořadí pozic jako trénink/plán (viz
+      Doplnění níže) a stejný počet řádků.
+- [x] Dlouhý seznam trenérů ani dlouhý název lokality nerozbíjí layout
+      dráhy rozvrhu (ověřeno CSS zalomením/oříznutím; sdílený track
+      zvětšen na `6.25rem`).
+- [x] `npm run build:css` a `dotnet test tests/SportSys.Razor.Tests -c Release`
+      proběhnou bez chyb/regresí (124/124 testů úspěšných).
+- [x] `docs/modules/sport.md` odpovídá nové 5řádkové struktuře.
+
+---
+
+## Doplnění (2026-10-03, pokyn uživatele): sjednocení pořadí i u zápasu
+
+Uživatel rozhodl, že pořadí vykreslovaných řádků v bloku má být **shodné pro
+všechny typy bloků** (trénink, tréninkový plán i zápas), aby se uživatel při
+čtení rozvrhu nemusel orientovat podle typu bloku. Toto rozhodnutí nahrazuje
+dřívější body výše, které u zápasu předepisovaly zachování původního pořadí
+(„Zápasový blok zůstává beze změny pořadí“).
+
+Uživatel úpravu kódu provedl sám přímo v
+`src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/_ScheduleBlockContent.cshtml`:
+třetí řádek (`schedule-block-location`, `@Model.DetailLine2`) se nyní
+vykresluje **pro všechny typy bloků stejně**, bez podmínky na
+`Model.EventType`; podmínka na `EventType` zůstává jen u čtvrtého řádku, kde
+rozhoduje, zda se `DetailLine1` zalomí na 2 řádky (`schedule-block-coaches--wrap`,
+trénink/plán) nebo zůstane jednořádkový (zápas).
+
+Jde čistě o sjednocení **pozice** řádků — sémantika dat se nemění:
+`ScheduleEventModelFactory.CreateMatch` dál nastavuje `DetailLine1` = soupeř
+a `DetailLine2` = výsledek. Třetí řádek bloku zápasu tedy zobrazuje výsledek
+(dřív byl na čtvrté pozici), čtvrtý řádek zobrazuje soupeře (dřív na třetí).
+Žádná změna `ScheduleEventModel`, DTO ani Contract vrstvy nebyla potřeba.
+
+Beze změny zůstává: zápasový blok nemá zalomení na 2 řádky (jen trénink a
+plán), tooltip zápasu i Excel export (nepoužívají `Default.cshtml`/partial).
+
+`docs/modules/sport.md` byla aktualizována tak, aby popisovala sjednocené
+pořadí pozic a zároveň vysvětlovala, že obsah 3./4. řádku u zápasu zůstává
+specifický (soupeř/výsledek, ne lokalita/trenéry).
+
+---
+
+## Doplnění (2026-10-05): zobrazení `TrainingPlan.Title` v řádku lokality
+
+### Cíl
+
+Nový komentář autora issue (2026-10-05):
+
+> Upravíme popisy u tréninkových plánů. Tréninkové plány nově obsahují
+> textovou property Title. Pokud je neprázdná, zobraz text Title za pomlčku
+> v řádce s lokalitou.
+
+Uživatel toto upřesnil (viz odpověď v `ask_user` při přípravě plánu): text
+`Title` se nemá připojovat **za** lokalitu, ale naopak na **začátek** řádku
+s lokalitou, oddělený pomlčkou:
+
+```text
+Title - Lokalita
+```
+
+místo
+
+```text
+Lokalita - Title
+```
+
+Pokud `Title` tréninkového plánu je prázdný (`""`), řádek s lokalitou
+zůstává beze změny (jen název lokality, žádná osamocená pomlčka). Změna se
+týká **pouze tréninkových plánů** — reálné tréninky (`Training`) nemají
+sloupec `Title` a jejich řádek s lokalitou se nemění. Zápasový blok také
+není dotčen.
+
+### Výchozí stav
+
+- `sport.TrainingPlan.Title` (`src/SportSys.Database/Models/sport/
+  TrainingPlan.cs:46`, `[StringLength(100)] public required string Title`)
+  **už existuje** v databázi — sloupec přidala migrace
+  `src/SportSys.Database/Migrations/20261003134604_TrainingPlanTitle.cs`.
+  **Žádná nová migrace není potřeba.**
+- `TrainingPlanScheduleItemDto` (`src/SportSys.Contract/Models/
+  TrainingScheduleDto.cs`) **nemá** vlastnost `Title` — property z entity
+  se do DTO zatím nijak nepromítá.
+- `TrainingScheduleService.GetTrainingPlansAsync` (`src/SportSys.Contract/
+  Services/TrainingScheduleService.cs`, projekce `Select(p => new
+  TrainingPlanScheduleItemDto { ... })`) nenačítá `p.Title` — je potřeba
+  doplnit mapování.
+- Vizualizační vrstva prošla od původních fází 1–5 refaktoringem na
+  třídní polymorfismus (viz paměť „training schedule models“):
+  `EventModel`/`TrainingLikeEventModel`/`TrainingEventModel`/
+  `TrainingPlanEventModel`/`MatchEventModel`
+  (`src/SportSys.Razor/Models/TrainingSchedule/EventModel.cs`) nahradily
+  dřívější `ScheduleEventModel` s `DetailLine1`/`DetailLine2` zmiňovaný ve
+  starších částech tohoto plánu výše — ty jsou v tomto bodě **neaktuální**,
+  platí už jen tato nová sekce a skutečný stav kódu.
+- Řádek s lokalitou se dnes vykresluje v
+  `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/
+  _ScheduleBlockContent.cshtml` jako
+  `<span class="schedule-block-location">@training.LocationSummary</span>`
+  pro větev `Model.Source is TrainingLikeEventModel training` — společnou
+  pro `TrainingEventModel` i `TrainingPlanEventModel`. `LocationSummary`
+  (`TrainingLikeEventModel.LocationSummary`) nese jen název lokality
+  (případně více lokalit spojeného bloku oddělených čárkou), bez vazby na
+  `Title`.
+- `TrainingScheduleBlockFactory.CreateBlock`
+  (`src/SportSys.Razor/Models/TrainingSchedule/
+  TrainingScheduleBlockData.cs`) pracuje obecně nad `ITrainingScheduleItem`
+  a nezná `Title` (je specifický jen pro plány). `EventModelFactory.
+  CreateTrainingPlanBlock` (`EventModel.cs`) už ale obdobně řeší
+  plán-specifická data mimo `TrainingScheduleBlockData` — např. `ValidFrom`/
+  `ValidTo` se počítají z `block.Items.OfType<TrainingPlanScheduleItemDto>()`
+  (`var planItems = ...`). Stejný vzor lze použít pro `Title`.
+- Spojený blok (vizualizační skupina více plánů, `TrainingScheduleBlockFactory.
+  CreateBlocks`) může obsahovat více `TrainingPlan` položek s různým
+  `Title`. Obdobné sloučené texty (`Locations`, `TrainingTypeNames`) se dnes
+  deduplikují a řadí přes `DistinctOrdered` a spojují čárkou — stejný
+  přístup se použije i pro `Title`.
+
+### Technický návrh
+
+1. **DTO** — přidat `public string Title { get; set; } = string.Empty;` do
+   `TrainingPlanScheduleItemDto` (`TrainingScheduleDto.cs`). Nepřidávat do
+   sdíleného rozhraní `ITrainingScheduleItem` — `Title` je vlastnost jen
+   tréninkových plánů, reálný trénink ji nemá.
+2. **Contract načítání** — v `TrainingScheduleService.GetTrainingPlansAsync`
+   doplnit do projekce `Title = p.Title,`.
+3. **Prezentační model** — do `TrainingPlanEventModel`
+   (`EventModel.cs`) přidat `public required string PlanTitleSummary { get;
+   init; }` (prázdný řetězec, pokud žádná položka bloku nemá vyplněný
+   `Title`).
+   V `EventModelFactory.CreateTrainingPlanBlock` spočítat ze stávající
+   proměnné `planItems`:
+   ```csharp
+   var planTitleSummary = string.Join(
+       ", ",
+       planItems
+           .Select(item => item.Title)
+           .Where(title => !string.IsNullOrWhiteSpace(title))
+           .Distinct(StringComparer.CurrentCulture)
+           .OrderBy(title => title, StringComparer.CurrentCulture));
+   ```
+   a předat jako `PlanTitleSummary = planTitleSummary` v inicializátoru
+   `TrainingPlanEventModel`.
+4. **Zobrazení** — v `_ScheduleBlockContent.cshtml`, ve větvi `Model.Source
+   is TrainingLikeEventModel training`, rozlišit, zda jde o tréninkový plán
+   s neprázdným `PlanTitleSummary`:
+   ```cshtml
+   <span class="schedule-block-location">
+     @if (training is Models.TrainingSchedule.TrainingPlanEventModel { PlanTitleSummary.Length: > 0 } plan)
+     {
+       @plan.PlanTitleSummary<text> - </text>@training.LocationSummary
+     }
+     else
+     {
+       @training.LocationSummary
+     }
+   </span>
+   ```
+   (Přesná syntaxe Razoru se doladí při implementaci tak, aby nevkládala
+   nechtěné mezery/HTML komentáře; princip je `Title - Lokalita` jen když
+   `PlanTitleSummary` není prázdné, jinak beze změny.)
+5. **CSS** — žádná změna stylu `.schedule-block-location` není nutná
+   (zůstává jednořádková, text se dál může zalomit/oříznout stejně jako
+   dnes u spojené lokality); zkontrolovat vizuálně, že delší text
+   `Title - Lokalita` nerozbíjí layout (viz požadavek na responzivitu z
+   původního zadání issue).
+
+### Implementační kroky
+
+1. Přidat `Title` do `TrainingPlanScheduleItemDto`
+   (`src/SportSys.Contract/Models/TrainingScheduleDto.cs`).
+2. Doplnit mapování `Title = p.Title` v `TrainingScheduleService.
+   GetTrainingPlansAsync` (`src/SportSys.Contract/Services/
+   TrainingScheduleService.cs`).
+3. Přidat `PlanTitleSummary` do `TrainingPlanEventModel` a výpočet v
+   `EventModelFactory.CreateTrainingPlanBlock`
+   (`src/SportSys.Razor/Models/TrainingSchedule/EventModel.cs`).
+4. Upravit řádek lokality v `_ScheduleBlockContent.cshtml`
+   (`src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/
+   _ScheduleBlockContent.cshtml`) podle návrhu v bodě 4 výše.
+5. Spustit `npm run build:css` (pouze pokud se při implementaci přidá nový
+   CSS modifikátor — podle bodu 5 návrhu pravděpodobně není potřeba).
+6. Spustit `dotnet test tests/SportSys.Razor.Tests -c Release`; doplnit/
+   upravit testy pokrývající vykreslení bloku tréninkového plánu o případ
+   s vyplněným i prázdným `Title` (pokud existující testy ověřují obsah
+   `schedule-block-location`).
+7. Aktualizovat `docs/modules/sport.md` (odstavec o struktuře bloku,
+   `docs/modules/sport.md:113-138`) — doplnit větu o tom, že u
+   tréninkového plánu s neprázdným `Title` řádek lokality zobrazuje
+   `Title - Lokalita`.
+8. Ručně ověřit v rozvrhu tréninkových plánů: plán s vyplněným `Title`,
+   plán s prázdným `Title`, spojený blok více plánů se shodným i různým
+   `Title`, a dlouhý text `Title - Lokalita` při úzkém sloupci rozvrhu.
+
+### Soubory ke změně
+
+- `src/SportSys.Contract/Models/TrainingScheduleDto.cs`
+- `src/SportSys.Contract/Services/TrainingScheduleService.cs`
+- `src/SportSys.Razor/Models/TrainingSchedule/EventModel.cs`
+- `src/SportSys.Razor/Pages/Shared/Components/TrainingSchedule/
+  _ScheduleBlockContent.cshtml`
+- `docs/modules/sport.md`
+
+### Testy a ověření
+
+- `dotnet test tests/SportSys.Razor.Tests -c Release` — rozšířit/ověřit
+  testy vykreslení bloku tréninkového plánu o `Title`.
+- Vizuální kontrola rozvrhu tréninkových plánů (plán s/bez `Title`,
+  spojený blok, úzký sloupec).
+
+### Manuální akceptace
+
+- Tréninkový plán s neprázdným `Title` zobrazuje na řádku lokality text
+  `Title - Lokalita`.
+- Tréninkový plán s prázdným `Title` zobrazuje jen `Lokalita`, beze změny
+  oproti současnému stavu.
+- Reálný trénink (`Training`) a zápasový blok nejsou touto změnou nijak
+  ovlivněny.
+- Spojený blok více tréninkových plánů s různými `Title` zobrazí všechny
+  neprázdné hodnoty oddělené čárkou před pomlčkou a lokalitou.
+- Dlouhý text `Title - Lokalita` nerozbíjí layout dráhy rozvrhu.
+
+### Beze změny
+
+- Databázové schéma — sloupec `TrainingPlan.Title` i migrace už existují,
+  žádná nová migrace se nevytváří.
+- `ITrainingScheduleItem` — `Title` zůstává specifický jen pro
+  `TrainingPlanScheduleItemDto`, nepřidává se do sdíleného rozhraní.
+- Tooltip bloku (`EventModelFactory.CreateTooltip`) a Excel export
+  (`TrainingScheduleExcelExporter`, `TrainingScheduleBlockData.
+  LocationSummary`) — komentář k issue se týká jen řádku lokality ve
+  vizuálním bloku rozvrhu, ne tooltipu ani exportu.
+- Řádek s trenéry, kategorií a čas — beze změny pořadí i obsahu.
+- Zápasový blok (`MatchEventModel`) — beze změny.
+
+### Mimo rozsah
+
+- Zobrazení/editace `Title` v administračním formuláři tréninkového plánu
+  (mimo rozsah tohoto issue, `Title` se tam už zadává — řeší jiná práce).
+- Promítnutí `Title` do tooltipu nebo Excel exportu.
+
+### Hotovo, když
+
+- [ ] `TrainingPlanScheduleItemDto.Title` se plní z `TrainingPlan.Title`.
+- [ ] `TrainingPlanEventModel.PlanTitleSummary` obsahuje sloučený,
+      deduplikovaný seznam neprázdných `Title` položek bloku.
+- [ ] Řádek lokality tréninkového plánu zobrazuje `Title - Lokalita`, pokud
+      je `Title` neprázdný, jinak jen `Lokalita`.
+- [ ] Reálné tréninky a zápasy zůstávají beze změny.
+- [ ] `dotnet test tests/SportSys.Razor.Tests -c Release` proběhne bez
+      regresí.
+- [ ] `docs/modules/sport.md` popisuje nové chování řádku lokality u
+      tréninkových plánů.

@@ -110,24 +110,39 @@ Legenda se sestavuje z výsledných bloků, nikoliv přímo ze seznamu vybranýc
 kategorií. Spojený blok se proto v legendě zobrazí pod stejným názvem jako
 v rozvrhu, například `U12 + U14`, a každá kombinace je uvedena pouze jednou.
 
-Každý blok zobrazuje čtyři pevné řádky v tomto pořadí: kategorie, čas od–do
-(tučně, nejvýraznější informace v bloku), příjmení přiřazených trenérů a
-název lokality. Typ tréninku (led / suchá příprava) se v bloku nevypisuje
-textem — rozlišuje ho vizuální vykreslení pozadí: led má plnou barvu podle
-kategorie beze změny, suchá příprava stejnou barvu doplněnou o jemné
-diagonální šrafování (modifikátor `schedule-block--dry`, CSS
-`repeating-linear-gradient`, bez obrázků a bez JS). Příjmení trenéra se
-odvozuje jako poslední mezerou oddělené slovo z `User.DisplayName` — výpočet
-provádí jednou `TrainingScheduleService` (Contract) a předává přes DTO
-`SimpleCoachDto` (`FullName` + `LastName`), Razor vrstva už žádný řetězec
-neparsuje. Údaje spojeného bloku se agregují ze všech jeho členů a oddělují
-čárkou. Pokud trénink nemá přiřazeného trenéra, zobrazí se `-`. U plánů se
-zahrnou přiřazení z `CoachTrainingPlan`, jejichž interval platnosti se
-překrývá s intervalem `TrainingPlan.From–To`. Pokud spojený blok obsahuje
-položky s různým typem tréninku (led i suchá příprava), šrafování se
-nezobrazí a blok se vykreslí jako plná barva — stejný bezpečný fallback jako
-u smíšeného stavu tréninku (`HasMixedState`). Celá jména trenérů i text typu
-tréninku zůstávají dostupné v tooltipu bloku a v Excel exportu rozvrhu
+Blok tréninku a tréninkového plánu zobrazuje pět pevných řádků v tomto
+pořadí: kategorie, čas od–do (tučně, nejvýraznější informace v bloku), název
+lokality a příjmení přiřazených trenérů (zalomená na nejvýše dva řádky —
+modifikátor `schedule-block-coaches--wrap`, aby se vešli i trenéři u
+spojených tréninků více kategorií). U tréninkového plánu s neprázdnou
+textovou vlastností `sport.TrainingPlan.Title` zobrazuje řádek lokality
+text ve tvaru `Title - Lokalita`; pokud je `Title` prázdný, zobrazí se jen
+název lokality beze změny (`TrainingPlanEventModel.PlanTitleSummary`,
+`EventModelFactory.CreateTrainingPlanBlock`). U spojeného bloku více plánů
+se neprázdné hodnoty `Title` deduplikují a spojují čárkou. Reálný trénink
+(`Training`) sloupec `Title` nemá a jeho řádek lokality se tímto nemění.
+Blok zápasu používá stejné pořadí
+vykreslovaných pozic (kategorie, čas, třetí a čtvrtý řádek), ale obsah
+třetího a čtvrtého řádku je zápasu vlastní: třetí řádek zobrazuje výsledek
+a čtvrtý soupeře (`ScheduleEventModelFactory.CreateMatch`), ne lokalitu a
+trenéry; jde jen o sjednocení vizuálního pořadí napříč typy bloků, ne o
+sdílený význam dat. Typ
+tréninku (led / suchá příprava) se v bloku nevypisuje textem — rozlišuje ho
+vizuální vykreslení pozadí: led má plnou barvu podle kategorie beze změny,
+suchá příprava stejnou barvu doplněnou o jemné diagonální šrafování
+(modifikátor `schedule-block--dry`, CSS `repeating-linear-gradient`, bez
+obrázků a bez JS). Příjmení trenéra se odvozuje jako poslední mezerou
+oddělené slovo z `User.DisplayName` — výpočet provádí jednou
+`TrainingScheduleService` (Contract) a předává přes DTO `SimpleCoachDto`
+(`FullName` + `LastName`), Razor vrstva už žádný řetězec neparsuje. Údaje
+spojeného bloku se agregují ze všech jeho členů a oddělují čárkou. Pokud
+trénink nemá přiřazeného trenéra, zobrazí se `-`. U plánů se zahrnou
+přiřazení z `CoachTrainingPlan`, jejichž interval platnosti se překrývá s
+intervalem `TrainingPlan.From–To`. Pokud spojený blok obsahuje položky s
+různým typem tréninku (led i suchá příprava), šrafování se nezobrazí a blok
+se vykreslí jako plná barva — stejný bezpečný fallback jako u smíšeného
+stavu tréninku (`HasMixedState`). Celá jména trenérů i text typu tréninku
+zůstávají dostupné v tooltipu bloku a v Excel exportu rozvrhu
 (`TrainingScheduleBlockData.CoachSummary`/`TrainingTypeSummary`), export se
 touto úpravou nemění.
 
@@ -191,6 +206,13 @@ a tlačítkem „Použít filtry“.
 - nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality —
   filtr je společný a omezuje tréninky i zápasy zároveň,
 - datum od a do,
+- nula, jeden nebo více dnů v týdnu (checkbox skupina Pondělí–Neděle); prázdný
+  výběr znamená všechny dny. Filtr omezuje přímo načtená data (tréninky i
+  zápasy) stejně jako ostatní společné filtry — při výběru jen vybraných dnů
+  se načítají a zobrazují (i exportují) výhradně bloky spadající na tyto dny,
+  ostatní dny se v intervalu Datum od–do zobrazují jako řádky bez položek
+  (podle volby „Zobrazovat prázdné řádky“ stejně jako ostatní dny bez
+  tréninku/zápasu),
 - při zapnutém „Tréninky“: nula, jeden nebo více typů tréninku (prázdný výběr
   = všechny typy), nula, jeden nebo více stavů tréninku (prázdný výběr =
   všechny stavy) a volitelné spojování časově překrývajících se nebo
@@ -200,9 +222,9 @@ a tlačítkem „Použít filtry“.
   stavy).
 
 Řádky odpovídají konkrétním datům z vybraného intervalu, včetně dnů bez tréninku.
-Sezóna, kategorie, datum a lokalita omezují tréninky i zápasy. Typ tréninku,
-stav tréninku a volba spojování se vztahují pouze na tréninky; zápasy se
-nikdy neslučují s tréninky ani mezi sebou. Typ zápasu a stav zápasu se
+Sezóna, kategorie, datum, den v týdnu a lokalita omezují tréninky i zápasy. Typ
+tréninku, stav tréninku a volba spojování se vztahují pouze na tréninky; zápasy
+se nikdy neslučují s tréninky ani mezi sebou. Typ zápasu a stav zápasu se
 vztahují pouze na zápasy a používají odlišné číselníky
 (`sport.MatchType`, `sport.MatchState`) než tréninkové filtry; zápas s
 nevyplněným `MatchStateId` se do vybraných stavů nepočítá.
@@ -271,9 +293,16 @@ tréninky, např. `U12 + U14`) stránka místo jednoho sdíleného pole zobrazuj
 tabulku Kategorie + Trenér s vlastním multivýběrem pro každý člen skupiny —
 protože editace celé skupiny má jediný vstupní bod (`EditItemId =
 block.MinimumItemId`), jinak by trenéři ostatních členů nebyli editovatelní.
-Jeden trenér smí být v rámci skupiny přiřazen nejvýše k jednomu tréninku;
-pokud se stejné ID objeví u více členů, Contract služba uložení odmítne
-(`TrainingPlanUpdateResult.DuplicateCoachAssignment`) a nic se nezapíše.
+
+> **Dočasný stav (HACK):** Validace, že jeden trenér smí být v rámci skupiny
+> přiřazen nejvýše k jednomu tréninku, je v
+> `TrainingPlanService.UpdateAsync` dočasně vypnutá (zakomentovaná, označená
+> komentářem `HACK`), takže stejný trenér může být nyní přiřazen k více
+> spojeným plánům současně. `TrainingPlanUpdateResult.DuplicateCoachAssignment`
+> i pomocná metoda `HasDuplicateCoachAcrossPlans` v kódu zůstávají
+> zachované pro případné obnovení validace. Jde o přechodné řešení do
+> finálního rozhodnutí; tento odstavec je potřeba opravit zpět (nebo kód
+> trvale odstranit), jakmile padne finální verdikt.
 
 Při uložení se vybraní trenéři (za každý `TrainingPlan.Id` ve skupině
 samostatně) sesynchronizují s `sport.CoachTrainingPlan`: nově vybraní se
@@ -292,25 +321,33 @@ Celý filtr je vizuálně obalen jedním panelem „Tréninky“ (ikona
 stejnojmenným panelem na stránce Schedule — stránka Plan řeší jen tréninky,
 takže není potřeba dělit filtry na společné/specifické jako na Schedule.
 Vnořené Kategorie používají stejnou třídu `schedule-filter-categories--nested`
-jako na Schedule. Tlačítko „Zobrazit plán“ zůstává beze změny; stránka
-Plan nemá akci „Vymazat filtry“.
+jako na Schedule. Tlačítko „Zobrazit plán“ zůstává beze změny; pod panelem je
+akční lišta s odkazem „Vymazat filtry“ (GET navigace na stránku bez
+parametrů, obnoví výchozí hodnoty všech filtrů, stejné provedení jako na
+stránce Schedule).
 
 - aktivní sezóna,
 - jedna nebo více aktivních kategorií,
 - nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
 - nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality,
-- jedna fáze tréninku,
+- nula nebo jedna fáze tréninku; prázdný výběr znamená všechny fáze,
 - nepovinné datum platnosti; zobrazí plány, pro které platí
   `From <= datum <= To`,
+- nula, jeden nebo více dnů v týdnu (checkbox skupina za polem „Datum
+  platnosti“); prázdný výběr znamená všechny dny. Na rozdíl od ostatních
+  filtrů zde vybrané dny přímo určují, které řádky (Pondělí–Neděle) se vůbec
+  vykreslí — pro nevybrané dny se nezobrazí ani prázdný řádek, bez ohledu na
+  volbu „Zobrazovat prázdné řádky“,
 - volitelné spojování časově překrývajících se nebo navazujících plánů.
 
-Plan vždy vykreslí pondělí až neděli včetně prázdných dnů. Při nevyplněném
-datu zobrazuje všechny odpovídající záznamy bez omezení podle `From–To`.
-Při vyplněném datu se hranice platnosti vyhodnocují inkluzivně. Překrývající
-se záznamy a plány s různými obdobími platnosti jsou rozděleny do samostatných
-lanes, pokud není zapnuté spojování tréninků. Při zapnutém spojování se plány
-ve stejném dni týdne seskupují pouze podle času; jejich období platnosti není
-další podmínkou spojení. Platnost je uvedena v tooltipu.
+Plan bez filtru „Den“ vykreslí pondělí až neděli včetně prázdných dnů. Při
+nevyplněném datu zobrazuje všechny odpovídající záznamy bez omezení podle
+`From–To`. Při vyplněném datu se hranice platnosti vyhodnocují inkluzivně.
+Překrývající se záznamy a plány s různými obdobími platnosti jsou rozděleny
+do samostatných lanes, pokud není zapnuté spojování tréninků. Při zapnutém
+spojování se plány ve stejném dni týdne seskupují pouze podle času; jejich
+období platnosti není další podmínkou spojení. Platnost je uvedena v
+tooltipu.
 
 `TrainingPlan.DayName` musí obsahovat přesnou anglickou hodnotu `Monday` až
 `Sunday`. Neplatná hodnota vyvolá explicitní chybu a není tiše přeskočena.

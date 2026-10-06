@@ -145,7 +145,7 @@ public class ScheduleEventModelFactoryTests
     }
 
     private static TrainingScheduleComponentModel CreateComponent(
-        params ScheduleEventModel[] items)
+        params EventModel[] items)
         => TrainingScheduleComponentModel.Create(new TrainingScheduleViewModel(
             [
                 new TrainingScheduleRow
@@ -158,14 +158,12 @@ public class ScheduleEventModelFactoryTests
             ["U12"],
             allowEditing: true));
 
-    private static ScheduleEventModel CreateEvent(
-        ScheduleEventType eventType,
+    private static EventModel CreateEvent(
         int id,
         int hourFrom,
         int hourTo)
         => new()
         {
-            EventType = eventType,
             SourceId = id,
             SeasonCategoryOrder = 1,
             ColorKey = "U12",

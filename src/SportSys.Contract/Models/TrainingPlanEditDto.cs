@@ -34,10 +34,14 @@ public class TrainingPlanEditDto : IValidatableObject
   [Display(Name = "Čas do")]
   public TimeOnly TimeTo { get; set; }
 
-  [Required(ErrorMessage = "Lokalita je povinná.")]
-  [StringLength(100, ErrorMessage = "Lokalita nesmí přesáhnout 100 znaků.")]
+  [Range(1, int.MaxValue, ErrorMessage = "Lokalita je povinná.")]
+  [UIHint("Select")]
   [Display(Name = "Lokalita")]
-  public string Location { get; set; } = string.Empty;
+  public int LocationId { get; set; }
+
+  [StringLength(100, ErrorMessage = "Název nesmí přesáhnout 100 znaků.")]
+  [Display(Name = "Název")]
+  public string Title { get; set; } = string.Empty;
 
   [Display(Name = "Trenéři")]
   [ScaffoldColumn(false)]
@@ -126,7 +130,7 @@ public class TrainingPlanEditMemberDto
   public required string DayName { get; init; }
   public TimeOnly TimeFrom { get; init; }
   public TimeOnly TimeTo { get; init; }
-  public required string Location { get; init; }
+  public int LocationId { get; init; }
 
   /// <summary>
   /// Aktuálně přiřazení trenéři tohoto konkrétního tréninku (nezávisle na
@@ -157,4 +161,5 @@ public enum TrainingPlanUpdateResult
   Conflict,
   InvalidInput,
   DuplicateCoachAssignment,
+  LocationUnavailable,
 }
