@@ -1,7 +1,7 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Požadavky na tréninky";
+    ViewData["Title"] = "Požadavky";
 
     var selectedTrainingTypeNames = Model.TrainingTypes
         .Where(type => Model.SelectedTrainingTypeIds.Contains(type.Id))
@@ -45,7 +45,7 @@
         </div>
 
         <div class="field">
-            <span class="schedule-filter-label" id="TrainingTypeLabel">Typ tréninku</span>
+            <span class="schedule-filter-label" id="TrainingTypeLabel">Typ tréninku <small class="text-muted">(jen tréninky)</small></span>
             <details class="schedule-multiselect"
                      data-multiselect
                      data-empty-label="Všechny typy">
@@ -77,7 +77,7 @@
         </div>
 
         <div class="field">
-            <span class="schedule-filter-label" id="TrainingPhaseLabel">Fáze tréninku</span>
+            <span class="schedule-filter-label" id="TrainingPhaseLabel">Fáze tréninku <small class="text-muted">(jen tréninky)</small></span>
             <details class="schedule-multiselect"
                      data-multiselect
                      data-empty-label="Všechny fáze">
@@ -118,10 +118,10 @@
                 {
                     <label class="checkbox-label">
                         <input type="checkbox"
-                               name="SelectedCategoryNames"
-                               value="@category.Name"
-                               checked="@Model.SelectedCategoryNames.Contains(category.Name)" />
-                        @category.Name
+                               name="SelectedCategoryCodes"
+                               value="@category.Code"
+                               checked="@Model.SelectedCategoryCodes.Contains(category.Code)" />
+                        @category.Code
                     </label>
                 }
             </div>
@@ -149,43 +149,87 @@
 {
     <p class="text-muted">Neexistuje žádná aktivní sezóna.</p>
 }
-else if (Model.Requirements.Count == 0)
-{
-    <p class="text-muted">Žádné požadavky na tréninky neodpovídají filtru.</p>
-}
 else
 {
-    <table class="grid">
-        <thead>
-            <tr>
-                <th>Sezóna</th>
-                <th>Kategorie</th>
-                <th>Typ tréninku</th>
-                <th>Fáze</th>
-                <th>Platnost od</th>
-                <th>Platnost do</th>
-                <th>Rozsah v hodinách</th>
-                <th>Trenéři</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var requirement in Model.Requirements)
-            {
+    <h2>Požadavky na tréninky</h2>
+
+    @if (Model.Requirements.Count == 0)
+    {
+        <p class="text-muted">Žádné požadavky na tréninky neodpovídají filtru.</p>
+    }
+    else
+    {
+        <table class="grid">
+            <thead>
                 <tr>
-                    <td>@requirement.SeasonName</td>
-                    <td>@requirement.SeasonCategoryName</td>
-                    <td>@requirement.TrainingTypeName</td>
-                    <td>@requirement.TrainingPhaseName</td>
-                    <td>@requirement.From.ToString("dd.MM.yyyy")</td>
-                    <td>@requirement.To.ToString("dd.MM.yyyy")</td>
-                    <td>@requirement.DurationHours.ToString("0.##")</td>
-                    <td>
-                        @(requirement.CoachAssignments.Count == 0
-                            ? "-"
-                            : string.Join(", ", requirement.CoachAssignments.Select(assignment => assignment.DisplayText)))
-                    </td>
+                    <th>Sezóna</th>
+                    <th>Kategorie</th>
+                    <th>Typ tréninku</th>
+                    <th>Fáze</th>
+                    <th>Platnost od</th>
+                    <th>Platnost do</th>
+                    <th>Rozsah v hodinách</th>
+                    <th>Trenéři</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var requirement in Model.Requirements)
+                {
+                    <tr>
+                        <td>@requirement.SeasonName</td>
+                        <td>@requirement.SeasonCategoryCode</td>
+                        <td>@requirement.TrainingTypeName</td>
+                        <td>@requirement.TrainingPhaseName</td>
+                        <td>@requirement.From.ToString("dd.MM.yyyy")</td>
+                        <td>@requirement.To.ToString("dd.MM.yyyy")</td>
+                        <td>@requirement.DurationHours.ToString("0.##")</td>
+                        <td>
+                            @(requirement.CoachAssignments.Count == 0
+                                ? "-"
+                                : string.Join(", ", requirement.CoachAssignments.Select(assignment => assignment.DisplayText)))
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h2>Požadavky na zápasy</h2>
+
+    @if (Model.MatchRequirements.Count == 0)
+    {
+        <p class="text-muted">Žádné požadavky na zápasy neodpovídají filtru.</p>
+    }
+    else
+    {
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Sezóna</th>
+                    <th>Kategorie</th>
+                    <th>Platnost od</th>
+                    <th>Platnost do</th>
+                    <th>Počet zápasů</th>
+                    <th>Trenéři</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var requirement in Model.MatchRequirements)
+                {
+                    <tr>
+                        <td>@requirement.SeasonName</td>
+                        <td>@requirement.SeasonCategoryCode</td>
+                        <td>@requirement.From.ToString("dd.MM.yyyy")</td>
+                        <td>@requirement.To.ToString("dd.MM.yyyy")</td>
+                        <td>@requirement.MatchCount</td>
+                        <td>
+                            @(requirement.CoachAssignments.Count == 0
+                                ? "-"
+                                : string.Join(", ", requirement.CoachAssignments.Select(assignment => assignment.DisplayText)))
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 }

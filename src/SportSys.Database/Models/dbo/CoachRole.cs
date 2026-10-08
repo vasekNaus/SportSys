@@ -20,4 +20,6 @@ public partial class CoachRole
     public required string Name { get; set; }
 
     public virtual ICollection<CoachTrainingRequirement> CoachTrainingRequirementCoachRoles { get; set; } = new List<CoachTrainingRequirement>();
+
+    public virtual ICollection<CoachMatchRequirement> CoachMatchRequirements { get; set; } = new List<CoachMatchRequirement>();
 }

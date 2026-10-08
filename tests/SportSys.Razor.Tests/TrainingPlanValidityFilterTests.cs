@@ -100,7 +100,7 @@ public class TrainingPlanValidityFilterTests
         Id = id,
         From = from,
         To = to,
-        SeasonCategoryName = string.Empty,
+        SeasonCategoryCode = string.Empty,
         LocationId = 0,
         Title = string.Empty,
         DayName = DayOfWeek.Monday.ToString(),

@@ -4,7 +4,7 @@ namespace SportSys.Razor.Models.TrainingSchedule;
 
 public sealed class TrainingScheduleCategorySegment
 {
-    public required string CategoryName { get; init; }
+    public required string CategoryCode { get; init; }
     public string? StateIcon { get; init; }
 }
 
@@ -71,7 +71,7 @@ public static class TrainingScheduleBlockFactory
     {
         var items = sourceItems
             .OrderBy(item => item.SeasonCategoryOrder)
-            .ThenBy(item => item.SeasonCategoryName, StringComparer.Ordinal)
+            .ThenBy(item => item.SeasonCategoryCode, StringComparer.Ordinal)
             .ThenBy(item => item.Id)
             .ToList();
 
@@ -102,7 +102,7 @@ public static class TrainingScheduleBlockFactory
         return new TrainingScheduleBlockData
         {
             Items = items,
-            Title = string.Join(" + ", items.Select(item => item.SeasonCategoryName)),
+            Title = string.Join(" + ", items.Select(item => item.SeasonCategoryCode)),
             TrainingTypeNames = DistinctOrdered(items.Select(item => item.TrainingTypeName)),
             Locations = DistinctOrdered(items
                 .Select(item => item.LocationName)
@@ -122,7 +122,7 @@ public static class TrainingScheduleBlockFactory
             CategorySegments = items
                 .Select(item => new TrainingScheduleCategorySegment
                 {
-                    CategoryName = item.SeasonCategoryName,
+                    CategoryCode = item.SeasonCategoryCode,
                     StateIcon = TrainingStateVisual.Get(item.TrainingStateId)?.Icon,
                 })
                 .ToList(),

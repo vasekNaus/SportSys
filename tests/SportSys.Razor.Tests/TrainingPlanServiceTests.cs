@@ -279,7 +279,7 @@ public class TrainingPlanServiceTests
         {
             Id = id,
             SeasonCategoryOrder = id,
-            SeasonCategoryName = category,
+            SeasonCategoryCode = category,
             TrainingTypeName = "Led",
             From = new DateOnly(2026, 9, 1),
             To = new DateOnly(2026, 9, 30),
@@ -302,7 +302,7 @@ public class TrainingPlanServiceTests
         {
             Id = source.Id,
             SeasonCategoryOrder = source.SeasonCategoryOrder,
-            SeasonCategoryName = source.SeasonCategoryName,
+            SeasonCategoryCode = source.SeasonCategoryCode,
             TrainingTypeName = source.TrainingTypeName,
             From = from ?? source.From,
             To = to ?? source.To,

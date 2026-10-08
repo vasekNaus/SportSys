@@ -11,7 +11,7 @@ public class ScheduleEventModelFactoryTests
         var scheduleEvent = ScheduleEventModelFactory.CreateMatch(new MatchScheduleItemDto
         {
             Id = 10,
-            SeasonCategoryName = "Dorost",
+            SeasonCategoryCode = "Dorost",
             SeasonCategoryOrder = 2,
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(19, 0),
@@ -38,7 +38,7 @@ public class ScheduleEventModelFactoryTests
         var scheduleEvent = ScheduleEventModelFactory.CreateMatch(new MatchScheduleItemDto
         {
             Id = 10,
-            SeasonCategoryName = "Dorost",
+            SeasonCategoryCode = "Dorost",
             OpponentName = "HC Plzeň",
             HomeTeamName = "HC Klatovy",
             AwayTeamName = "HC Plzeň",
@@ -132,7 +132,7 @@ public class ScheduleEventModelFactoryTests
         var scheduleEvent = ScheduleEventModelFactory.CreateMatch(new MatchScheduleItemDto
         {
             Id = 10,
-            SeasonCategoryName = "Dorost",
+            SeasonCategoryCode = "Dorost",
             OpponentName = "HC Plzeň",
             HomeTeamName = "HC Klatovy",
             AwayTeamName = "HC Plzeň",
@@ -192,7 +192,7 @@ public class ScheduleEventModelFactoryTests
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(18, 0),
             GroupId = groupId,
-            SeasonCategoryName = category,
+            SeasonCategoryCode = category,
             SeasonCategoryOrder = categoryOrder,
             LocationName = location,
             TrainingTypeName = "Led",

@@ -45,18 +45,18 @@ public class CsvMatchImportService
     _logger.LogInformation("Import zápasů z CSV: {FilePath}", csvFilePath);
 
     // ── Krok A: načtení referenčních tabulek ─────────────────────────────
-    // SeasonCategory: klíč = CompetitionCode, hodnota = seznam (Name, CompetitionTeamName)
+    // SeasonCategory: klíč = CompetitionCode, hodnota = seznam (Code, CompetitionTeamName)
     // Jeden CompetitionCode může mít více záznamů (např. A-tým + B-tým ve stejné soutěži)
     var seasonCategoryRaw = await _db.SeasonCategories
         .Where(sc => sc.SeasonId == seasonId && sc.CompetitionCode != string.Empty)
-        .Select(sc => new { Code = sc.CompetitionCode.Trim(), Name = sc.Name, TeamName = sc.CompetitionTeamName.Trim() })
+        .Select(sc => new { CompetitionCode = sc.CompetitionCode.Trim(), CategoryCode = sc.Code, TeamName = sc.CompetitionTeamName.Trim() })
         .ToListAsync(ct);
 
     var seasonCategoryByCode = seasonCategoryRaw
-        .GroupBy(sc => sc.Code, StringComparer.OrdinalIgnoreCase)
+        .GroupBy(sc => sc.CompetitionCode, StringComparer.OrdinalIgnoreCase)
         .ToDictionary(
             g => g.Key,
-            g => g.Select(e => (Name: e.Name, TeamName: e.TeamName)).ToList(),
+            g => g.Select(e => (CategoryCode: e.CategoryCode, TeamName: e.TeamName)).ToList(),
             StringComparer.OrdinalIgnoreCase);
 
     var teamsByName = await _db.Teams
@@ -118,7 +118,7 @@ public class CsvMatchImportService
         continue;
       }
 
-      string? seasonCategoryName = null;
+      string? seasonCategoryCode = null;
       string? competitionTeamName = null;
       bool? isHome = null;
       foreach (var c in candidates)
@@ -126,11 +126,11 @@ public class CsvMatchImportService
         if (string.IsNullOrEmpty(c.TeamName)) continue;
         if (domaci.Equals(c.TeamName, StringComparison.OrdinalIgnoreCase))
         {
-          seasonCategoryName = c.Name; competitionTeamName = c.TeamName; isHome = true; break;
+          seasonCategoryCode = c.CategoryCode; competitionTeamName = c.TeamName; isHome = true; break;
         }
         if (hoste.Equals(c.TeamName, StringComparison.OrdinalIgnoreCase))
         {
-          seasonCategoryName = c.Name; competitionTeamName = c.TeamName; isHome = false; break;
+          seasonCategoryCode = c.CategoryCode; competitionTeamName = c.TeamName; isHome = false; break;
         }
       }
       if (isHome is null)
@@ -207,7 +207,7 @@ public class CsvMatchImportService
       {
         Id = newId,
         SeasonId = seasonId,
-        SeasonCategoryName = seasonCategoryName!,
+        SeasonCategoryCode = seasonCategoryCode!,
         LocationId = homeLocationId.Value,
         Date = date.Value,
         TimeFrom = timeFrom.Value,

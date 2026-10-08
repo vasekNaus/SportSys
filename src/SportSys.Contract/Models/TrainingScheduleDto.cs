@@ -9,7 +9,7 @@ public class SeasonDto
 public class SeasonCategoryDto
 {
     public int SeasonId { get; set; }
-    public string Name { get; set; } = "";
+    public string Code { get; set; } = "";
     public int Order { get; set; }
 }
 
@@ -28,7 +28,7 @@ public interface ITrainingScheduleItem
     Guid? GroupId { get; }
     Guid? VisualizationGroupId { get; set; }
     int SeasonCategoryOrder { get; }
-    string SeasonCategoryName { get; }
+    string SeasonCategoryCode { get; }
     string LocationName { get; }
     string TrainingTypeName { get; }
     bool IsDryTraining { get; }
@@ -52,7 +52,7 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public Guid? GroupId { get; set; }
     public Guid? VisualizationGroupId { get; set; }
     public int SeasonCategoryOrder { get; set; }
-    public string SeasonCategoryName { get; set; } = string.Empty;
+    public string SeasonCategoryCode { get; set; } = string.Empty;
     public int LocationId { get; set; }
     public string LocationName { get; set; } = string.Empty;
     public string TrainingTypeName { get; set; } = string.Empty;

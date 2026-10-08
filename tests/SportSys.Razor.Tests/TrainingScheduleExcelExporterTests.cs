@@ -256,7 +256,7 @@ public class TrainingScheduleExcelExporterTests
             TimeTo = timeTo,
             GroupId = groupId,
             VisualizationGroupId = visualizationGroupId,
-            SeasonCategoryName = category,
+            SeasonCategoryCode = category,
             SeasonCategoryOrder = categoryOrder,
             LocationId = 1,
             LocationName = location,

@@ -70,6 +70,7 @@ public static class ServiceCollectionExtensions
     services.AddScoped<TrainingService>();
     services.AddScoped<TrainingPlanService>();
     services.AddScoped<TrainingRequirementService>();
+    services.AddScoped<MatchRequirementService>();
     services.AddScoped<CoachService>();
     services.AddScoped<CoachAttendanceService>();
 

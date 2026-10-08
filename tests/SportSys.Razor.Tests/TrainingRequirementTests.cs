@@ -32,6 +32,39 @@ public class TrainingRequirementTests
     }
 
     [Fact]
+    public void MatchCoachDisplayText_UsesDisplayNameAndRole()
+    {
+        var assignment = new MatchRequirementCoachListItem
+        {
+            DisplayName = "Jan Novák",
+            PersonalNumber = "123",
+            CoachRoleName = "Hlavní trenér",
+        };
+
+        Assert.Equal("Jan Novák (Hlavní trenér)", assignment.DisplayText);
+    }
+
+    [Fact]
+    public void MatchCoachDisplayText_FallsBackToPersonalNumber()
+    {
+        var assignment = new MatchRequirementCoachListItem
+        {
+            DisplayName = " ",
+            PersonalNumber = "123",
+            CoachRoleName = "Asistent",
+        };
+
+        Assert.Equal("123 (Asistent)", assignment.DisplayText);
+    }
+
+    [Fact]
+    public void RequirementCoachItems_ShareCommonBase()
+    {
+        Assert.IsAssignableFrom<RequirementCoachListItem>(new TrainingRequirementCoachListItem());
+        Assert.IsAssignableFrom<RequirementCoachListItem>(new MatchRequirementCoachListItem());
+    }
+
+    [Fact]
     public void NormalizeIds_RemovesInvalidAndDuplicateValues()
     {
         var availableItems = new[]

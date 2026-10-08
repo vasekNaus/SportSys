@@ -2,7 +2,7 @@
 @model EditModel
 @{
     ViewData["Title"] = "Upravit trénink";
-    var categories = string.Join(" + ", Model.Context.CategoryNames);
+    var categories = string.Join(" + ", Model.Context.CategoryCodes);
     var trainingTypes = string.Join(
         ", ",
         Model.Context.Members
@@ -36,7 +36,7 @@
         <div class="infobox">
             <i class="fa-solid fa-link fa-fw"></i>
             Změny budou uloženy pro všechny spojené tréninky:
-            @string.Join(", ", Model.Context.CategoryNames).
+            @string.Join(", ", Model.Context.CategoryCodes).
         </div>
     }
     else
@@ -65,7 +65,7 @@
                 @foreach (var member in Model.Context.Members)
                 {
                     <tr>
-                        <td>@member.SeasonCategoryName</td>
+                        <td>@member.SeasonCategoryCode</td>
                         <td>@member.TrainingTypeName</td>
                         <td>@member.Date.ToString("d")</td>
                         <td>@member.TimeFrom.ToString("H:mm")</td>

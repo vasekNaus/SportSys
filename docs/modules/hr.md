@@ -28,6 +28,7 @@ identity.User
 sport.CoachTraining
 sport.CoachTrainingPlan
 sport.CoachTrainingRequirement --> hr.Coach.Id
+sport.CoachMatchRequirement --> hr.Coach.Id
 ```
 
 `Coach : User` používá TPT. `Coach.Id` je zděděné `User.Id` a v databázi je

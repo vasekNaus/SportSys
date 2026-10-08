@@ -86,7 +86,7 @@ public static class EventModelFactory
         var role = match.IsHome ? "domácí" : "venkovní";
         var tooltipParts = new List<string>
         {
-            match.SeasonCategoryName,
+            match.SeasonCategoryCode,
             $"{match.HomeTeamName} – {match.AwayTeamName}",
             $"{match.MatchTypeName}, {role}",
             match.LocationName,
@@ -104,8 +104,8 @@ public static class EventModelFactory
         {
             SourceId = match.Id,
             SeasonCategoryOrder = match.SeasonCategoryOrder,
-            ColorKey = match.SeasonCategoryName,
-            TitleLine = match.SeasonCategoryName,
+            ColorKey = match.SeasonCategoryCode,
+            TitleLine = match.SeasonCategoryCode,
             OpponentName = match.OpponentName,
             ResultText = result,
             IsHome = match.IsHome,
@@ -130,14 +130,14 @@ public static class EventModelFactory
             ? string.Join(
                 "\n",
                 block.CategorySegments.Select(segment =>
-                    $"{segment.StateIcon} {segment.CategoryName}".Trim()))
+                    $"{segment.StateIcon} {segment.CategoryCode}".Trim()))
             : null;
 
         return new TrainingEventModel
         {
             SourceId = block.MinimumItemId,
             SeasonCategoryOrder = block.SeasonCategoryOrder,
-            ColorKey = block.Items[0].SeasonCategoryName,
+            ColorKey = block.Items[0].SeasonCategoryCode,
             TitleLine = block.Title,
             CoachSurnameSummary = block.CoachSurnameSummary,
             LocationSummary = block.LocationSummary,
@@ -170,7 +170,7 @@ public static class EventModelFactory
         {
             SourceId = block.MinimumItemId,
             SeasonCategoryOrder = block.SeasonCategoryOrder,
-            ColorKey = block.Items[0].SeasonCategoryName,
+            ColorKey = block.Items[0].SeasonCategoryCode,
             TitleLine = block.Title,
             CoachSurnameSummary = block.CoachSurnameSummary,
             LocationSummary = block.LocationSummary,
@@ -190,7 +190,7 @@ public static class EventModelFactory
     {
         var parts = new List<string>
         {
-            item.SeasonCategoryName,
+            item.SeasonCategoryCode,
         };
 
         if (item.TrainingStateName is not null)

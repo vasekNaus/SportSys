@@ -18,7 +18,9 @@ projektu `SportSys.Contract`.
 
 `Training` a `Match` jsou TPC potomci `SportEvent` se sdílenou sekvencí.
 `TrainingPlan` popisuje obecný týdenní plán a `TrainingRequirement` požadovaný
-rozsah. Vazební tabulky trenérů odkazují na stabilní `hr.Coach.Id`.
+rozsah. `MatchRequirement` eviduje požadovaný počet zápasů kategorie v období.
+Vazební tabulky trenérů (`CoachTrainingRequirement`, `CoachMatchRequirement`)
+odkazují na stabilní `hr.Coach.Id` a `dbo.CoachRole.Id`.
 
 `TrainingGroup` a `TrainingPlanGroup` jsou nezávislé; jejich ID se mezi
 reálnými tréninky a plány nekopíruje.
@@ -29,28 +31,36 @@ reálnými tréninky a plány nekopíruje.
 |---|---|---|
 | Reálný rozvrh | `/sport/Training/Schedule` | `sport.Training`, `sport.Match` |
 | Obecný týdenní plán | `/sport/Training/Plan` | `sport.TrainingPlan` |
-| Požadavky na tréninky | `/sport/Training/Requirement` | `sport.TrainingRequirement` |
+| Požadavky na tréninky a zápasy | `/sport/Training/Requirement` | `sport.TrainingRequirement`, `sport.MatchRequirement` |
 
 Původní route `/sport/Schedule` není zachována.
 
-## Požadavky na tréninky
+## Požadavky na tréninky a zápasy
 
 Stránka `/sport/Training/Requirement` je read-only přehled požadavků pro
-plánování sezóny. Zobrazuje sezónu, kategorii, typ a fázi tréninku, interval
-platnosti, požadovaný rozsah v hodinách a přiřazené trenéry včetně jejich rolí.
-Trenér bez zobrazovaného jména je identifikován osobním číslem; požadavek bez
-trenéra zobrazuje `-`.
+plánování sezóny. První tabulka zobrazuje požadavky na tréninky: sezónu,
+kategorii, typ a fázi tréninku, interval platnosti, požadovaný rozsah v
+hodinách a přiřazené trenéry včetně jejich rolí. Druhá tabulka pod ní zobrazuje
+požadavky na zápasy z `sport.MatchRequirement`: sezónu, kategorii, interval
+platnosti, požadovaný počet zápasů (`MatchCount`) a trenéry z
+`sport.CoachMatchRequirement` včetně rolí. Trenér bez zobrazovaného jména je
+identifikován osobním číslem; požadavek bez trenéra zobrazuje `-`.
 
-Přehled používá GET filtry:
+Přehled používá společné GET filtry pro obě tabulky:
 
 - aktivní sezóna; výchozí je nejnovější aktivní sezóna,
-- nula, jedna nebo více aktivních kategorií vybrané sezóny,
+- nula, jedna nebo více aktivních kategorií vybrané sezóny.
+
+Dále lze filtrovat pouze požadavky na tréninky (zápasy tyto dimenze nemají a
+filtry ignorují):
+
 - nula, jeden nebo více typů tréninku,
 - nula, jedna nebo více fází tréninku.
 
 Prázdný výběr kategorií, typů nebo fází znamená všechny hodnoty. Neplatné
-hodnoty z URL se před načtením dat odstraní. Stránka data pouze čte a nemění
-databázové schéma ani obsah tabulek.
+hodnoty z URL se před načtením dat odstraní. Obě tabulky mají samostatný
+prázdný stav. Stránka data pouze čte a nemění databázové schéma ani obsah
+tabulek. Požadavky na zápasy načítá `MatchRequirementService`.
 
 ### Společné datové kontrakty
 
@@ -99,7 +109,7 @@ nevyjadřuje vzájemnou vazbu.
 
 Komponenta seskupuje položky pouze uvnitř aktuálního řádku a teprve potom
 rozděluje výsledné bloky do lanes. Titulek spojeného bloku obsahuje názvy všech
-kategorií oddělené ` + ` a seřazené podle `SeasonCategory.Order`, názvu
+kategorií oddělené ` + ` a seřazené podle `SeasonCategory.Order`, kódu
 kategorie a ID položky. Časový rozsah vede od nejčasnějšího začátku po
 nejpozdější konec; případná časová mezera mezi členy je tedy součástí
 společného bloku. Barvu určuje první kategorie a tooltip zachovává informace
@@ -411,7 +421,7 @@ Administrace spravuje `Name`, `From`, `To` a `IsActive`. Platí invariant
 
 ### SeasonCategory
 
-Entita má složený primární klíč `SeasonId + Name`. Při vytvoření jsou obě části
+Entita má složený primární klíč `SeasonId + Code` (`Code` je `varchar(10)`). Při vytvoření jsou obě části
 klíče povinné; při editaci jsou neměnné. Formulář dále spravuje `Order`,
 `CompetitionCode`, `CompetitionTeamName`, `BirthYears` a `IsActive`.
 
@@ -459,6 +469,7 @@ vazby zápasů i domácích lokalit týmů.
 | Editace tréninku | `src/SportSys.Contract/Services/TrainingService.cs` |
 | Editace tréninkového plánu | `src/SportSys.Contract/Services/TrainingPlanService.cs` |
 | Požadavky | `src/SportSys.Contract/Services/TrainingRequirementService.cs` |
+| Požadavky na zápasy | `src/SportSys.Contract/Services/MatchRequirementService.cs` |
 | ViewComponent | `src/SportSys.Razor/ViewComponents/TrainingScheduleViewComponent.cs` |
 | Prezentační model | `src/SportSys.Razor/Models/TrainingSchedule/` |
 | Razor Area | `src/SportSys.Razor/Areas/sport/Pages/` |

@@ -2,7 +2,7 @@
 @model EditModel
 @{
     ViewData["Title"] = "Upravit tréninkový plán";
-    var categories = string.Join(" + ", Model.Context.CategoryNames);
+    var categories = string.Join(" + ", Model.Context.CategoryCodes);
     var trainingTypes = string.Join(
         ", ",
         Model.Context.Members
@@ -36,7 +36,7 @@
         <div class="infobox">
             <i class="fa-solid fa-link fa-fw"></i>
             Změny budou uloženy pro všechny spojené tréninkové plány:
-            @string.Join(", ", Model.Context.CategoryNames).
+            @string.Join(", ", Model.Context.CategoryCodes).
         </div>
     }
     else
@@ -70,7 +70,7 @@
                             var member = Model.Context.Members[i];
                             var memberLabelId = $"MemberCoachesLabel_{member.Id}";
                             <tr>
-                                <td>@member.SeasonCategoryName</td>
+                                <td>@member.SeasonCategoryCode</td>
                                 <td>
                                     <input type="hidden"
                                            name="Input.MemberCoachAssignments[@i].TrainingPlanId"

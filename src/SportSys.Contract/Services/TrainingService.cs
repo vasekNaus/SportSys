@@ -37,13 +37,13 @@ public class TrainingService
         var members = await CreateMembersQuery(id, target.GroupId)
             .AsNoTracking()
             .OrderBy(training => training.SeasonCategory.Order)
-            .ThenBy(training => training.SeasonCategoryName)
+            .ThenBy(training => training.SeasonCategoryCode)
             .ThenBy(training => training.Id)
             .Select(training => new TrainingEditMemberDto
             {
                 Id = training.Id,
                 SeasonCategoryOrder = training.SeasonCategory.Order,
-                SeasonCategoryName = training.SeasonCategoryName,
+                SeasonCategoryCode = training.SeasonCategoryCode,
                 TrainingTypeName = training.TrainingType.Name,
                 Date = training.Date,
                 TimeFrom = training.TimeFrom,
@@ -107,7 +107,7 @@ public class TrainingService
             {
                 Id = training.Id,
                 SeasonCategoryOrder = training.SeasonCategory.Order,
-                SeasonCategoryName = training.SeasonCategoryName,
+                SeasonCategoryCode = training.SeasonCategoryCode,
                 TrainingTypeName = training.TrainingType.Name,
                 Date = training.Date,
                 TimeFrom = training.TimeFrom,

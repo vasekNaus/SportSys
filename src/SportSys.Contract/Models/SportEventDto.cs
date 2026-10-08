@@ -4,7 +4,7 @@ public abstract class SportEventDto
 {
     public int Id { get; set; }
     public int SeasonId { get; set; }
-    public string SeasonCategoryName { get; set; } = string.Empty;
+    public string SeasonCategoryCode { get; set; } = string.Empty;
     public int SeasonCategoryOrder { get; set; }
     public DateOnly Date { get; set; }
     public TimeOnly TimeFrom { get; set; }

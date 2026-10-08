@@ -35,11 +35,11 @@ public class TrainingRequirementService
             .AsNoTracking()
             .Where(category => category.SeasonId == seasonId && category.IsActive)
             .OrderBy(category => category.Order)
-            .ThenBy(category => category.Name)
+            .ThenBy(category => category.Code)
             .Select(category => new SeasonCategoryDto
             {
                 SeasonId = category.SeasonId,
-                Name = category.Name,
+                Code = category.Code,
                 Order = category.Order,
             })
             .ToListAsync(ct);
@@ -75,7 +75,7 @@ public class TrainingRequirementService
 
     public async Task<List<TrainingRequirementListItem>> GetAllAsync(
         int seasonId,
-        IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<string> categoryCodes,
         IReadOnlyCollection<int> trainingTypeIds,
         IReadOnlyCollection<int> trainingPhaseIds,
         CancellationToken ct = default)
@@ -84,10 +84,10 @@ public class TrainingRequirementService
             .AsNoTracking()
             .Where(requirement => requirement.SeasonId == seasonId);
 
-        if (categoryNames.Count > 0)
+        if (categoryCodes.Count > 0)
         {
             query = query.Where(requirement =>
-                categoryNames.Contains(requirement.SeasonCategoryName));
+                categoryCodes.Contains(requirement.SeasonCategoryCode));
         }
 
         if (trainingTypeIds.Count > 0)
@@ -105,7 +105,7 @@ public class TrainingRequirementService
         return await query
             .OrderByDescending(requirement => requirement.SeasonCategory.Season.From)
             .ThenBy(requirement => requirement.SeasonCategory.Order)
-            .ThenBy(requirement => requirement.SeasonCategoryName)
+            .ThenBy(requirement => requirement.SeasonCategoryCode)
             .ThenBy(requirement => requirement.From)
             .ThenBy(requirement => requirement.To)
             .ThenBy(requirement => requirement.TrainingType.Name)
@@ -116,7 +116,7 @@ public class TrainingRequirementService
                 Id = requirement.Id,
                 SeasonId = requirement.SeasonId,
                 SeasonName = requirement.SeasonCategory.Season.Name,
-                SeasonCategoryName = requirement.SeasonCategoryName,
+                SeasonCategoryCode = requirement.SeasonCategoryCode,
                 SeasonCategoryOrder = requirement.SeasonCategory.Order,
                 TrainingTypeId = requirement.TrainingTypeId,
                 TrainingTypeName = requirement.TrainingType.Name,

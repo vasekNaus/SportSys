@@ -16,7 +16,7 @@ public sealed class MatchScheduleService
 
     public async Task<List<MatchScheduleItemDto>> GetMatchesAsync(
         int seasonId,
-        IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<string> categoryCodes,
         DateOnly dateFrom,
         DateOnly dateTo,
         IReadOnlyCollection<int>? matchStateIds = null,
@@ -26,7 +26,7 @@ public sealed class MatchScheduleService
     {
         var query = _db.Matches
             .Where(match => match.SeasonId == seasonId
-                && categoryNames.Contains(match.SeasonCategoryName)
+                && categoryCodes.Contains(match.SeasonCategoryCode)
                 && match.Date >= dateFrom
                 && match.Date <= dateTo);
 
@@ -47,7 +47,7 @@ public sealed class MatchScheduleService
             {
                 Id = match.Id,
                 SeasonId = match.SeasonId,
-                SeasonCategoryName = match.SeasonCategoryName,
+                SeasonCategoryCode = match.SeasonCategoryCode,
                 SeasonCategoryOrder = match.SeasonCategory.Order,
                 CompetitionTeamName = match.SeasonCategory.CompetitionTeamName,
                 Date = match.Date,
@@ -114,7 +114,7 @@ public sealed class MatchScheduleService
         {
             Id = match.Id,
             SeasonId = match.SeasonId,
-            SeasonCategoryName = match.SeasonCategoryName,
+            SeasonCategoryCode = match.SeasonCategoryCode,
             SeasonCategoryOrder = match.SeasonCategoryOrder,
             Date = match.Date,
             TimeFrom = match.TimeFrom,
@@ -163,7 +163,7 @@ public sealed class MatchScheduleService
     {
         public int Id { get; init; }
         public int SeasonId { get; init; }
-        public required string SeasonCategoryName { get; init; }
+        public required string SeasonCategoryCode { get; init; }
         public int SeasonCategoryOrder { get; init; }
         public required string CompetitionTeamName { get; init; }
         public DateOnly Date { get; init; }

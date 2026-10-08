@@ -32,7 +32,7 @@ public class TrainingScheduleService
             .Select(c => new SeasonCategoryDto
             {
                 SeasonId = c.SeasonId,
-                Name = c.Name,
+                Code = c.Code,
                 Order = c.Order,
             })
             .ToListAsync(ct);
@@ -109,7 +109,7 @@ public class TrainingScheduleService
 
     public async Task<List<TrainingScheduleItemDto>> GetTrainingsAsync(
         int seasonId,
-        IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<string> categoryCodes,
         IReadOnlyCollection<int> trainingTypeIds,
         IReadOnlyCollection<int> trainingStateIds,
         IReadOnlyCollection<int> locationIds,
@@ -120,7 +120,7 @@ public class TrainingScheduleService
     {
         var query = _db.Training
             .Where(t => t.SeasonId == seasonId
-                && categoryNames.Contains(t.SeasonCategoryName)
+                && categoryCodes.Contains(t.SeasonCategoryCode)
                 && t.Date >= dateFrom
                 && t.Date <= dateTo);
 
@@ -148,7 +148,7 @@ public class TrainingScheduleService
                     ? null
                     : t.GroupMembership.GroupId,
                 SeasonCategoryOrder = t.SeasonCategory.Order,
-                SeasonCategoryName = t.SeasonCategoryName,
+                SeasonCategoryCode = t.SeasonCategoryCode,
                 LocationId = t.LocationId,
                 LocationName = t.Location.Name,
                 TrainingTypeName = t.TrainingType.Name,
@@ -174,7 +174,7 @@ public class TrainingScheduleService
 
     public async Task<List<TrainingPlanScheduleItemDto>> GetTrainingPlansAsync(
         int seasonId,
-        IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<string> categoryCodes,
         IReadOnlyCollection<int> trainingTypeIds,
         IReadOnlyCollection<int> locationIds,
         int? trainingPhaseId,
@@ -184,7 +184,7 @@ public class TrainingScheduleService
     {
         var query = _db.TrainingPlans
             .Where(p => p.SeasonId == seasonId
-                && categoryNames.Contains(p.SeasonCategoryName));
+                && categoryCodes.Contains(p.SeasonCategoryCode));
 
         if (trainingPhaseId.HasValue)
             query = query.Where(p => p.TrainingPhaseId == trainingPhaseId.Value);
@@ -214,7 +214,7 @@ public class TrainingScheduleService
                     ? null
                     : p.GroupMembership.GroupId,
                 SeasonCategoryOrder = p.SeasonCategory.Order,
-                SeasonCategoryName = p.SeasonCategoryName,
+                SeasonCategoryCode = p.SeasonCategoryCode,
                 LocationId = p.LocationId,
                 LocationName = p.Location.Name,
                 TrainingTypeName = p.TrainingType.Name,
@@ -368,7 +368,7 @@ public class TrainingScheduleService
                 .OrderBy(item => item.TimeFrom)
                 .ThenBy(item => item.TimeTo)
                 .ThenBy(item => item.SeasonCategoryOrder)
-                .ThenBy(item => item.SeasonCategoryName, StringComparer.Ordinal)
+                .ThenBy(item => item.SeasonCategoryCode, StringComparer.Ordinal)
                 .ThenBy(item => item.Id)
                 .ToList();
 

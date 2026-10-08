@@ -25,7 +25,7 @@ public class IndexModel : PageModel
     public int? SeasonId { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    public List<string> SelectedCategories { get; set; } = [];
+    public List<string> SelectedCategoryCodes { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public List<int> SelectedTrainingTypeIds { get; set; } = [];
@@ -75,7 +75,7 @@ public class IndexModel : PageModel
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
         {
             SeasonId = null;
-            SelectedCategories = [];
+            SelectedCategoryCodes = [];
         }
 
         var requestedTrainingTypeIds = SelectedTrainingTypeIds.ToHashSet();
@@ -96,9 +96,9 @@ public class IndexModel : PageModel
         if (SeasonId.HasValue)
         {
             SeasonCategories = await _service.GetCategoriesAsync(SeasonId.Value, ct);
-            var validCategories = SeasonCategories.Select(c => c.Name).ToHashSet();
-            SelectedCategories = SelectedCategories
-                .Where(validCategories.Contains)
+            var validCategoryCodes = SeasonCategories.Select(c => c.Code).ToHashSet();
+            SelectedCategoryCodes = SelectedCategoryCodes
+                .Where(validCategoryCodes.Contains)
                 .Distinct()
                 .ToList();
         }
@@ -110,13 +110,13 @@ public class IndexModel : PageModel
 
         SelectedSeasonName = Seasons.FirstOrDefault(s => s.Id == SeasonId.Value)?.Name;
 
-        var categories = SelectedCategories.Count > 0
-            ? SelectedCategories
-            : SeasonCategories.Select(c => c.Name).ToList();
+        var categoryCodes = SelectedCategoryCodes.Count > 0
+            ? SelectedCategoryCodes
+            : SeasonCategories.Select(c => c.Code).ToList();
 
         var plans = await _service.GetTrainingPlansAsync(
             SeasonId.Value,
-            categories,
+            categoryCodes,
             SelectedTrainingTypeIds,
             SelectedLocationIds,
             TrainingPhaseId,
@@ -154,8 +154,8 @@ public class IndexModel : PageModel
             .ToList();
 
         var categoryOrder = SeasonCategories
-            .Where(c => SelectedCategories.Count == 0 || SelectedCategories.Contains(c.Name))
-            .Select(c => c.Name)
+            .Where(c => SelectedCategoryCodes.Count == 0 || SelectedCategoryCodes.Contains(c.Code))
+            .Select(c => c.Code)
             .ToList();
 
         ScheduleView = new TrainingScheduleViewModel(

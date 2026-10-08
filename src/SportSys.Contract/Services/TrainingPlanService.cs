@@ -39,12 +39,12 @@ public class TrainingPlanService
     var memberRows = await CreateMembersQuery(id, target.GroupId)
         .AsNoTracking()
         .OrderBy(plan => plan.SeasonCategory.Order)
-        .ThenBy(plan => plan.SeasonCategoryName)
+        .ThenBy(plan => plan.SeasonCategoryCode)
         .ThenBy(plan => plan.Id)
         .Select(plan => new MemberRow(
             plan.Id,
             plan.SeasonCategory.Order,
-            plan.SeasonCategoryName,
+            plan.SeasonCategoryCode,
             plan.TrainingType.Name,
             plan.From,
             plan.To,
@@ -65,7 +65,7 @@ public class TrainingPlanService
         {
           Id = row.Id,
           SeasonCategoryOrder = row.SeasonCategoryOrder,
-          SeasonCategoryName = row.SeasonCategoryName,
+          SeasonCategoryCode = row.SeasonCategoryCode,
           TrainingTypeName = row.TrainingTypeName,
           From = row.From,
           To = row.To,
@@ -198,7 +198,7 @@ public class TrainingPlanService
         {
           Id = plan.Id,
           SeasonCategoryOrder = plan.SeasonCategory.Order,
-          SeasonCategoryName = plan.SeasonCategoryName,
+          SeasonCategoryCode = plan.SeasonCategoryCode,
           TrainingTypeName = plan.TrainingType.Name,
           From = plan.From,
           To = plan.To,
@@ -462,7 +462,7 @@ public class TrainingPlanService
   private sealed record MemberRow(
       int Id,
       int SeasonCategoryOrder,
-      string SeasonCategoryName,
+      string SeasonCategoryCode,
       string TrainingTypeName,
       DateOnly From,
       DateOnly To,

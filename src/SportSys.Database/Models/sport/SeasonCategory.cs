@@ -9,7 +9,7 @@ using SportSys.Database.Models.dboSchema;
 
 namespace SportSys.Database.Models.sport;
 
-[PrimaryKey("SeasonId", "Name")]
+[PrimaryKey("SeasonId", "Code")]
 [Table(nameof(SeasonCategory), Schema = Schemas.Sport)]
 public partial class SeasonCategory
 {
@@ -19,7 +19,11 @@ public partial class SeasonCategory
     [Key]
     [StringLength(10)]
     [Unicode(false)]
-    public required string Name { get; set; }
+    public required string Code { get; set; }
+
+    [StringLength(20)]
+    [Unicode(false)]
+    public string Name { get; set; } = string.Empty;
 
     public int Order { get; set; }
 
@@ -44,6 +48,8 @@ public partial class SeasonCategory
     public virtual ICollection<Training> Training { get; set; } = new List<Training>();
 
     public virtual ICollection<TrainingRequirement> TrainingRequirements { get; set; } = new List<TrainingRequirement>();
+
+    public virtual ICollection<MatchRequirement> MatchRequirements { get; set; } = new List<MatchRequirement>();
 
     public virtual ICollection<TrainingPlan> TrainingPlans { get; set; } = new List<TrainingPlan>();
 }

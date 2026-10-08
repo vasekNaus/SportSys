@@ -51,8 +51,8 @@ public class TrainingEditContextDto
     public bool IsGrouped { get; init; }
     public bool CanEdit { get; init; }
 
-    public IReadOnlyList<string> CategoryNames => Members
-        .Select(member => member.SeasonCategoryName)
+    public IReadOnlyList<string> CategoryCodes => Members
+        .Select(member => member.SeasonCategoryCode)
         .Distinct(StringComparer.Ordinal)
         .ToList();
 }
@@ -61,7 +61,7 @@ public class TrainingEditMemberDto
 {
     public int Id { get; init; }
     public int SeasonCategoryOrder { get; init; }
-    public required string SeasonCategoryName { get; init; }
+    public required string SeasonCategoryCode { get; init; }
     public required string TrainingTypeName { get; init; }
     public DateOnly Date { get; init; }
     public TimeOnly TimeFrom { get; init; }

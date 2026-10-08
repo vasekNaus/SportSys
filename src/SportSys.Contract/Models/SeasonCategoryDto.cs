@@ -8,9 +8,9 @@ public class SeasonCategoryEditDto
     public int SeasonId { get; set; }
 
     [ScaffoldColumn(false)]
-    [Required(ErrorMessage = "Název je povinný.")]
-    [StringLength(10, ErrorMessage = "Název nesmí přesáhnout 10 znaků.")]
-    public string? Name { get; set; }
+    [Required(ErrorMessage = "Kód je povinný.")]
+    [StringLength(10, ErrorMessage = "Kód nesmí přesáhnout 10 znaků.")]
+    public string? Code { get; set; }
 
     [Display(Name = "Pořadí")]
     public int Order { get; set; }
@@ -39,7 +39,7 @@ public class SeasonCategoryListItem
 {
     public int SeasonId { get; set; }
     public string SeasonName { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
     public int Order { get; set; }
     public string CompetitionCode { get; set; } = string.Empty;
     public string CompetitionTeamName { get; set; } = string.Empty;

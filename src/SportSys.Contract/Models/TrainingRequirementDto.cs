@@ -7,7 +7,7 @@ public class TrainingRequirementListItem
     public int Id { get; set; }
     public int SeasonId { get; set; }
     public string SeasonName { get; set; } = string.Empty;
-    public string SeasonCategoryName { get; set; } = string.Empty;
+    public string SeasonCategoryCode { get; set; } = string.Empty;
     public int SeasonCategoryOrder { get; set; }
     public int TrainingTypeId { get; set; }
     public string TrainingTypeName { get; set; } = string.Empty;
@@ -19,11 +19,15 @@ public class TrainingRequirementListItem
     public IReadOnlyList<TrainingRequirementCoachListItem> CoachAssignments { get; set; } = [];
 }
 
-public class TrainingRequirementCoachListItem : CoachSelectItem
+public abstract class RequirementCoachListItem : CoachSelectItem
 {
     public int CoachRoleId { get; set; }
     public string CoachRoleName { get; set; } = string.Empty;
 
     public string DisplayText
         => $"{(string.IsNullOrWhiteSpace(DisplayName) ? PersonalNumber : DisplayName)} ({CoachRoleName})";
+}
+
+public class TrainingRequirementCoachListItem : RequirementCoachListItem
+{
 }

@@ -20,7 +20,7 @@ public partial class TrainingPlan
 
   [StringLength(10)]
   [Unicode(false)]
-  public required string SeasonCategoryName { get; set; }
+  public required string SeasonCategoryCode { get; set; }
 
   public int TrainingTypeId { get; set; }
 
@@ -52,7 +52,7 @@ public partial class TrainingPlan
   [DeleteBehavior(DeleteBehavior.ClientSetNull)]
   public virtual Location Location { get; set; } = null!;
 
-  [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryName))]
+  [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryCode))]
   [DeleteBehavior(DeleteBehavior.ClientSetNull)]
   public virtual SeasonCategory SeasonCategory { get; set; } = null!;
 

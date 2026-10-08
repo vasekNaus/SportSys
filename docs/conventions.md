@@ -70,7 +70,7 @@ Všude, kde atribut přijímá název C# symbolu, používat `nameof`.
 **Složený FK** — `nameof` vrací compile-time konstantu, konkatenace je platná:
 
 ```csharp
-[ForeignKey(nameof(Season_Id) + ", " + nameof(SeasonCategory_Name))]
+[ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryCode))]
 ```
 
 ---
@@ -175,7 +175,7 @@ Vzor sdílené sekvence (`SportEvent → Training / Match`, `InventoryItem → E
 - `UseTpcMappingStrategy()` v Fluent API
 - Apollo `IdConvention()` pojmenuje FK sloupce zděděné z bázové třídy automaticky — ❌ nepřidávat `HasColumnName` pro zděděné FK
 
-**Výjimka:** FK sdílené ve dvou navigacích TPC hierarchie (např. `SeasonId`, `SeasonCategoryName` v `SportEventConfiguration`) — zde `HasColumnName` explicitně nastavit.
+**Výjimka:** FK sdílené ve dvou navigacích TPC hierarchie (např. `SeasonId`, `SeasonCategoryCode` v `SportEventConfiguration`) — zde `HasColumnName` explicitně nastavit.
 
 ### TPT výjimka pro Identity
 

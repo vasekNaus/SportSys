@@ -8,10 +8,14 @@ namespace SportSys.Razor.Areas.sport.Pages.Training.Requirement;
 public class IndexModel : PageModel
 {
     private readonly TrainingRequirementService _service;
+    private readonly MatchRequirementService _matchService;
 
-    public IndexModel(TrainingRequirementService service)
+    public IndexModel(
+        TrainingRequirementService service,
+        MatchRequirementService matchService)
     {
         _service = service;
+        _matchService = matchService;
     }
 
     public List<SeasonDto> Seasons { get; private set; } = [];
@@ -19,12 +23,13 @@ public class IndexModel : PageModel
     public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
     public List<LookupSelectItem> TrainingPhases { get; private set; } = [];
     public List<TrainingRequirementListItem> Requirements { get; private set; } = [];
+    public List<MatchRequirementListItem> MatchRequirements { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? SeasonId { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    public List<string> SelectedCategoryNames { get; set; } = [];
+    public List<string> SelectedCategoryCodes { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public List<int> SelectedTrainingTypeIds { get; set; } = [];
@@ -41,7 +46,7 @@ public class IndexModel : PageModel
         if (!SeasonId.HasValue || Seasons.All(season => season.Id != SeasonId.Value))
         {
             SeasonId = Seasons.FirstOrDefault()?.Id;
-            SelectedCategoryNames = [];
+            SelectedCategoryCodes = [];
         }
 
         SelectedTrainingTypeIds = NormalizeIds(
@@ -55,19 +60,24 @@ public class IndexModel : PageModel
             return;
 
         SeasonCategories = await _service.GetCategoriesAsync(SeasonId.Value, ct);
-        var validCategoryNames = SeasonCategories
-            .Select(category => category.Name)
+        var validCategoryCodes = SeasonCategories
+            .Select(category => category.Code)
             .ToHashSet(StringComparer.Ordinal);
-        SelectedCategoryNames = SelectedCategoryNames
-            .Where(validCategoryNames.Contains)
+        SelectedCategoryCodes = SelectedCategoryCodes
+            .Where(validCategoryCodes.Contains)
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
         Requirements = await _service.GetAllAsync(
             SeasonId.Value,
-            SelectedCategoryNames,
+            SelectedCategoryCodes,
             SelectedTrainingTypeIds,
             SelectedTrainingPhaseIds,
+            ct);
+
+        MatchRequirements = await _matchService.GetAllAsync(
+            SeasonId.Value,
+            SelectedCategoryCodes,
             ct);
     }
 

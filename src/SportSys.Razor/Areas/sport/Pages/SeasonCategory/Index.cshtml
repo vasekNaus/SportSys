@@ -65,7 +65,7 @@ else
             {
                 <tr class="@(!category.IsActive ? "inactive-row" : null)">
                     <td>@category.SeasonName</td>
-                    <td>@category.Name</td>
+                    <td>@category.Code</td>
                     <td>@category.Order</td>
                     <td>@category.CompetitionCode</td>
                     <td>@category.CompetitionTeamName</td>
@@ -74,14 +74,14 @@ else
                         <a class="button secondary icon-btn"
                            asp-page="Edit"
                            asp-route-seasonId="@category.SeasonId"
-                           asp-route-name="@category.Name"
+                           asp-route-code="@category.Code"
                            title="Upravit">
                             <i class="fa-solid fa-pen fa-fw"></i>
                         </a>
                         <form method="post"
                               asp-page-handler="SetActive"
                               asp-route-seasonId="@category.SeasonId"
-                              asp-route-name="@category.Name"
+                              asp-route-code="@category.Code"
                               asp-route-isActive="@(!category.IsActive)"
                               asp-route-search="@Model.Search"
                               style="display:inline">

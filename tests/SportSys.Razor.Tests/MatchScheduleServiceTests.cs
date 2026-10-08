@@ -128,7 +128,7 @@ public class MatchScheduleServiceTests
         {
             Id = 15,
             SeasonId = 2026,
-            SeasonCategoryName = "Dorost",
+            SeasonCategoryCode = "Dorost",
             SeasonCategoryOrder = 2,
             CompetitionTeamName = competitionTeamName,
             Date = new DateOnly(2026, 9, 24),

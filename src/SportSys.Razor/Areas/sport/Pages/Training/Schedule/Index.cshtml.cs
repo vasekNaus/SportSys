@@ -36,7 +36,7 @@ public class IndexModel : PageModel
     public int? SeasonId { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    public List<string> SelectedCategories { get; set; } = [];
+    public List<string> SelectedCategoryCodes { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public List<int> SelectedTrainingTypeIds { get; set; } = [];
@@ -89,14 +89,14 @@ public class IndexModel : PageModel
             return;
 
         var filter = GetNormalizedFilter();
-        var categories = GetSelectedCategoryNames();
+        var categoryCodes = GetSelectedCategoryCodes();
         var trainings = ShowTrainings
-            ? await LoadTrainingsAsync(filter, categories, ct)
+            ? await LoadTrainingsAsync(filter, categoryCodes, ct)
             : [];
         var matches = ShowMatches
             ? await _matchService.GetMatchesAsync(
                 filter.SeasonId,
-                categories,
+                categoryCodes,
                 filter.DateFrom,
                 filter.DateTo,
                 SelectedMatchStateIds,
@@ -118,14 +118,14 @@ public class IndexModel : PageModel
         }
 
         var filter = GetNormalizedFilter();
-        var categories = GetSelectedCategoryNames();
+        var categoryCodes = GetSelectedCategoryCodes();
         var trainings = ShowTrainings
-            ? await LoadTrainingsAsync(filter, categories, ct)
+            ? await LoadTrainingsAsync(filter, categoryCodes, ct)
             : [];
         var matches = ShowMatches
             ? await _matchService.GetMatchesAsync(
                 filter.SeasonId,
-                categories,
+                categoryCodes,
                 filter.DateFrom,
                 filter.DateTo,
                 SelectedMatchStateIds,
@@ -164,7 +164,7 @@ public class IndexModel : PageModel
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
         {
             SeasonId = null;
-            SelectedCategories = [];
+            SelectedCategoryCodes = [];
         }
 
         var requestedTrainingTypeIds = SelectedTrainingTypeIds.ToHashSet();
@@ -200,9 +200,9 @@ public class IndexModel : PageModel
         if (SeasonId.HasValue)
         {
             SeasonCategories = await _service.GetCategoriesAsync(SeasonId.Value, ct);
-            var validCategories = SeasonCategories.Select(c => c.Name).ToHashSet();
-            SelectedCategories = SelectedCategories
-                .Where(validCategories.Contains)
+            var validCategoryCodes = SeasonCategories.Select(c => c.Code).ToHashSet();
+            SelectedCategoryCodes = SelectedCategoryCodes
+                .Where(validCategoryCodes.Contains)
                 .Distinct()
                 .ToList();
         }
@@ -226,11 +226,11 @@ public class IndexModel : PageModel
 
     private Task<List<TrainingScheduleItemDto>> LoadTrainingsAsync(
         NormalizedScheduleFilter filter,
-        IReadOnlyCollection<string> categories,
+        IReadOnlyCollection<string> categoryCodes,
         CancellationToken ct)
         => _service.GetTrainingsAsync(
             filter.SeasonId,
-            categories,
+            categoryCodes,
             SelectedTrainingTypeIds,
             SelectedTrainingStateIds,
             SelectedLocationIds,
@@ -289,8 +289,8 @@ public class IndexModel : PageModel
             rows.RemoveAll(row => row.Items.Count == 0);
 
         var categoryOrder = SeasonCategories
-            .Where(c => SelectedCategories.Count == 0 || SelectedCategories.Contains(c.Name))
-            .Select(c => c.Name)
+            .Where(c => SelectedCategoryCodes.Count == 0 || SelectedCategoryCodes.Contains(c.Code))
+            .Select(c => c.Code)
             .ToList();
 
         return new TrainingScheduleViewModel(
@@ -299,10 +299,10 @@ public class IndexModel : PageModel
             allowEditing: !MergeTrainings);
     }
 
-    private IReadOnlyCollection<string> GetSelectedCategoryNames()
-        => SelectedCategories.Count > 0
-            ? SelectedCategories
-            : SeasonCategories.Select(category => category.Name).ToList();
+    private IReadOnlyCollection<string> GetSelectedCategoryCodes()
+        => SelectedCategoryCodes.Count > 0
+            ? SelectedCategoryCodes
+            : SeasonCategories.Select(category => category.Code).ToList();
 
     private readonly record struct NormalizedScheduleFilter(
         int SeasonId,
