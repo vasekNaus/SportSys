@@ -37,6 +37,15 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public List<int> SelectedTrainingPhaseIds { get; set; } = [];
 
+    [BindProperty(SupportsGet = true)]
+    public DateOnly? ValidOn { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public bool ShowTrainings { get; set; } = true;
+
+    [BindProperty(SupportsGet = true)]
+    public bool ShowMatches { get; set; } = true;
+
     public async Task OnGetAsync(CancellationToken ct)
     {
         Seasons = await _service.GetSeasonsAsync(ct);
@@ -68,17 +77,23 @@ public class IndexModel : PageModel
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
-        Requirements = await _service.GetAllAsync(
-            SeasonId.Value,
-            SelectedCategoryCodes,
-            SelectedTrainingTypeIds,
-            SelectedTrainingPhaseIds,
-            ct);
+        Requirements = ShowTrainings
+            ? await _service.GetAllAsync(
+                SeasonId.Value,
+                SelectedCategoryCodes,
+                SelectedTrainingTypeIds,
+                SelectedTrainingPhaseIds,
+                ValidOn,
+                ct)
+            : [];
 
-        MatchRequirements = await _matchService.GetAllAsync(
-            SeasonId.Value,
-            SelectedCategoryCodes,
-            ct);
+        MatchRequirements = ShowMatches
+            ? await _matchService.GetAllAsync(
+                SeasonId.Value,
+                SelectedCategoryCodes,
+                ValidOn,
+                ct)
+            : [];
     }
 
     internal static List<int> NormalizeIds(

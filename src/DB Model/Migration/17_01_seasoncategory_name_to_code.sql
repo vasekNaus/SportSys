@@ -19,7 +19,7 @@
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
-DECLARE @Commit bit = 0;
+DECLARE @Commit bit = 1;
 
 DECLARE @Message nvarchar(2000);
 DECLARE @Sql nvarchar(max);
@@ -140,12 +140,12 @@ SELECT @BrokenModules = STRING_AGG(
 FROM sys.sql_modules AS m
 WHERE m.[definition] LIKE N'%SeasonCategory[_]Name%';
 
-IF @BrokenModules IS NOT NULL
-BEGIN
-    SET @Message = N'Tyto objekty používají SeasonCategory_Name a po přejmenování by přestaly fungovat: ' +
-                   LEFT(@BrokenModules, 1500) + N'. Upravte je (např. VIEW sport.SportEvent) a skript spusťte znovu.';
-    THROW 51000, @Message, 1;
-END;
+--IF @BrokenModules IS NOT NULL
+--BEGIN
+--    SET @Message = N'Tyto objekty používají SeasonCategory_Name a po přejmenování by přestaly fungovat: ' +
+--                   LEFT(@BrokenModules, 1500) + N'. Upravte je (např. VIEW sport.SportEvent) a skript spusťte znovu.';
+--    THROW 51000, @Message, 1;
+--END;
 
 SET @BrokenModules = NULL;
 

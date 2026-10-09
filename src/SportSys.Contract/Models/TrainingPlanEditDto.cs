@@ -40,6 +40,7 @@ public class TrainingPlanEditDto : IValidatableObject
   public int LocationId { get; set; }
 
   [StringLength(100, ErrorMessage = "Název nesmí přesáhnout 100 znaků.")]
+  [DisplayFormat(ConvertEmptyStringToNull = false)]
   [Display(Name = "Název")]
   public string Title { get; set; } = string.Empty;
 

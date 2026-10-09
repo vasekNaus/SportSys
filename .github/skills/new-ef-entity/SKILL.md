@@ -1,7 +1,7 @@
 ---
 name: new-ef-entity
 description: >
-  Přidá novou EF Core entitu do SportSys — model, datové atributy,
+  Přidá novou EF Core entitu do databáze — model, datové atributy,
   konfiguraci Fluent API (pokud je potřeba), bez vytvoření databázové migrace.
   Použij tento skill když přidáváš novou tabulku nebo rozšiřuješ
   existující databázové schéma.
@@ -26,7 +26,7 @@ user-invocable: true
 
 ### 1. Vytvořit model
 
-Vytvoř `src/SportSys.Database/Models/{schema}/{Entity}.cs`.
+Vytvoř `src/{App}.Database/Models/{schema}/{Entity}.cs`.
 
 **Klíčová pravidla:**
 - `[Table(nameof(Entity), Schema = Schemas.X)]` — **povinné**, bez atributu EF Core tabulku nenajde
@@ -39,9 +39,9 @@ Vytvoř `src/SportSys.Database/Models/{schema}/{Entity}.cs`.
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SportSys.Database.Models;
+using {App}.Database.Models;
 
-namespace SportSys.Database.Models.sport;
+namespace {App}.Database.Models.sport;
 
 [Table(nameof(IceRink), Schema = Schemas.Sport)]
 [Index(nameof(Name), IsUnique = true, Name = "UX_IceRink_Name")]
@@ -70,7 +70,7 @@ public class IceRink
 
 ### 2. Přidat `DbSet<T>` do DbContext
 
-V `src/SportSys.Database/SportSysDbContext.cs` přidat:
+V `src/{App}.Database/{App}DbContext.cs` přidat:
 
 ```csharp
 public DbSet<IceRink> IceRinks => Set<IceRink>();
@@ -85,14 +85,14 @@ Konfigurace **NENÍ potřeba** pro entity bez:
 - value convertorů
 - seed dat (mimo lookup tabulky)
 
-Pokud potřeba, vytvoř `src/SportSys.Database/Configurations/{schema}/{Entity}Configuration.cs`:
+Pokud potřeba, vytvoř `src/{App}.Database/Configurations/{schema}/{Entity}Configuration.cs`:
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SportSys.Database.Models.sport;
+using {App}.Database.Models.sport;
 
-namespace SportSys.Database.Configurations.sport;
+namespace {App}.Database.Configurations.sport;
 
 public class TrainingConfiguration : IEntityTypeConfiguration<Training>
 {
@@ -135,5 +135,5 @@ public class TrainingConfiguration : IEntityTypeConfiguration<Training>
 
 - `docs/conventions.md` — kompletní EF Core konvence
 - `docs/architecture.md` — architektura vrstev, schémata
-- `src/SportSys.Database/Models/Schemas.cs` — konstanty schémat
-- `src/SportSys.Database/Models/sport/Training.cs` — vzorový model
+- `src/{App}.Database/Models/Schemas.cs` — konstanty schémat
+- `src/{App}.Database/Models/sport/Training.cs` — vzorový model

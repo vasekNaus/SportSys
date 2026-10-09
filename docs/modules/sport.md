@@ -122,9 +122,11 @@ v rozvrhu, například `U12 + U14`, a každá kombinace je uvedena pouze jednou.
 
 Blok tréninku a tréninkového plánu zobrazuje pět pevných řádků v tomto
 pořadí: kategorie, čas od–do (tučně, nejvýraznější informace v bloku), název
-lokality a příjmení přiřazených trenérů (zalomená na nejvýše dva řádky —
-modifikátor `schedule-block-coaches--wrap`, aby se vešli i trenéři u
-spojených tréninků více kategorií). U tréninkového plánu s neprázdnou
+lokality a příjmení přiřazených trenérů (zalomená na tolik řádků, kolik je
+potřeba — modifikátor `schedule-block-coaches--wrap`, aby se vešli i trenéři u
+spojených tréninků více kategorií; dráha `.schedule-track` je CSS grid, bloky
+sdílejí jednu buňku, a výška dráhy se proto natáhne podle nejvyššího bloku,
+minimálně na `$track-height`). U tréninkového plánu s neprázdnou
 textovou vlastností `sport.TrainingPlan.Title` zobrazuje řádek lokality
 text ve tvaru `Title - Lokalita`; pokud je `Title` prázdný, zobrazí se jen
 název lokality beze změny (`TrainingPlanEventModel.PlanTitleSummary`,

@@ -1,0 +1,65 @@
+@page "{id:int}"
+@model EditTrainingModel
+@using SportSys.Razor.Models
+@{
+    ViewData["Title"] = "Upravit požadavek na tréninky";
+    var formAction = Url.Page("./EditTraining", new { id = Model.Input.Id, handler = "" });
+}
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="infobox">
+        <i class="fa-solid fa-circle-check fa-fw"></i> @Model.StatusMessage
+    </div>
+}
+
+<dl class="training-edit-summary">
+    <div><dt>Sezóna</dt><dd>@Model.Context.SeasonName</dd></div>
+    <div><dt>Kategorie</dt><dd>@Model.Context.SeasonCategoryCode</dd></div>
+    <div><dt>Typ tréninku</dt><dd>@Model.Context.TrainingTypeName</dd></div>
+    <div><dt>Fáze</dt><dd>@Model.Context.TrainingPhaseName</dd></div>
+</dl>
+
+<form method="post" asp-antiforgery="true" action="@formAction">
+    <div asp-validation-summary="All" class="validation-summary-errors"></div>
+
+    <input type="hidden" asp-for="Input.Id" />
+
+    <div class="field">
+        <label asp-for="Input.From"></label>
+        <input asp-for="Input.From" type="date" class="textbox" />
+        <span asp-validation-for="Input.From"></span>
+    </div>
+    <div class="field">
+        <label asp-for="Input.To"></label>
+        <input asp-for="Input.To" type="date" class="textbox" />
+        <span asp-validation-for="Input.To"></span>
+    </div>
+    <div class="field">
+        <label asp-for="Input.DurationHours"></label>
+        <input asp-for="Input.DurationHours" type="number" step="0.01" min="0.01" max="999.99" class="textbox" />
+        <span asp-validation-for="Input.DurationHours"></span>
+    </div>
+
+    <h2>Trenéři</h2>
+    <partial name="_CoachAssignmentsTable"
+             model="new RequirementCoachTableModel
+             {
+                 Assignments = Model.Input.CoachAssignments,
+                 CoachItems = Model.Context.CoachItems,
+                 RoleItems = Model.Context.RoleItems,
+             }" />
+
+    <footer>
+        <button type="submit" class="button">
+            <i class="fa-solid fa-floppy-disk fa-fw"></i> Uložit
+        </button>
+        <a class="button secondary" asp-page="./Index">
+            <i class="fa-solid fa-xmark fa-fw"></i> Zavřít
+        </a>
+    </footer>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

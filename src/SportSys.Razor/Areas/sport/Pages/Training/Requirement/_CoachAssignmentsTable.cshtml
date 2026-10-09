@@ -1,0 +1,54 @@
+@model SportSys.Razor.Models.RequirementCoachTableModel
+
+<table class="details">
+    <thead>
+        <tr>
+            <th>Trenér</th>
+            <th>Role</th>
+            <th>Akce</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (var i = 0; i < Model.Assignments.Count; i++)
+        {
+            var assignment = Model.Assignments[i];
+            <tr>
+                <td>
+                    <select name="Input.CoachAssignments[@i].CoachId" class="textbox" aria-label="Trenér">
+                        <option value="">— vyberte trenéra —</option>
+                        @foreach (var item in Model.CoachItems)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == assignment.CoachId?.ToString())">@item.Text</option>
+                        }
+                    </select>
+                </td>
+                <td>
+                    <select name="Input.CoachAssignments[@i].CoachRoleId" class="textbox" aria-label="Role">
+                        <option value="">— vyberte roli —</option>
+                        @foreach (var item in Model.RoleItems)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == assignment.CoachRoleId?.ToString())">@item.Text</option>
+                        }
+                    </select>
+                </td>
+                <td class="buttons">
+                    <button type="submit"
+                            class="button secondary icon-btn"
+                            formnovalidate
+                            asp-page-handler="RemoveCoach"
+                            name="index"
+                            value="@i"
+                            title="Odebrat trenéra">
+                        <i class="fa-solid fa-trash fa-fw"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p class="buttons">
+    <button type="submit" class="button secondary" formnovalidate asp-page-handler="AddCoach">
+        <i class="fa-solid fa-plus fa-fw"></i> Přidat trenéra
+    </button>
+</p>
