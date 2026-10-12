@@ -27,6 +27,10 @@ public partial class SeasonCategory
 
     public int Order { get; set; }
 
+    public int MatchDurationMinutes { get; set; }
+
+    public int WarmupDurationMinutes { get; set; }
+
     [StringLength(10)]
     [Unicode(false)]
     public required string CompetitionCode { get; set; } = string.Empty;

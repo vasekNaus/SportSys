@@ -265,10 +265,29 @@ obsahující pouze zápasy exportní akci nenabízí.
 ### Časový interval zápasu
 
 `Match` ukládá `TimeFrom` a `TimeTo`; `DurationMinutes` je persisted computed
-sloupec. Import svazového CSV obsahuje pouze začátek, proto novému zápasu
-nastaví `TimeTo = TimeFrom`. Takový zápas má délku `0` a koncový čas lze
-následně ručně upřesnit. Vizualizace nulový interval vykreslí minimální
-čitelnou šířkou a dvě bodové události ve stejném čase rozdělí do různých lanes.
+sloupec. Import KIS nastaví `TimeTo` jako začátek utkání zvýšený o
+`SeasonCategory.MatchDurationMinutes`. `WarmupDurationMinutes` je samostatná
+administrativní konfigurace rozbruslení před začátkem utkání; nemění
+`Match.TimeFrom` ani `Match.TimeTo`.
+
+### Import zápasů z KIS
+
+Konzolová aplikace importuje export `games.xlsx` příkazem:
+
+```powershell
+dotnet run --project src\SportSys.ConsoleApp -- import-kis <cesta-k-xlsx> <id-sezony>
+```
+
+Soubor musí obsahovat list `Export` se sloupci `Datum`, `Čas`, `Soupiska`,
+`Domácí`, `Hosté`, `Místo` a `Typ`. `Soupiska` se jednoznačně páruje s
+`SeasonCategory.Name` vybrané sezony, týmy s `Team.Name` a místo s
+`Location.Name`. Typy `Ligový zápas`, `Příprava` a `Turnaj` se mapují na
+pevný číselník `MatchType`.
+
+KIS neposkytuje externí identifikátor. Opakovaný import proto považuje zápas
+za existující pouze při shodě lokace, data, začátku, kategorie, domácího a
+hostujícího týmu. Neznámé, nejednoznačné či chybějící hodnoty nezakládají
+číselníky; příslušný řádek se přeskočí a konzole vypíše číslo řádku s důvodem.
 
 ### Editace tréninku a tréninkového plánu
 

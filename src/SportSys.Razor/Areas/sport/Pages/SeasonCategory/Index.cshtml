@@ -54,6 +54,8 @@ else
                 <th>Sezóna</th>
                 <th>Kategorie</th>
                 <th>Pořadí</th>
+                <th>Délka zápasu</th>
+                <th>Rozbruslení</th>
                 <th>Kód soutěže</th>
                 <th>Tým v soutěži</th>
                 <th>Stav</th>
@@ -67,6 +69,8 @@ else
                     <td>@category.SeasonName</td>
                     <td>@category.Code</td>
                     <td>@category.Order</td>
+                    <td>@category.MatchDurationMinutes min</td>
+                    <td>@category.WarmupDurationMinutes min</td>
                     <td>@category.CompetitionCode</td>
                     <td>@category.CompetitionTeamName</td>
                     <td>@(category.IsActive ? "Aktivní" : "Neaktivní")</td>

@@ -1355,6 +1355,9 @@ namespace SportSys.Database.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true, "DF_SeasonCategory_IsActive");
 
+                    b.Property<int>("MatchDurationMinutes")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1366,10 +1369,17 @@ namespace SportSys.Database.Migrations
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
+                    b.Property<int>("WarmupDurationMinutes")
+                        .HasColumnType("int");
+
                     b.HasKey("SeasonId", "Code");
 
                     b.ToTable("SeasonCategory", "sport", t =>
                         {
+                            t.HasCheckConstraint("CK_SeasonCategory_MatchDurationMinutes", "[MatchDurationMinutes] > 0");
+
+                            t.HasCheckConstraint("CK_SeasonCategory_WarmupDurationMinutes", "[WarmupDurationMinutes] >= 0");
+
                             t.Property("SeasonId")
                                 .HasColumnName("Season_Id");
                         });

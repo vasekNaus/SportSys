@@ -8,6 +8,16 @@ public class SeasonCategoryConfiguration : IEntityTypeConfiguration<SeasonCatego
 {
     public void Configure(EntityTypeBuilder<SeasonCategory> builder)
     {
+        builder.ToTable(table =>
+        {
+            table.HasCheckConstraint(
+                "CK_SeasonCategory_MatchDurationMinutes",
+                "[MatchDurationMinutes] > 0");
+            table.HasCheckConstraint(
+                "CK_SeasonCategory_WarmupDurationMinutes",
+                "[WarmupDurationMinutes] >= 0");
+        });
+
         builder.Property(e => e.Name)
                .HasDefaultValue(string.Empty, "DF_SeasonCategory_Name");
         builder.Property(e => e.CompetitionCode)

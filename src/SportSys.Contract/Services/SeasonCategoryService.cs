@@ -40,7 +40,10 @@ public class SeasonCategoryService
                 SeasonId = c.SeasonId,
                 SeasonName = c.Season.Name,
                 Code = c.Code,
+                Name = c.Name,
                 Order = c.Order,
+                MatchDurationMinutes = c.MatchDurationMinutes,
+                WarmupDurationMinutes = c.WarmupDurationMinutes,
                 CompetitionCode = c.CompetitionCode,
                 CompetitionTeamName = c.CompetitionTeamName,
                 IsActive = c.IsActive,
@@ -59,7 +62,10 @@ public class SeasonCategoryService
             {
                 SeasonId = c.SeasonId,
                 Code = c.Code,
+                Name = c.Name,
                 Order = c.Order,
+                MatchDurationMinutes = c.MatchDurationMinutes,
+                WarmupDurationMinutes = c.WarmupDurationMinutes,
                 CompetitionCode = c.CompetitionCode,
                 CompetitionTeamName = c.CompetitionTeamName,
                 BirthYears = c.BirthYears,
@@ -76,7 +82,10 @@ public class SeasonCategoryService
         {
             SeasonId = dto.SeasonId,
             Code = dto.Code!,
+            Name = dto.Name!,
             Order = dto.Order,
+            MatchDurationMinutes = dto.MatchDurationMinutes,
+            WarmupDurationMinutes = dto.WarmupDurationMinutes,
             CompetitionCode = dto.CompetitionCode!,
             CompetitionTeamName = dto.CompetitionTeamName!,
             BirthYears = dto.BirthYears!,
@@ -91,10 +100,13 @@ public class SeasonCategoryService
     public async Task UpdateAsync(SeasonCategoryEditDto dto, CancellationToken ct = default)
     {
         var entity = await _db.SeasonCategories.FindAsync([dto.SeasonId, dto.Code!], ct)
-            ?? throw new InvalidOperationException(
+            ?? throw new InvalidOperationException(
                 $"Kategorie {dto.Code} v sezóně {dto.SeasonId} nebyla nalezena.");
 
+        entity.Name = dto.Name!;
         entity.Order = dto.Order;
+        entity.MatchDurationMinutes = dto.MatchDurationMinutes;
+        entity.WarmupDurationMinutes = dto.WarmupDurationMinutes;
         entity.CompetitionCode = dto.CompetitionCode!;
         entity.CompetitionTeamName = dto.CompetitionTeamName!;
         entity.BirthYears = dto.BirthYears!;
