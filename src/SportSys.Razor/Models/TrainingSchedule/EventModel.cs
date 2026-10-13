@@ -28,6 +28,7 @@ public sealed class MatchEventModel : EventModel
     public bool IsHome { get; init; }
     public string? MatchStateIcon { get; init; }
     public string? MatchStateTooltip { get; init; }
+    public IReadOnlyList<CoachParticipationEventModel> CoachParticipations { get; init; } = [];
 }
 
 /// <summary>
@@ -45,6 +46,7 @@ public sealed class TrainingEventModel : TrainingLikeEventModel
 {
     public string? StateIcon { get; init; }
     public string? StateTooltip { get; init; }
+    public IReadOnlyList<CoachParticipationEventModel> CoachParticipations { get; init; } = [];
 }
 
 public sealed class TrainingPlanEventModel : TrainingLikeEventModel
@@ -95,6 +97,13 @@ public static class EventModelFactory
         if (match.MatchStateName is not null)
             tooltipParts.Add(match.MatchStateName);
 
+        if (match.CoachParticipations.Count > 0)
+        {
+            tooltipParts.Add(
+                $"Trenéři: {string.Join(", ", match.CoachParticipations.Select(participation =>
+                    $"{participation.FullName} – {participation.ParticipationTypeName}"))}");
+        }
+
         if (!string.IsNullOrWhiteSpace(match.Note))
             tooltipParts.Add(match.Note);
 
@@ -114,6 +123,11 @@ public static class EventModelFactory
             Tooltip = string.Join(" · ", tooltipParts),
             MatchStateIcon = stateInfo?.Icon,
             MatchStateTooltip = match.MatchStateName,
+            CoachParticipations = match.CoachParticipations
+                .Select(participation => CreateCoachParticipationModel(
+                    match.SeasonCategoryCode,
+                    participation))
+                .ToList(),
         };
     }
 
@@ -149,6 +163,11 @@ public static class EventModelFactory
             EditPage = allowEditing ? "/Training/Schedule/Edit" : null,
             StateIcon = stateIcon,
             StateTooltip = stateTooltip,
+            CoachParticipations = block.CoachParticipations
+                .Select(item => CreateCoachParticipationModel(
+                    item.CategoryCode,
+                    item.Participation))
+                .ToList(),
         };
     }
 
@@ -198,7 +217,8 @@ public static class EventModelFactory
 
         parts.Add(item.TrainingTypeName);
         parts.Add(item.TrainingPhaseName);
-        parts.Add(item.LocationName);
+        if (!string.IsNullOrWhiteSpace(item.LocationName))
+            parts.Add(item.LocationName);
 
         if (item is TrainingPlanScheduleItemDto plan)
         {
@@ -210,9 +230,30 @@ public static class EventModelFactory
         if (!string.IsNullOrWhiteSpace(item.Note))
             parts.Add(item.Note);
 
-        if (item.Coaches.Count > 0)
+        if (item is TrainingScheduleItemDto training
+            && training.CoachParticipations.Count > 0)
+        {
+            parts.Add(
+                $"Trenéři: {string.Join(", ", training.CoachParticipations.Select(participation =>
+                    $"{participation.FullName} – {participation.ParticipationTypeName}"))}");
+        }
+        else if (item.Coaches.Count > 0)
+        {
             parts.Add($"Trenéři: {string.Join(", ", item.Coaches.Select(coach => coach.FullName))}");
+        }
 
         return string.Join(" · ", parts);
     }
+
+    private static CoachParticipationEventModel CreateCoachParticipationModel(
+        string categoryCode,
+        CoachParticipationDto participation)
+        => new()
+        {
+            CategoryCode = categoryCode,
+            FullName = participation.FullName,
+            LastName = participation.LastName,
+            Icon = CoachParticipationVisual.GetIcon(participation.ParticipationTypeId),
+            ParticipationTypeName = participation.ParticipationTypeName,
+        };
 }

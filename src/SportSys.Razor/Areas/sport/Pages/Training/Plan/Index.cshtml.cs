@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using SportSys.Contract.Models;
 using SportSys.Contract.Services;
 using SportSys.Razor.Models.TrainingSchedule;
@@ -20,6 +21,7 @@ public class IndexModel : PageModel
     public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
     public List<LookupSelectItem> TrainingPhases { get; private set; } = [];
     public List<LookupSelectItem> Locations { get; private set; } = [];
+    public List<SelectListItem> CoachSelectList { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? SeasonId { get; set; }
@@ -32,6 +34,9 @@ public class IndexModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public List<int> SelectedLocationIds { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public List<int> SelectedCoachIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? TrainingPhaseId { get; set; }
@@ -71,6 +76,15 @@ public class IndexModel : PageModel
         TrainingTypes = await _service.GetTrainingTypesAsync(ct);
         TrainingPhases = await _service.GetTrainingPhasesAsync(ct);
         Locations = await _service.GetTrainingPlanLocationsAsync(ct);
+        var coaches = await _service.GetCoachesAsync(ct);
+        CoachSelectList = coaches
+            .Select(coach => new SelectListItem(coach.DisplayName, coach.Id.ToString()))
+            .ToList();
+        var availableCoachIds = coaches.Select(coach => coach.Id).ToHashSet();
+        SelectedCoachIds = SelectedCoachIds
+            .Where(availableCoachIds.Contains)
+            .Distinct()
+            .ToList();
 
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
         {
@@ -122,6 +136,7 @@ public class IndexModel : PageModel
             TrainingPhaseId,
             ValidOn,
             MergeTrainings,
+            SelectedCoachIds,
             ct);
 
         plans = WeekDayNames.FilterByDay(plans, plan => plan.DayOfWeek, SelectedDaysOfWeek);

@@ -12,7 +12,7 @@ Contract služby a DTO.
 - Evidence bankovního spojení, adresy a zdravotní pojišťovny v čase.
 - Evidence trenérských licencí a smluv pro sezóny.
 - Bezpečné uložení fotografie trenéra.
-- Upload, filtrování a stažení zdrojových XLSX souborů docházky.
+- Import, filtrování a stažení zdrojových XLSX souborů docházky.
 - Audit uživatele, který docházku nahrál.
 
 ## Datový model
@@ -26,6 +26,7 @@ identity.User
         +-- hr.CoachAttendance --> identity.User
 
 sport.CoachTraining
+sport.CoachMatch
 sport.CoachTrainingPlan
 sport.CoachTrainingRequirement --> hr.Coach.Id
 sport.CoachMatchRequirement --> hr.Coach.Id
@@ -61,7 +62,8 @@ odměna je nezáporná a historie se zachovává přes `IsActive`.
 
 `CoachAttendance` uchovává jeden původní XLSX soubor pro kombinaci trenéra,
 roku a měsíce. Obsahuje UTC čas uploadu a povinný odkaz na
-`identity.User`, který upload provedl.
+`identity.User`, který upload provedl. Archiv vznikne pouze při úspěšném
+atomickém importu všech řádků do `sport.CoachTraining` a `sport.CoachMatch`.
 
 ## Tok zpracování
 
@@ -76,14 +78,18 @@ roku a měsíce. Obsahuje UTC čas uploadu a povinný odkaz na
 6. Uloží změnu a vrátí doménovou validační chybu při konfliktu.
 7. Fotografie se načítá samostatným autorizovaným handlerem.
 
-### Upload docházky
+### Import docházky
 
 1. PageModel získá lokální user ID přes `CurrentUserIdResolver`.
-2. Contract validátor zkontroluje název, příponu, velikost, MIME typ a
-   strukturu Open XML balíčku.
-3. Služba ověří trenéra a unikátní období.
-4. Soubor uloží jako binární obsah s auditem.
-5. Seznamové dotazy binární obsah neprojektují; načítá se až při stažení.
+2. `CoachAttendanceXlsxParser` zkontroluje soubor, přesnou hlavičku a převede
+   datové řádky na typovaný model.
+3. Uživatel explicitně vybere sezonu, trenéra, měsíc a rok.
+4. Služba jednoznačně spáruje soupisku, stav účasti a existující trénink nebo
+   zápas; chybějící, duplicitní či nejednoznačný řádek zablokuje celý import.
+5. V serializovatelné transakci se aktualizují účasti a uloží původní soubor.
+6. Jediný `SaveChangesAsync` zajišťuje, že při chybě nezůstane archiv ani
+   částečně importovaná účast.
+7. Seznamové dotazy binární obsah neprojektují; načítá se až při stažení.
 
 ## Klíčové komponenty
 
@@ -91,7 +97,8 @@ roku a měsíce. Obsahuje UTC čas uploadu a povinný odkaz na
 |---|---|
 | Coach služba | `src/SportSys.Contract/Services/CoachService.cs` |
 | Attendance služba | `src/SportSys.Contract/Services/CoachAttendanceService.cs` |
-| XLSX validátor | `src/SportSys.Contract/Services/CoachAttendanceXlsxValidator.cs` |
+| XLSX parser | `src/SportSys.Contract/Services/CoachAttendanceXlsxParser.cs` |
+| Resolver importu | `src/SportSys.Contract/Services/CoachAttendanceImportPlanner.cs` |
 | Coach stránky | `src/SportSys.Razor/Areas/hr/Pages/Coach/` |
 | Attendance stránka | `src/SportSys.Razor/Areas/hr/Pages/Attendance/` |
 | HR entity | `src/SportSys.Database/Models/hr/` |
@@ -128,7 +135,11 @@ nesmí být použity v PageModelech.
 - Fotografie může být JPEG, PNG nebo WebP a má limit 5 MiB.
 - Docházka může být pouze `.xlsx` do 10 MiB.
 - Stažení docházky používá privátní `no-store` cache.
-- Archivace docházky nečte buňky a nezapisuje do `sport.Training`.
+- Import nezakládá sportovní události; pouze eviduje účast na již existujících
+  trénincích a zápasech.
+- Všechny řádky musí ležet ve zvoleném měsíci a intervalu zvolené sezony.
+- Opakovaný import stejného trenéra a období není povolen.
+- Import nikdy nemaže účasti na událostech, které ve vstupním souboru nejsou.
 - Agent nevytváří EF Core migraci.
 - TPC je výchozí strategie projektu; TPT `User -> Coach` je výjimka podle
   ADR-004.
@@ -145,5 +156,5 @@ chybou, nikoli přepsáním původního souboru.
 - `docs/conventions.md`
 - `docs/modules/auth.md`
 - `docs/decisions/adr-004-coach-jako-tpt-potomek-user.md`
-- `.github/tasks/hr-coach-administration.md` - historický implementační plán
-- `.github/tasks/8-evidence-dochazky-treneru.md` - historický implementační plán
+- `tasks/hr-coach-administration.md` - historický implementační plán
+- `tasks/completed/8-evidence-dochazky-treneru.md` - historický implementační plán

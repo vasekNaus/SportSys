@@ -62,6 +62,13 @@
             </div>
 
             <div class="field">
+                <label asp-for="SelectedCoachIds">Trenéři</label>
+                <search-multiselect asp-for="SelectedCoachIds"
+                                    asp-items="Model.CoachSelectList"
+                                    placeholder="Hledat trenéra" />
+            </div>
+
+            <div class="field">
                 <span class="schedule-filter-label" id="TrainingPhaseLabel">Fáze <small class="text-muted">(jen tréninky)</small></span>
                 <details class="schedule-multiselect"
                          data-multiselect

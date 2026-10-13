@@ -579,3 +579,16 @@ $header-height:   1.75rem;
   text-overflow: clip;
   overflow-wrap: anywhere;
 }
+
+.schedule-block-coach-participation {
+  display:        inline-flex;
+  align-items:    baseline;
+  gap:            .125rem;
+  margin-right:   .25rem;
+  white-space:    nowrap;
+  text-shadow:    none;
+}
+
+.schedule-block-coach-icon {
+  flex-shrink: 0;
+}

@@ -43,4 +43,6 @@ public class Coach : User
   public ICollection<CoachTrainingPlan> CoachTrainingPlans { get; set; } = [];
 
   public ICollection<CoachTraining> CoachTrainings { get; set; } = [];
+
+  public ICollection<CoachMatch> CoachMatches { get; set; } = [];
 }

@@ -18,11 +18,14 @@ public class MatchRequirementService
         int seasonId,
         IReadOnlyCollection<string> categoryCodes,
         DateOnly? validOn = null,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
         var query = _db.MatchRequirements
             .AsNoTracking()
             .Where(requirement => requirement.SeasonId == seasonId);
+
+        query = query.FilterByCoachIds(coachIds);
 
         if (validOn.HasValue)
         {

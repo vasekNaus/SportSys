@@ -43,6 +43,22 @@ public sealed class KisMatchImportService
         if (!File.Exists(xlsxFilePath))
             throw new FileNotFoundException($"XLSX soubor nenalezen: {xlsxFilePath}", xlsxFilePath);
 
+        await using var stream = File.OpenRead(xlsxFilePath);
+        return await ImportAsync(stream, seasonId, ct);
+    }
+
+    public async Task<KisMatchImportResult> ImportAsync(
+        Stream xlsx,
+        int seasonId,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(xlsx);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(seasonId);
+
+        var rows = ReadRows(xlsx);
+        if (!await _db.Seasons.AnyAsync(season => season.Id == seasonId, ct))
+            throw new ArgumentException("Vybraná sezóna neexistuje.", nameof(seasonId));
+
         var categories = await _db.SeasonCategories
             .Where(category => category.SeasonId == seasonId)
             .Select(category => new CategoryLookup(
@@ -76,7 +92,7 @@ public sealed class KisMatchImportService
 
         var result = new KisMatchImportResult();
 
-        foreach (var row in ReadRows(xlsxFilePath))
+        foreach (var row in rows)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -200,7 +216,13 @@ public sealed class KisMatchImportService
 
     internal static IReadOnlyList<KisMatchImportRow> ReadRows(string xlsxFilePath)
     {
-        using var workbook = new XLWorkbook(xlsxFilePath);
+        using var stream = File.OpenRead(xlsxFilePath);
+        return ReadRows(stream);
+    }
+
+    internal static IReadOnlyList<KisMatchImportRow> ReadRows(Stream xlsx)
+    {
+        using var workbook = new XLWorkbook(xlsx);
         var worksheet = workbook.Worksheets
             .FirstOrDefault(sheet => sheet.Name.Equals("Export", StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidDataException("XLSX soubor neobsahuje list 'Export'.");

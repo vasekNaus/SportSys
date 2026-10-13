@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Models;
+using SportSys.Contract.Models.hr;
 using SportSys.Database.Context;
 using SportSys.Database.Models.sport;
 
@@ -13,6 +14,9 @@ public class TrainingRequirementService
     {
         _db = db;
     }
+
+    public Task<List<CoachSelectItem>> GetCoachesAsync(CancellationToken ct = default)
+        => RequirementEditHelper.GetCoachesAsync(_db, ct);
 
     public async Task<List<SeasonDto>> GetSeasonsAsync(CancellationToken ct = default)
     {
@@ -80,11 +84,14 @@ public class TrainingRequirementService
         IReadOnlyCollection<int> trainingTypeIds,
         IReadOnlyCollection<int> trainingPhaseIds,
         DateOnly? validOn = null,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
         var query = _db.TrainingRequirements
             .AsNoTracking()
             .Where(requirement => requirement.SeasonId == seasonId);
+
+        query = query.FilterByCoachIds(coachIds);
 
         if (validOn.HasValue)
         {

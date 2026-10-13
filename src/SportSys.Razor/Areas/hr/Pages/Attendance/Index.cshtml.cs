@@ -35,6 +35,7 @@ public class IndexModel : PageModel
 
     public List<CoachAttendanceListItem> Attendances { get; set; } = [];
     public List<SelectListItem> UploadCoachSelectList { get; set; } = [];
+    public List<SelectListItem> SeasonSelectList { get; set; } = [];
     public List<SelectListItem> FilterCoachSelectList { get; set; } = [];
     public List<SelectListItem> MonthSelectList { get; } =
     [
@@ -55,7 +56,7 @@ public class IndexModel : PageModel
 
         if (AttendanceFile is null || AttendanceFile.Length == 0)
             ModelState.AddModelError(nameof(AttendanceFile), "Vyberte soubor XLSX.");
-        else if (AttendanceFile.Length > CoachAttendanceXlsxValidator.MaxFileSizeBytes)
+        else if (AttendanceFile.Length > CoachAttendanceXlsxParser.MaxFileSizeBytes)
             ModelState.AddModelError(nameof(AttendanceFile), "Soubor může mít maximálně 10 MiB.");
 
         if (!ModelState.IsValid)
@@ -72,7 +73,7 @@ public class IndexModel : PageModel
             await stream.CopyToAsync(buffer, ct);
 
             var userUploadId = CurrentUserIdResolver.GetRequiredUserId(User);
-            await _service.UploadAsync(
+            var result = await _service.UploadAsync(
                 Upload,
                 buffer.ToArray(),
                 AttendanceFile.ContentType,
@@ -80,7 +81,10 @@ public class IndexModel : PageModel
                 userUploadId,
                 ct);
 
-            StatusMessage = "Docházka byla nahrána.";
+            StatusMessage =
+                $"Docházka byla importována: {result.TrainingCount} tréninků, "
+                + $"{result.MatchCount} zápasů, {result.InsertedCount} nových, "
+                + $"{result.UpdatedCount} aktualizovaných a {result.UnchangedCount} beze změny.";
             return RedirectToPage(new
             {
                 Filter.CoachId,
@@ -92,7 +96,15 @@ public class IndexModel : PageModel
         }
         catch (CoachValidationException ex)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
+            if (ex.Errors.Count > 0)
+            {
+                foreach (var error in ex.Errors)
+                    ModelState.AddModelError(string.Empty, error);
+            }
+            else
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+            }
             ResetInvalidFilter();
             await LoadPageAsync(loadAttendances: true, ct);
             return Page();
@@ -125,6 +137,13 @@ public class IndexModel : PageModel
             .. coaches.Select(coach => new SelectListItem(
                 $"{coach.DisplayName} ({coach.PersonalNumber})",
                 coach.Id.ToString())),
+        ];
+
+        var seasons = await _service.GetSeasonsAsync(ct);
+        SeasonSelectList =
+        [
+            new("— vyberte sezonu —", ""),
+            .. seasons.Select(season => new SelectListItem(season.Name, season.Id.ToString())),
         ];
 
         if (loadAttendances)

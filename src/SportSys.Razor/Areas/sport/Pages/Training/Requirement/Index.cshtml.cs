@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using SportSys.Contract.Models;
 using SportSys.Contract.Services;
 
@@ -22,6 +23,7 @@ public class IndexModel : PageModel
     public List<SeasonCategoryDto> SeasonCategories { get; private set; } = [];
     public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
     public List<LookupSelectItem> TrainingPhases { get; private set; } = [];
+    public List<SelectListItem> CoachSelectList { get; private set; } = [];
     public List<TrainingRequirementListItem> Requirements { get; private set; } = [];
     public List<MatchRequirementListItem> MatchRequirements { get; private set; } = [];
 
@@ -38,6 +40,9 @@ public class IndexModel : PageModel
     public List<int> SelectedTrainingPhaseIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
+    public List<int> SelectedCoachIds { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
     public DateOnly? ValidOn { get; set; }
 
     [BindProperty(SupportsGet = true)]
@@ -51,6 +56,15 @@ public class IndexModel : PageModel
         Seasons = await _service.GetSeasonsAsync(ct);
         TrainingTypes = await _service.GetTrainingTypesAsync(ct);
         TrainingPhases = await _service.GetTrainingPhasesAsync(ct);
+        var coaches = await _service.GetCoachesAsync(ct);
+        CoachSelectList = coaches
+            .Select(coach => new SelectListItem(coach.DisplayName, coach.Id.ToString()))
+            .ToList();
+        var availableCoachIds = coaches.Select(coach => coach.Id).ToHashSet();
+        SelectedCoachIds = SelectedCoachIds
+            .Where(availableCoachIds.Contains)
+            .Distinct()
+            .ToList();
 
         if (!SeasonId.HasValue || Seasons.All(season => season.Id != SeasonId.Value))
         {
@@ -84,6 +98,7 @@ public class IndexModel : PageModel
                 SelectedTrainingTypeIds,
                 SelectedTrainingPhaseIds,
                 ValidOn,
+                SelectedCoachIds,
                 ct)
             : [];
 
@@ -92,6 +107,7 @@ public class IndexModel : PageModel
                 SeasonId.Value,
                 SelectedCategoryCodes,
                 ValidOn,
+                SelectedCoachIds,
                 ct)
             : [];
     }

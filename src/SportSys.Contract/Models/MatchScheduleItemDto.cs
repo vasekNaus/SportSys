@@ -13,4 +13,5 @@ public sealed class MatchScheduleItemDto : SportEventDto
     public int? AwayGoals { get; set; }
     public int? MatchStateId { get; set; }
     public string? MatchStateName { get; set; }
+    public IReadOnlyList<CoachParticipationDto> CoachParticipations { get; set; } = [];
 }

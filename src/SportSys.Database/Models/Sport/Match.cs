@@ -41,4 +41,6 @@ public partial class Match : SportEvent
 
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]
     public virtual sportSchema.MatchState? MatchState { get; set; }
+
+    public ICollection<CoachMatch> CoachMatches { get; set; } = [];
 }

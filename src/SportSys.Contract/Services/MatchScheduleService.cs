@@ -22,6 +22,7 @@ public sealed class MatchScheduleService
         IReadOnlyCollection<int>? matchStateIds = null,
         IReadOnlyCollection<int>? locationIds = null,
         IReadOnlyCollection<int>? matchTypeIds = null,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
         var query = _db.Matches
@@ -29,6 +30,8 @@ public sealed class MatchScheduleService
                 && categoryCodes.Contains(match.SeasonCategoryCode)
                 && match.Date >= dateFrom
                 && match.Date <= dateTo);
+
+        query = query.FilterByCoachIds(coachIds);
 
         if (matchStateIds is { Count: > 0 })
             query = query.Where(match => match.MatchStateId.HasValue
@@ -66,7 +69,47 @@ public sealed class MatchScheduleService
             })
             .ToListAsync(ct);
 
-        return matches.Select(CreateDto).ToList();
+        var matchDtos = matches.Select(CreateDto).ToList();
+        await AssignCoachParticipationsAsync(matchDtos, ct);
+        return matchDtos;
+    }
+
+    private async Task AssignCoachParticipationsAsync(
+        IReadOnlyList<MatchScheduleItemDto> matches,
+        CancellationToken ct)
+    {
+        if (matches.Count == 0)
+            return;
+
+        var matchIds = matches.Select(match => match.Id).ToList();
+        var participations = await _db.CoachMatches
+            .Where(assignment => matchIds.Contains(assignment.MatchId))
+            .Select(assignment => new
+            {
+                assignment.MatchId,
+                assignment.CoachId,
+                CoachFullName = assignment.Coach.DisplayName ?? string.Empty,
+                assignment.ParticipationTypeId,
+                ParticipationTypeName = assignment.ParticipationType.Name,
+            })
+            .ToListAsync(ct);
+
+        var participationsByMatchId = participations.ToLookup(item => item.MatchId);
+        foreach (var match in matches)
+        {
+            match.CoachParticipations = participationsByMatchId[match.Id]
+                .OrderBy(item => item.CoachFullName)
+                .ThenBy(item => item.ParticipationTypeId)
+                .Select(item => new CoachParticipationDto
+                {
+                    CoachId = item.CoachId,
+                    FullName = item.CoachFullName,
+                    LastName = ExtractLastName(item.CoachFullName),
+                    ParticipationTypeId = item.ParticipationTypeId,
+                    ParticipationTypeName = item.ParticipationTypeName,
+                })
+                .ToList();
+        }
     }
 
     public async Task<List<LookupSelectItem>> GetMatchStatesAsync(CancellationToken ct = default)
@@ -157,6 +200,18 @@ public sealed class MatchScheduleService
             && normalizedTeamName.Equals(
                 normalizedCompetitionTeamName[..^2].TrimEnd(),
                 StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ExtractLastName(string fullName)
+    {
+        var trimmed = fullName.Trim();
+        if (trimmed.Length == 0)
+            return string.Empty;
+
+        var lastSpaceIndex = trimmed.LastIndexOf(' ');
+        return lastSpaceIndex < 0
+            ? trimmed
+            : trimmed[(lastSpaceIndex + 1)..];
     }
 
     internal sealed class MatchProjection

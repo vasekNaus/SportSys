@@ -85,8 +85,11 @@ public class KisMatchImportModelTests
             }
 
             var rows = KisMatchImportService.ReadRows(filePath);
+            using var stream = File.OpenRead(filePath);
+            var uploadedRows = KisMatchImportService.ReadRows(stream);
 
             var row = Assert.Single(rows);
+            Assert.Equal(row, Assert.Single(uploadedRows));
             Assert.Equal(2, row.RowNumber);
             Assert.True(KisMatchImportService.TryParseDate(row.Date, out var date));
             Assert.Equal(new DateOnly(2026, 10, 24), date);
@@ -95,6 +98,48 @@ public class KisMatchImportModelTests
         {
             File.Delete(filePath);
         }
+    }
+
+    [Fact]
+    public void UploadedWorkbookWithoutExportSheetIsRejected()
+    {
+        using var workbook = new XLWorkbook();
+        workbook.AddWorksheet("Other");
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        var error = Assert.Throws<InvalidDataException>(() => KisMatchImportService.ReadRows(stream));
+
+        Assert.Contains("Export", error.Message);
+    }
+
+    [Fact]
+    public void UploadedWorkbookWithInvalidHeadersIsRejected()
+    {
+        using var workbook = new XLWorkbook();
+        workbook.AddWorksheet("Export").Cell(1, 1).Value = "Other";
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        var error = Assert.Throws<InvalidDataException>(() => KisMatchImportService.ReadRows(stream));
+
+        Assert.Contains("Datum", error.Message);
+    }
+
+    [Theory]
+    [InlineData(-1, false)]
+    [InlineData(0, false)]
+    [InlineData(1, true)]
+    public void MatchImportRequiresSeason(int seasonId, bool expectedValid)
+    {
+        var input = new KisMatchImportDto { SeasonId = seasonId };
+        var errors = new List<ValidationResult>();
+
+        var valid = Validator.TryValidateObject(input, new ValidationContext(input), errors, true);
+
+        Assert.Equal(expectedValid, valid);
     }
 
     [Theory]

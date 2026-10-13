@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Models;
+using SportSys.Contract.Models.hr;
 using SportSys.Database.Context;
 using SportSys.Database.Enums;
 using SportSys.Database.Models.sport;
@@ -14,6 +15,9 @@ public class TrainingScheduleService
     {
         _db = db;
     }
+
+    public Task<List<CoachSelectItem>> GetCoachesAsync(CancellationToken ct = default)
+        => RequirementEditHelper.GetCoachesAsync(_db, ct);
 
     public async Task<List<SeasonDto>> GetSeasonsAsync(CancellationToken ct = default)
     {
@@ -116,6 +120,7 @@ public class TrainingScheduleService
         DateOnly dateFrom,
         DateOnly dateTo,
         bool mergeOverlapping,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
         var query = _db.Training
@@ -123,6 +128,8 @@ public class TrainingScheduleService
                 && categoryCodes.Contains(t.SeasonCategoryCode)
                 && t.Date >= dateFrom
                 && t.Date <= dateTo);
+
+        query = query.FilterByCoachIds(coachIds);
 
         if (trainingTypeIds.Count > 0)
             query = query.Where(t => trainingTypeIds.Contains(t.TrainingTypeId));
@@ -180,11 +187,14 @@ public class TrainingScheduleService
         int? trainingPhaseId,
         DateOnly? validOn,
         bool mergeOverlapping,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
         var query = _db.TrainingPlans
             .Where(p => p.SeasonId == seasonId
                 && categoryCodes.Contains(p.SeasonCategoryCode));
+
+        query = query.FilterByCoachIds(coachIds);
 
         if (trainingPhaseId.HasValue)
             query = query.Where(p => p.TrainingPhaseId == trainingPhaseId.Value);
@@ -255,22 +265,38 @@ public class TrainingScheduleService
             .Select(c => new
             {
                 c.TrainingId,
+                c.CoachId,
                 CoachFullName = c.Coach.DisplayName ?? string.Empty,
+                c.ParticipationTypeId,
+                ParticipationTypeName = c.ParticipationType.Name,
             })
             .ToListAsync(ct);
 
-        var assignmentsByTrainingId = assignments
-            .ToLookup(a => a.TrainingId, a => a.CoachFullName);
+        var assignmentsByTrainingId = assignments.ToLookup(a => a.TrainingId);
 
         foreach (var training in trainings)
         {
-            training.Coaches = assignmentsByTrainingId[training.Id]
+            var trainingAssignments = assignmentsByTrainingId[training.Id];
+            training.Coaches = trainingAssignments
+                .Select(a => a.CoachFullName)
                 .Distinct()
-                .OrderBy(x => x)
+                .OrderBy(fullName => fullName)
                 .Select(fullName => new SimpleCoachDto
                 {
                     FullName = fullName,
                     LastName = ExtractLastName(fullName),
+                })
+                .ToList();
+            training.CoachParticipations = trainingAssignments
+                .OrderBy(a => a.CoachFullName)
+                .ThenBy(a => a.ParticipationTypeId)
+                .Select(a => new CoachParticipationDto
+                {
+                    CoachId = a.CoachId,
+                    FullName = a.CoachFullName,
+                    LastName = ExtractLastName(a.CoachFullName),
+                    ParticipationTypeId = a.ParticipationTypeId,
+                    ParticipationTypeName = a.ParticipationTypeName,
                 })
                 .ToList();
         }

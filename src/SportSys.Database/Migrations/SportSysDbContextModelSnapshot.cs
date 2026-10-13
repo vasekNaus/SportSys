@@ -1088,6 +1088,44 @@ namespace SportSys.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SportSys.Database.Models.sport.CoachMatch", b =>
+                {
+                    b.Property<int>("CoachId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MatchId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ParticipationTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue("", "DF_CoachMatch_Note");
+
+                    b.HasKey("CoachId", "MatchId", "ParticipationTypeId");
+
+                    b.HasIndex(new[] { "MatchId" }, "IX_CoachMatch_Match");
+
+                    b.HasIndex(new[] { "ParticipationTypeId" }, "IX_CoachMatch_ParticipationType");
+
+                    b.ToTable("CoachMatch", "sport", t =>
+                        {
+                            t.Property("CoachId")
+                                .HasColumnName("Coach_Id");
+
+                            t.Property("MatchId")
+                                .HasColumnName("Match_Id");
+
+                            t.Property("ParticipationTypeId")
+                                .HasColumnName("ParticipationType_Id");
+                        });
+                });
+
             modelBuilder.Entity("SportSys.Database.Models.sport.CoachMatchRequirement", b =>
                 {
                     b.Property<int>("CoachId")
@@ -2295,6 +2333,31 @@ namespace SportSys.Database.Migrations
                     b.Navigation("Member");
                 });
 
+            modelBuilder.Entity("SportSys.Database.Models.sport.CoachMatch", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
+                        .WithMany("CoachMatches")
+                        .HasForeignKey("CoachId")
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sport.Match", "Match")
+                        .WithMany("CoachMatches")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sportSchema.ParticipationType", "ParticipationType")
+                        .WithMany("CoachMatches")
+                        .HasForeignKey("ParticipationTypeId")
+                        .IsRequired();
+
+                    b.Navigation("Coach");
+
+                    b.Navigation("Match");
+
+                    b.Navigation("ParticipationType");
+                });
+
             modelBuilder.Entity("SportSys.Database.Models.sport.CoachMatchRequirement", b =>
                 {
                     b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
@@ -2723,6 +2786,8 @@ namespace SportSys.Database.Migrations
 
             modelBuilder.Entity("SportSys.Database.Models.sportSchema.ParticipationType", b =>
                 {
+                    b.Navigation("CoachMatches");
+
                     b.Navigation("CoachTrainings");
                 });
 
@@ -2755,6 +2820,8 @@ namespace SportSys.Database.Migrations
 
                     b.Navigation("CoachMatchRequirements");
 
+                    b.Navigation("CoachMatches");
+
                     b.Navigation("CoachTrainingPlans");
 
                     b.Navigation("CoachTrainingRequirementCoaches");
@@ -2766,6 +2833,11 @@ namespace SportSys.Database.Migrations
                     b.Navigation("Licenses");
 
                     b.Navigation("Settings");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.Match", b =>
+                {
+                    b.Navigation("CoachMatches");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sport.Training", b =>

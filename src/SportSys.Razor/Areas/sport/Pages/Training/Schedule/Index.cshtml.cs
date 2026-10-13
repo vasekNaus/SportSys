@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using SportSys.Contract.Models;
 using SportSys.Contract.Services;
 using SportSys.Razor.Models.TrainingSchedule;
@@ -15,17 +16,20 @@ public class IndexModel : PageModel
     private readonly MatchScheduleService _matchService;
     private readonly TrainingScheduleExcelExporter _excelExporter;
     private readonly KisTrainingImportService _kisTrainingImportService;
+    private readonly KisMatchImportService _kisMatchImportService;
 
     public IndexModel(
         TrainingScheduleService service,
         MatchScheduleService matchService,
         TrainingScheduleExcelExporter excelExporter,
-        KisTrainingImportService kisTrainingImportService)
+        KisTrainingImportService kisTrainingImportService,
+        KisMatchImportService kisMatchImportService)
     {
         _service = service;
         _matchService = matchService;
         _excelExporter = excelExporter;
         _kisTrainingImportService = kisTrainingImportService;
+        _kisMatchImportService = kisMatchImportService;
     }
 
     public List<SeasonDto> Seasons { get; private set; } = [];
@@ -36,6 +40,7 @@ public class IndexModel : PageModel
     public List<LookupSelectItem> Locations { get; private set; } = [];
     public List<LookupSelectItem> MatchStates { get; private set; } = [];
     public List<LookupSelectItem> MatchTypes { get; private set; } = [];
+    public List<SelectListItem> CoachSelectList { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? SeasonId { get; set; }
@@ -51,6 +56,9 @@ public class IndexModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public List<int> SelectedLocationIds { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public List<int> SelectedCoachIds { get; set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public List<int> SelectedMatchStateIds { get; set; } = [];
@@ -90,16 +98,26 @@ public class IndexModel : PageModel
     [BindProperty]
     public IFormFile? ImportFile { get; set; }
 
+    [BindProperty]
+    public KisMatchImportDto MatchImport { get; set; } = new();
+
+    [BindProperty]
+    public IFormFile? MatchImportFile { get; set; }
+
     [TempData]
     public string? StatusMessage { get; set; }
 
     [TempData]
     public string? ImportWarningsJson { get; set; }
 
+    [TempData]
+    public string? MatchImportWarningsJson { get; set; }
+
     public ITrainingScheduleViewModel? ScheduleView { get; private set; }
     public bool HasExportableTrainings { get; private set; }
     public string? ExportErrorMessage { get; private set; }
     public IReadOnlyList<KisTrainingImportWarning> ImportWarnings { get; private set; } = [];
+    public IReadOnlyList<KisMatchImportWarning> MatchImportWarnings { get; private set; } = [];
 
     public async Task OnGetAsync(CancellationToken ct)
     {
@@ -121,6 +139,7 @@ public class IndexModel : PageModel
                 SelectedMatchStateIds,
                 SelectedLocationIds,
                 SelectedMatchTypeIds,
+                SelectedCoachIds,
                 ct)
             : [];
         (trainings, matches) = FilterByDaysOfWeek(trainings, matches);
@@ -150,6 +169,7 @@ public class IndexModel : PageModel
                 SelectedMatchStateIds,
                 SelectedLocationIds,
                 SelectedMatchTypeIds,
+                SelectedCoachIds,
                 ct)
             : [];
         (trainings, matches) = FilterByDaysOfWeek(trainings, matches);
@@ -173,14 +193,8 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostImportAsync(CancellationToken ct)
     {
-        RetainImportModelState();
-
-        if (ImportFile is null || ImportFile.Length == 0)
-            ModelState.AddModelError(nameof(ImportFile), "Vyberte soubor XLSX.");
-        else if (ImportFile.Length > 10 * 1024 * 1024)
-            ModelState.AddModelError(nameof(ImportFile), "Soubor může mít maximálně 10 MiB.");
-        else if (!Path.GetExtension(ImportFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
-            ModelState.AddModelError(nameof(ImportFile), "Vyberte soubor ve formátu XLSX.");
+        RetainImportModelState(nameof(Import), nameof(ImportFile));
+        ValidateImportFile(ImportFile, nameof(ImportFile));
 
         if (!ModelState.IsValid)
         {
@@ -218,6 +232,55 @@ public class IndexModel : PageModel
         return Page();
     }
 
+    public async Task<IActionResult> OnPostImportMatchesAsync(CancellationToken ct)
+    {
+        RetainImportModelState(nameof(MatchImport), nameof(MatchImportFile));
+        ValidateImportFile(MatchImportFile, nameof(MatchImportFile));
+
+        if (!ModelState.IsValid)
+        {
+            await LoadAndNormalizeFiltersAsync(ct);
+            return Page();
+        }
+
+        try
+        {
+            await using var stream = MatchImportFile!.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            buffer.Position = 0;
+
+            var result = await _kisMatchImportService.ImportAsync(buffer, MatchImport.SeasonId, ct);
+            StatusMessage =
+                $"Import zápasů dokončen: vloženo {result.Inserted}, " +
+                $"již existuje {result.Existing}, přeskočeno {result.Skipped}.";
+            MatchImportWarningsJson = result.Warnings.Count == 0
+                ? null
+                : JsonSerializer.Serialize(result.Warnings.Take(20));
+
+            return RedirectToPage();
+        }
+        catch (InvalidDataException ex)
+        {
+            ModelState.AddModelError(nameof(MatchImportFile), ex.Message);
+        }
+        catch (System.IO.FileFormatException)
+        {
+            ModelState.AddModelError(nameof(MatchImportFile), "Soubor není platný XLSX export KIS.");
+        }
+        catch (System.Xml.XmlException)
+        {
+            ModelState.AddModelError(nameof(MatchImportFile), "Soubor není platný XLSX export KIS.");
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError($"{nameof(MatchImport)}.{nameof(MatchImport.SeasonId)}", ex.Message);
+        }
+
+        await LoadAndNormalizeFiltersAsync(ct);
+        return Page();
+    }
+
     private async Task<bool> LoadAndNormalizeFiltersAsync(CancellationToken ct)
     {
         Seasons = await _service.GetSeasonsAsync(ct);
@@ -227,6 +290,15 @@ public class IndexModel : PageModel
         Locations = await _service.GetTrainingLocationsAsync(SelectedLocationIds, ct);
         MatchStates = await _matchService.GetMatchStatesAsync(ct);
         MatchTypes = await _matchService.GetMatchTypesAsync(ct);
+        var coaches = await _service.GetCoachesAsync(ct);
+        CoachSelectList = coaches
+            .Select(coach => new SelectListItem(coach.DisplayName, coach.Id.ToString()))
+            .ToList();
+        var availableCoachIds = coaches.Select(coach => coach.Id).ToHashSet();
+        SelectedCoachIds = SelectedCoachIds
+            .Where(availableCoachIds.Contains)
+            .Distinct()
+            .ToList();
 
         if (SeasonId.HasValue && Seasons.All(s => s.Id != SeasonId.Value))
         {
@@ -285,13 +357,23 @@ public class IndexModel : PageModel
         return true;
     }
 
-    private void RetainImportModelState()
+    private void ValidateImportFile(IFormFile? file, string key)
+    {
+        if (file is null || file.Length == 0)
+            ModelState.AddModelError(key, "Vyberte soubor XLSX.");
+        else if (file.Length > 10 * 1024 * 1024)
+            ModelState.AddModelError(key, "Soubor může mít maximálně 10 MiB.");
+        else if (!Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+            ModelState.AddModelError(key, "Vyberte soubor ve formátu XLSX.");
+    }
+
+    private void RetainImportModelState(string inputKey, string fileKey)
     {
         foreach (var key in ModelState.Keys
                      .Where(key =>
-                         !key.Equals(nameof(Import), StringComparison.Ordinal) &&
-                         !key.StartsWith($"{nameof(Import)}.", StringComparison.Ordinal) &&
-                         !key.Equals(nameof(ImportFile), StringComparison.Ordinal))
+                         !key.Equals(inputKey, StringComparison.Ordinal) &&
+                         !key.StartsWith($"{inputKey}.", StringComparison.Ordinal) &&
+                         !key.Equals(fileKey, StringComparison.Ordinal))
                      .ToList())
         {
             ModelState.Remove(key);
@@ -303,6 +385,12 @@ public class IndexModel : PageModel
         if (ImportWarningsJson is not null)
         {
             ImportWarnings = JsonSerializer.Deserialize<List<KisTrainingImportWarning>>(ImportWarningsJson)
+                ?? [];
+        }
+
+        if (MatchImportWarningsJson is not null)
+        {
+            MatchImportWarnings = JsonSerializer.Deserialize<List<KisMatchImportWarning>>(MatchImportWarningsJson)
                 ?? [];
         }
     }
@@ -326,6 +414,7 @@ public class IndexModel : PageModel
             filter.DateFrom,
             filter.DateTo,
             MergeTrainings,
+            SelectedCoachIds,
             ct);
 
     private (List<TrainingScheduleItemDto> Trainings, List<MatchScheduleItemDto> Matches) FilterByDaysOfWeek(

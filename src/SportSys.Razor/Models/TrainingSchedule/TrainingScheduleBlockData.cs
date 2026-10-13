@@ -2,6 +2,12 @@ using SportSys.Contract.Models;
 
 namespace SportSys.Razor.Models.TrainingSchedule;
 
+public sealed class TrainingScheduleCoachParticipation
+{
+    public required string CategoryCode { get; init; }
+    public required CoachParticipationDto Participation { get; init; }
+}
+
 public sealed class TrainingScheduleCategorySegment
 {
     public required string CategoryCode { get; init; }
@@ -15,6 +21,7 @@ public sealed class TrainingScheduleBlockData
     public required IReadOnlyList<string> TrainingTypeNames { get; init; }
     public required IReadOnlyList<string> Locations { get; init; }
     public required IReadOnlyList<SimpleCoachDto> Coaches { get; init; }
+    public required IReadOnlyList<TrainingScheduleCoachParticipation> CoachParticipations { get; init; }
     public required IReadOnlyList<string> TrainingTypeLocationSummaries { get; init; }
     public required IReadOnlyList<TrainingScheduleCategorySegment> CategorySegments { get; init; }
     public TimeOnly TimeFrom { get; init; }
@@ -114,6 +121,15 @@ public static class TrainingScheduleBlockFactory
             Coaches = items
                 .SelectMany(item => item.Coaches)
                 .OrderBy(coach => coach.FullName, StringComparer.Ordinal)
+                .ToList(),
+            CoachParticipations = items
+                .OfType<TrainingScheduleItemDto>()
+                .SelectMany(item => item.CoachParticipations.Select(participation =>
+                    new TrainingScheduleCoachParticipation
+                    {
+                        CategoryCode = item.SeasonCategoryCode,
+                        Participation = participation,
+                    }))
                 .ToList(),
             TrainingTypeLocationSummaries = DistinctOrdered(items.Select(item =>
                 string.IsNullOrWhiteSpace(item.LocationName)

@@ -1,10 +1,10 @@
 ---
 name: task-plan-implementation
 description: >
-  Implementuje schválený plán z .github/tasks end-to-end: ověří aktuálnost
+  Implementuje schválený plán z tasks end-to-end: ověří aktuálnost
   rozhodnutí, načte relevantní skills a dokumentaci, provede změny po vrstvách,
   doplní testy a zkontroluje soulad výsledku s plánem. Použij při požadavku
-  "implementuj @.github/tasks/...".
+  "implementuj @tasks/...".
 user-invocable: true
 ---
 
@@ -12,7 +12,7 @@ user-invocable: true
 
 ## Kdy použít
 
-- Uživatel odkáže na konkrétní soubor v `.github/tasks/` a požaduje implementaci.
+- Uživatel odkáže na konkrétní soubor v `tasks/` a požaduje implementaci.
 - Schválený plán zasahuje více vrstev nebo obsahuje navazující fáze.
 - Je nutné udržet shodu mezi plánem, kódem, testy a dokumentací.
 
@@ -113,12 +113,12 @@ relevantní sadu testů.
 ## Příklady
 
 ```text
-Implementuj @.github/tasks/12-export-treninku-do-excelu.md
+Implementuj @tasks/12-export-treninku-do-excelu.md
 ```
 
 Pokud uživatel doplní výjimku, zachovej ji jako vyšší prioritu:
 
 ```text
-Implementuj @.github/tasks/12-export-treninku-do-excelu.md;
+Implementuj @tasks/12-export-treninku-do-excelu.md;
 autorizaci zatím neměň a nevytvářej migraci.
 ```

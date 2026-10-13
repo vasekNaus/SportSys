@@ -19,6 +19,15 @@ public sealed class SimpleCoachDto
     public required string LastName { get; init; }
 }
 
+public sealed class CoachParticipationDto
+{
+    public int CoachId { get; init; }
+    public required string FullName { get; init; }
+    public required string LastName { get; init; }
+    public int ParticipationTypeId { get; init; }
+    public required string ParticipationTypeName { get; init; }
+}
+
 public interface ITrainingScheduleItem
 {
     int Id { get; }
@@ -90,6 +99,7 @@ public class TrainingScheduleItemDto : SportEventDto, ITrainingScheduleItem
     public bool IsDryTraining { get; set; }
     public string TrainingPhaseName { get; set; } = string.Empty;
     public IReadOnlyList<SimpleCoachDto> Coaches { get; set; } = [];
+    public IReadOnlyList<CoachParticipationDto> CoachParticipations { get; set; } = [];
     public int? TrainingStateId { get; set; }
     public string? TrainingStateName { get; set; }
 }

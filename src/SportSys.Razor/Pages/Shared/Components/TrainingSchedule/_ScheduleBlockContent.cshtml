@@ -11,6 +11,22 @@
 {
   <span class="schedule-block-location">@match.ResultText</span>
   <span class="schedule-block-coaches">@match.OpponentName</span>
+  @if (match.CoachParticipations.Count > 0)
+  {
+    <span class="schedule-block-coaches schedule-block-coaches--wrap">
+      @foreach (var participation in match.CoachParticipations)
+      {
+        <span class="schedule-block-coach-participation"
+              title="@($"{participation.CategoryCode}: {participation.FullName} – {participation.ParticipationTypeName}")">
+          @participation.LastName
+          <span class="schedule-block-coach-icon"
+                title="@participation.ParticipationTypeName"
+                role="img"
+                aria-label="@($"{participation.FullName}: {participation.ParticipationTypeName}")">@participation.Icon</span>
+        </span>
+      }
+    </span>
+  }
   if (!string.IsNullOrEmpty(match.MatchStateIcon))
   {
     <span class="schedule-block-state-icon"
@@ -30,7 +46,27 @@ else if (Model.Source is Models.TrainingSchedule.TrainingLikeEventModel training
       @training.LocationSummary
     }
   </span>
-  <span class="schedule-block-coaches schedule-block-coaches--wrap">@training.CoachSurnameSummary</span>
+  @if (training is Models.TrainingSchedule.TrainingEventModel trainingEventWithCoaches
+      && trainingEventWithCoaches.CoachParticipations.Count > 0)
+  {
+    <span class="schedule-block-coaches schedule-block-coaches--wrap">
+      @foreach (var participation in trainingEventWithCoaches.CoachParticipations)
+      {
+        <span class="schedule-block-coach-participation"
+              title="@($"{participation.CategoryCode}: {participation.FullName} – {participation.ParticipationTypeName}")">
+          @participation.LastName
+          <span class="schedule-block-coach-icon"
+                title="@participation.ParticipationTypeName"
+                role="img"
+                aria-label="@($"{participation.FullName}: {participation.ParticipationTypeName}")">@participation.Icon</span>
+        </span>
+      }
+    </span>
+  }
+  else
+  {
+    <span class="schedule-block-coaches schedule-block-coaches--wrap">@training.CoachSurnameSummary</span>
+  }
   if (training is Models.TrainingSchedule.TrainingEventModel trainingEvent
       && !string.IsNullOrEmpty(trainingEvent.StateIcon))
   {

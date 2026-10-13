@@ -20,4 +20,6 @@ public partial class ParticipationType
     public required string Name { get; set; }
 
     public virtual ICollection<CoachTraining> CoachTrainings { get; set; } = new List<CoachTraining>();
+
+    public virtual ICollection<CoachMatch> CoachMatches { get; set; } = new List<CoachMatch>();
 }

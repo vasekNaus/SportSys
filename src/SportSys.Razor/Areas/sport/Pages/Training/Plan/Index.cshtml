@@ -129,6 +129,13 @@
                        value="@Model.ValidOn?.ToString("yyyy-MM-dd")"
                        onchange="this.form.submit()" />
             </div>
+
+            <div class="field">
+                <label asp-for="SelectedCoachIds">Trenéři</label>
+                <search-multiselect asp-for="SelectedCoachIds"
+                                    asp-items="Model.CoachSelectList"
+                                    placeholder="Hledat trenéra" />
+            </div>
         </div>
 
         <fieldset class="schedule-filter-categories schedule-filter-categories--nested">

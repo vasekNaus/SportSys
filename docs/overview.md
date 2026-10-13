@@ -38,5 +38,5 @@ nenahrazuje. Přístup k rezervacím `plan.*` je navržen jako read-only; aktuá
 - [Scénáře použití](use-cases.md)
 
 `features.md` a `use-cases.md` jsou stručné produktové pohledy. Historické
-plány v `.github/tasks/` ani rešerše v `docs/research/` nejsou specifikací
+plány v `tasks/` ani rešerše v `docs/research/` nejsou specifikací
 aktuální implementace.

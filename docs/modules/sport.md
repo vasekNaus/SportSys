@@ -22,6 +22,12 @@ rozsah. `MatchRequirement` eviduje požadovaný počet zápasů kategorie v obdo
 Vazební tabulky trenérů (`CoachTrainingRequirement`, `CoachMatchRequirement`)
 odkazují na stabilní `hr.Coach.Id` a `dbo.CoachRole.Id`.
 
+Skutečnou účast trenéra evidují `sport.CoachTraining` a
+`sport.CoachMatch`. Obě vazby obsahují trenéra, konkrétní událost, stav z
+`sport.ParticipationType` a poznámku do 50 znaků. Složený databázový klíč
+obsahuje i stav účasti; aplikační služby proto vynucují invariant nejvýše
+jednoho stavu jednoho trenéra pro jednu událost.
+
 `TrainingGroup` a `TrainingPlanGroup` jsou nezávislé; jejich ID se mezi
 reálnými tréninky a plány nekopíruje.
 
@@ -49,7 +55,10 @@ identifikován osobním číslem; požadavek bez trenéra zobrazuje `-`.
 Přehled používá společné GET filtry pro obě tabulky:
 
 - aktivní sezóna; výchozí je nejnovější aktivní sezóna,
-- nula, jedna nebo více aktivních kategorií vybrané sezóny.
+- nula, jedna nebo více aktivních kategorií vybrané sezóny,
+- nula, jeden nebo více trenérů; prázdný výběr znamená všechny požadavky,
+  neprázdný výběr vrací jen požadavky s alespoň jedním vybraným trenérem
+  (logika OR).
 
 Dále lze filtrovat pouze požadavky na tréninky (zápasy tyto dimenze nemají a
 filtry ignorují):
@@ -120,25 +129,29 @@ Legenda se sestavuje z výsledných bloků, nikoliv přímo ze seznamu vybranýc
 kategorií. Spojený blok se proto v legendě zobrazí pod stejným názvem jako
 v rozvrhu, například `U12 + U14`, a každá kombinace je uvedena pouze jednou.
 
-Blok tréninku a tréninkového plánu zobrazuje pět pevných řádků v tomto
-pořadí: kategorie, čas od–do (tučně, nejvýraznější informace v bloku), název
-lokality a příjmení přiřazených trenérů (zalomená na tolik řádků, kolik je
-potřeba — modifikátor `schedule-block-coaches--wrap`, aby se vešli i trenéři u
-spojených tréninků více kategorií; dráha `.schedule-track` je CSS grid, bloky
-sdílejí jednu buňku, a výška dráhy se proto natáhne podle nejvyššího bloku,
-minimálně na `$track-height`). U tréninkového plánu s neprázdnou
+Blok skutečného tréninku zobrazuje kategorii, čas od–do, lokalitu a seznam
+příjmení trenérů; za každým příjmením je ikona jeho účasti. Ikony odpovídají
+stabilním ID `sport.ParticipationType`: `1` ✅ účast, `2` ❓ bez reakce,
+`3` ❌ neúčast, `4` 🔗 spojený trénink a `5` ↔ neúčast – jiný trénink.
+Název stavu z číselníku je dostupný u ikony a celý tooltip události obsahuje
+celá jména trenérů i jejich stav. U bloku sloučených tréninků se zobrazuje
+každá účast zvlášť, včetně opakovaného trenéra; tooltip zachovává kategorii
+každého zdrojového tréninku. Seznam se při nedostatku místa zalamuje
+(`schedule-block-coaches--wrap`); výška dráhy se přizpůsobí nejvyššímu bloku.
+U tréninkového plánu se nadále zobrazují pouze příjmení přiřazených trenérů,
+bez indikace účasti.
+
+U tréninkového plánu s neprázdnou
 textovou vlastností `sport.TrainingPlan.Title` zobrazuje řádek lokality
 text ve tvaru `Title - Lokalita`; pokud je `Title` prázdný, zobrazí se jen
 název lokality beze změny (`TrainingPlanEventModel.PlanTitleSummary`,
 `EventModelFactory.CreateTrainingPlanBlock`). U spojeného bloku více plánů
 se neprázdné hodnoty `Title` deduplikují a spojují čárkou. Reálný trénink
 (`Training`) sloupec `Title` nemá a jeho řádek lokality se tímto nemění.
-Blok zápasu používá stejné pořadí
-vykreslovaných pozic (kategorie, čas, třetí a čtvrtý řádek), ale obsah
-třetího a čtvrtého řádku je zápasu vlastní: třetí řádek zobrazuje výsledek
-a čtvrtý soupeře (`ScheduleEventModelFactory.CreateMatch`), ne lokalitu a
-trenéry; jde jen o sjednocení vizuálního pořadí napříč typy bloků, ne o
-sdílený význam dat. Typ
+Blok zápasu zobrazuje kategorii, čas, výsledek, soupeře a samostatný seznam
+trenérů s ikonami účasti ve stejném formátu jako skutečný trénink. Tooltip
+obsahuje také celá jména trenérů a názvy jejich stavů. Výsledek ani soupeř se
+zobrazením trenérů nenahrazují. Typ
 tréninku (led / suchá příprava) se v bloku nevypisuje textem — rozlišuje ho
 vizuální vykreslení pozadí: led má plnou barvu podle kategorie beze změny,
 suchá příprava stejnou barvu doplněnou o jemné diagonální šrafování
@@ -158,18 +171,20 @@ zůstávají dostupné v tooltipu bloku a v Excel exportu rozvrhu
 (`TrainingScheduleBlockData.CoachSummary`/`TrainingTypeSummary`), export se
 touto úpravou nemění.
 
-Zápasový blok používá stejnou časovou osu, ale zobrazuje kategorii, čas,
-soupeře a výsledek. Neznámý výsledek se zobrazuje jako `-`. Zápas nemá
-editační odkaz, ale zobrazuje stavovou ikonu podle `Match.MatchStateId`
-(viz níže). Překryv zápasu s tréninkem nebo jiným zápasem vytvoří další lane.
+Zápasový blok používá stejnou časovou osu, zobrazuje kategorii, čas, výsledek,
+soupeře a přiřazené trenéry s ikonami účasti. Neznámý výsledek se zobrazuje
+jako `-`. Zápas nemá editační odkaz, ale zobrazuje také stavovou ikonu podle
+`Match.MatchStateId` (viz níže). Překryv zápasu s tréninkem nebo jiným zápasem
+vytvoří další lane.
 
 Při materializaci více reálných tréninků z propojených plánů se pro vzniklé
 tréninky vytvoří nová skupina v `TrainingGroup`. Identifikátor skupiny z
 `TrainingPlanGroup` se mezi tabulkami nekopíruje.
 
-Reálný trénink navíc nese stav (`sport.TrainingState`). Kategorie se nikdy
-nebarví podle stavu; vizualizace je omezena na ikonu v pravém dolním rohu
-bloku. Mapování `TrainingStateId → ikona` je v
+Reálný trénink navíc nese vlastní stav (`sport.TrainingState`), nezávislý na
+účasti trenérů. Kategorie se nikdy nebarví podle stavu; stav tréninku se
+zobrazuje samostatnou ikonou v pravém dolním rohu bloku. Mapování
+`TrainingStateId → ikona` je v
 `src/SportSys.Razor/Models/TrainingSchedule/TrainingStateVisual.cs`. Pokud
 blok obsahuje jediný trénink nebo spojené tréninky se shodným stavem, zobrazí
 se ikona tohoto stavu bez tooltipu. Pokud mají spojené tréninky rozdílné
@@ -217,6 +232,8 @@ a tlačítkem „Použít filtry“.
 - jedna nebo více aktivních kategorií (společné pro tréninky i zápasy),
 - nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality —
   filtr je společný a omezuje tréninky i zápasy zároveň,
+- nula, jeden nebo více trenérů; prázdný výběr znamená bez omezení, filtr je
+  společný pro tréninky i zápasy a více trenérů se kombinuje logikou OR,
 - datum od a do,
 - nula, jeden nebo více dnů v týdnu (checkbox skupina Pondělí–Neděle); prázdný
   výběr znamená všechny dny. Filtr omezuje přímo načtená data (tréninky i
@@ -272,6 +289,12 @@ administrativní konfigurace rozbruslení před začátkem utkání; nemění
 
 ### Import zápasů z KIS
 
+Stránka `/sport/Training/Schedule` obsahuje pod importem tréninků samostatný
+formulář pro import zápasů. Vyžaduje sezónu a export `games.xlsx` do 10 MiB.
+Po importu zobrazí počty vložených, již existujících a přeskočených zápasů
+a nejvýše 20 varování s číslem řádku a důvodem. Neplatný soubor se zobrazí
+jako validační chyba; import tréninků má vlastní nezávislý formulář.
+
 Konzolová aplikace importuje export `games.xlsx` příkazem:
 
 ```powershell
@@ -310,6 +333,18 @@ nastaví časy z KIS a stav `TimeChanged`. Pokud kandidát neexistuje, vytvoří
 trénink bez vazby na plán se stavem `KisOnly` a zvolenou fází. Více kandidátů,
 neplatné intervaly a neznámé nebo nejednoznačné reference se přeskočí
 s číslem řádku a důvodem. Po změně času je opakovaný import přesnou shodou,
+
+### Import docházky trenérů
+
+HR stránka `/hr/Attendance/Index` importuje řádky XLSX na existující sportovní
+události. Trénink se páruje přes sezonu, kategorii, datum a přesný časový
+interval; zrušené, přesunuté a poruchou arény dotčené tréninky nejsou
+kandidáty. Zápas se páruje přes sezonu, kategorii, datum a názvy domácího a
+hostujícího týmu. Čas zápasu slouží jen k rozlišení více kandidátů, protože
+export docházky může obsahovat čas srazu.
+
+Import události nezakládá ani nemění. Každý řádek musí být jednoznačný a celý
+soubor se zapisuje atomicky společně s archivem v `hr.CoachAttendance`. Po změně času je opakovaný import přesnou shodou,
 proto nevytváří duplicitní tréninky.
 
 ### Editace tréninku a tréninkového plánu
@@ -384,6 +419,9 @@ stránce Schedule).
 - jedna nebo více aktivních kategorií,
 - nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
 - nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality,
+- nula, jeden nebo více trenérů; prázdný výběr znamená všechny plány,
+  neprázdný výběr vrací plán s alespoň jedním vybraným trenérem, jehož
+  přiřazení se překrývá s platností plánu,
 - nula nebo jedna fáze tréninku; prázdný výběr znamená všechny fáze,
 - nepovinné datum platnosti; zobrazí plány, pro které platí
   `From <= datum <= To`,
