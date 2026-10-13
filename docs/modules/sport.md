@@ -289,6 +289,29 @@ za existující pouze při shodě lokace, data, začátku, kategorie, domácího
 hostujícího týmu. Neznámé, nejednoznačné či chybějící hodnoty nezakládají
 číselníky; příslušný řádek se přeskočí a konzole vypíše číslo řádku s důvodem.
 
+### Import tréninků z KIS
+
+Stránka `/sport/Training/Schedule` umožňuje nahrát XLSX export KIS. Formulář
+vyžaduje aktivní sezónu, fázi pro nově vytvořené tréninky a soubor do 10 MiB.
+Soubor musí obsahovat list `Export` se sloupci `Datum`, `Čas od`, `Čas do`,
+`Soupiska`, `Název`, `Místo`, `Typ` a `Poznámka trenéra`. Opakovaná hlavička
+v datech se ignoruje.
+
+`Soupiska` se jednoznačně páruje s aktivní `SeasonCategory.Name` vybrané
+sezóny a `Místo` s `Location.Name`; lokalita se nevolí ve formuláři. Typ `Led`
+se mapuje na `Ice` a `Suchá příprava` na `Dry`. Ostatní typy, včetně
+`Schůzka s rodiči`, se nezakládají a řádek se uvede ve varování importu.
+Sloupce `Název` a `Poznámka trenéra` se neukládají, protože pro ně model
+tréninku nemá samostatné atributy.
+
+Import páruje trénink podle data, kategorie, lokality a typu. Při shodě
+obou časů nastaví stav `ConfirmedKis`. Má-li jediný kandidát jiný interval,
+nastaví časy z KIS a stav `TimeChanged`. Pokud kandidát neexistuje, vytvoří
+trénink bez vazby na plán se stavem `KisOnly` a zvolenou fází. Více kandidátů,
+neplatné intervaly a neznámé nebo nejednoznačné reference se přeskočí
+s číslem řádku a důvodem. Po změně času je opakovaný import přesnou shodou,
+proto nevytváří duplicitní tréninky.
+
 ### Editace tréninku a tréninkového plánu
 
 Kliknutím na blok reálného tréninku v `/sport/Training/Schedule` se v novém

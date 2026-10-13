@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
     });
 
     services.AddScoped<KisMatchImportService>();
+    services.AddScoped<KisTrainingImportService>();
     services.AddScoped<SportLocationService>();
     services.AddScoped<TeamService>();
     services.AddScoped<SeasonService>();

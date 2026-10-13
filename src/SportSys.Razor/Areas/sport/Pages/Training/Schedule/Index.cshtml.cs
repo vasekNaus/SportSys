@@ -5,6 +5,7 @@ using SportSys.Contract.Services;
 using SportSys.Razor.Models.TrainingSchedule;
 using SportSys.Razor.Services;
 using System.Globalization;
+using System.Text.Json;
 
 namespace SportSys.Razor.Areas.sport.Pages.Training.Schedule;
 
@@ -13,21 +14,25 @@ public class IndexModel : PageModel
     private readonly TrainingScheduleService _service;
     private readonly MatchScheduleService _matchService;
     private readonly TrainingScheduleExcelExporter _excelExporter;
+    private readonly KisTrainingImportService _kisTrainingImportService;
 
     public IndexModel(
         TrainingScheduleService service,
         MatchScheduleService matchService,
-        TrainingScheduleExcelExporter excelExporter)
+        TrainingScheduleExcelExporter excelExporter,
+        KisTrainingImportService kisTrainingImportService)
     {
         _service = service;
         _matchService = matchService;
         _excelExporter = excelExporter;
+        _kisTrainingImportService = kisTrainingImportService;
     }
 
     public List<SeasonDto> Seasons { get; private set; } = [];
     public List<SeasonCategoryDto> SeasonCategories { get; private set; } = [];
     public List<LookupSelectItem> TrainingTypes { get; private set; } = [];
     public List<LookupSelectItem> TrainingStates { get; private set; } = [];
+    public List<LookupSelectItem> TrainingPhases { get; private set; } = [];
     public List<LookupSelectItem> Locations { get; private set; } = [];
     public List<LookupSelectItem> MatchStates { get; private set; } = [];
     public List<LookupSelectItem> MatchTypes { get; private set; } = [];
@@ -79,12 +84,26 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public bool ShowMatches { get; set; } = true;
 
+    [BindProperty]
+    public KisTrainingImportDto Import { get; set; } = new();
+
+    [BindProperty]
+    public IFormFile? ImportFile { get; set; }
+
+    [TempData]
+    public string? StatusMessage { get; set; }
+
+    [TempData]
+    public string? ImportWarningsJson { get; set; }
+
     public ITrainingScheduleViewModel? ScheduleView { get; private set; }
     public bool HasExportableTrainings { get; private set; }
     public string? ExportErrorMessage { get; private set; }
+    public IReadOnlyList<KisTrainingImportWarning> ImportWarnings { get; private set; } = [];
 
     public async Task OnGetAsync(CancellationToken ct)
     {
+        DeserializeImportWarnings();
         if (!await LoadAndNormalizeFiltersAsync(ct))
             return;
 
@@ -152,11 +171,59 @@ public class IndexModel : PageModel
             fileName);
     }
 
+    public async Task<IActionResult> OnPostImportAsync(CancellationToken ct)
+    {
+        RetainImportModelState();
+
+        if (ImportFile is null || ImportFile.Length == 0)
+            ModelState.AddModelError(nameof(ImportFile), "Vyberte soubor XLSX.");
+        else if (ImportFile.Length > 10 * 1024 * 1024)
+            ModelState.AddModelError(nameof(ImportFile), "Soubor může mít maximálně 10 MiB.");
+        else if (!Path.GetExtension(ImportFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+            ModelState.AddModelError(nameof(ImportFile), "Vyberte soubor ve formátu XLSX.");
+
+        if (!ModelState.IsValid)
+        {
+            await LoadAndNormalizeFiltersAsync(ct);
+            return Page();
+        }
+
+        try
+        {
+            await using var stream = ImportFile!.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            buffer.Position = 0;
+
+            var result = await _kisTrainingImportService.ImportAsync(buffer, Import, ct);
+            StatusMessage =
+                $"Import dokončen: potvrzeno {result.Confirmed}, změněn čas {result.TimeChanged}, " +
+                $"vloženo {result.Inserted}, přeskočeno {result.Skipped}.";
+            ImportWarningsJson = result.Warnings.Count == 0
+                ? null
+                : JsonSerializer.Serialize(result.Warnings.Take(20));
+
+            return RedirectToPage();
+        }
+        catch (InvalidDataException ex)
+        {
+            ModelState.AddModelError(nameof(ImportFile), ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+        }
+
+        await LoadAndNormalizeFiltersAsync(ct);
+        return Page();
+    }
+
     private async Task<bool> LoadAndNormalizeFiltersAsync(CancellationToken ct)
     {
         Seasons = await _service.GetSeasonsAsync(ct);
         TrainingTypes = await _service.GetTrainingTypesAsync(ct);
         TrainingStates = await _service.GetTrainingStatesAsync(ct);
+        TrainingPhases = await _service.GetTrainingPhasesAsync(ct);
         Locations = await _service.GetTrainingLocationsAsync(SelectedLocationIds, ct);
         MatchStates = await _matchService.GetMatchStatesAsync(ct);
         MatchTypes = await _matchService.GetMatchTypesAsync(ct);
@@ -216,6 +283,28 @@ public class IndexModel : PageModel
         }
 
         return true;
+    }
+
+    private void RetainImportModelState()
+    {
+        foreach (var key in ModelState.Keys
+                     .Where(key =>
+                         !key.Equals(nameof(Import), StringComparison.Ordinal) &&
+                         !key.StartsWith($"{nameof(Import)}.", StringComparison.Ordinal) &&
+                         !key.Equals(nameof(ImportFile), StringComparison.Ordinal))
+                     .ToList())
+        {
+            ModelState.Remove(key);
+        }
+    }
+
+    private void DeserializeImportWarnings()
+    {
+        if (ImportWarningsJson is not null)
+        {
+            ImportWarnings = JsonSerializer.Deserialize<List<KisTrainingImportWarning>>(ImportWarningsJson)
+                ?? [];
+        }
     }
 
     private NormalizedScheduleFilter GetNormalizedFilter()
