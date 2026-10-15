@@ -213,6 +213,10 @@ Frontendové konvence mají jediný zdroj pravdy v
 `src/SportSys.Razor/wwwroot/css/site.css` je generovaný výstup a ručně se
 neupravuje.
 
+Datumová a časová pole v Razor formulářích vykresluj přes EditorTemplates
+`Date` / `Time`; hodnoty mají český formát a parsuje je
+`CzechDateTimeModelBinder` stejně pro GET i POST.
+
 ---
 
 ## Reference

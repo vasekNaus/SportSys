@@ -102,11 +102,8 @@
 
             <div class="field">
                 <label for="ValidOn">Datum</label>
-                <input type="date"
-                       id="ValidOn"
-                       name="ValidOn"
-                       class="textbox"
-                       value="@Model.ValidOn?.ToString("yyyy-MM-dd")" />
+                @Html.EditorFor(m => m.ValidOn, "Date", new { InputCssClass = "textbox" })
+                <span asp-validation-for="ValidOn" class="field-validation-error"></span>
             </div>
         </div>
 

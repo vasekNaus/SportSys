@@ -44,12 +44,12 @@ else
         </p>
         <p>
             <label asp-for="LicenseInput.ValidFrom"></label>
-            <input asp-for="LicenseInput.ValidFrom" type="date" />
+            @Html.EditorFor(m => m.LicenseInput.ValidFrom, "Date")
             <span asp-validation-for="LicenseInput.ValidFrom" class="field-validation-error"></span>
         </p>
         <p>
             <label asp-for="LicenseInput.ValidTo"></label>
-            <input asp-for="LicenseInput.ValidTo" type="date" />
+            @Html.EditorFor(m => m.LicenseInput.ValidTo, "Date")
             <span asp-validation-for="LicenseInput.ValidTo" class="field-validation-error"></span>
         </p>
         <footer>

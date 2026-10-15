@@ -1,19 +1,23 @@
 @{
     Layout = "/Pages/Shared/EditorTemplates/_Layout.cshtml";
-    var value = ViewData.Model switch
+    var value = SportSys.Razor.Infrastructure.CzechDateTimeFormat.FormatTime((object?)ViewData.Model);
+    var fullName = ViewData.TemplateInfo.GetFullHtmlFieldName(string.Empty);
+    if (ViewData.ModelState.TryGetValue(fullName, out var modelState) &&
+        modelState.Errors.Count == 0)
     {
-        TimeOnly timeOnly => timeOnly.ToString("HH:mm"),
-        TimeSpan timeSpan => timeSpan.ToString(@"hh\:mm"),
-        _ => string.Empty,
+        ViewData.ModelState.Remove(fullName);
+    }
+    var attributes = new Dictionary<string, object>
+    {
+        ["type"] = "text",
+        ["class"] = ViewData["InputCssClass"] as string ?? "short",
+        ["autocomplete"] = "off",
+        ["inputmode"] = "text",
+        ["data-time-input"] = string.Empty,
+        ["placeholder"] = "hh:mm",
     };
 }
 @Html.TextBox(
     string.Empty,
     value,
-    new
-    {
-        type = "time",
-        @class = "short",
-        lang = "cs-CZ",
-        step = 60,
-    })
+    attributes)

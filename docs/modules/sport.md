@@ -38,6 +38,8 @@ reálnými tréninky a plány nekopíruje.
 | Reálný rozvrh | `/sport/Training/Schedule` | `sport.Training`, `sport.Match` |
 | Obecný týdenní plán | `/sport/Training/Plan` | `sport.TrainingPlan` |
 | Požadavky na tréninky a zápasy | `/sport/Training/Requirement` | `sport.TrainingRequirement`, `sport.MatchRequirement` |
+| Import tréninků z KIS | `/sport/Training/Import/Trainings` | import XLSX přes Contract |
+| Import zápasů z KIS | `/sport/Training/Import/Matches` | import XLSX přes Contract |
 
 Původní route `/sport/Schedule` není zachována.
 
@@ -289,11 +291,12 @@ administrativní konfigurace rozbruslení před začátkem utkání; nemění
 
 ### Import zápasů z KIS
 
-Stránka `/sport/Training/Schedule` obsahuje pod importem tréninků samostatný
-formulář pro import zápasů. Vyžaduje sezónu a export `games.xlsx` do 10 MiB.
-Po importu zobrazí počty vložených, již existujících a přeskočených zápasů
-a nejvýše 20 varování s číslem řádku a důvodem. Neplatný soubor se zobrazí
-jako validační chyba; import tréninků má vlastní nezávislý formulář.
+Samostatná stránka `/sport/Training/Import/Matches` nabízí importní formulář,
+který vyžaduje sezónu a export `games.xlsx` do 10 MiB. Po importu zobrazí
+počty vložených, již existujících a přeskočených zápasů a nejvýše 20 varování
+s číslem řádku a důvodem. Neplatný soubor se zobrazí jako validační chyba.
+Rozvrh na stránku odkazuje tlačítkem „Import zápasů“ a návrat na rozvrh
+zajišťuje tlačítko na importní stránce; breadcrumb se nezobrazuje.
 
 Konzolová aplikace importuje export `games.xlsx` příkazem:
 
@@ -314,11 +317,13 @@ hostujícího týmu. Neznámé, nejednoznačné či chybějící hodnoty nezakl�
 
 ### Import tréninků z KIS
 
-Stránka `/sport/Training/Schedule` umožňuje nahrát XLSX export KIS. Formulář
-vyžaduje aktivní sezónu, fázi pro nově vytvořené tréninky a soubor do 10 MiB.
-Soubor musí obsahovat list `Export` se sloupci `Datum`, `Čas od`, `Čas do`,
-`Soupiska`, `Název`, `Místo`, `Typ` a `Poznámka trenéra`. Opakovaná hlavička
-v datech se ignoruje.
+Samostatná stránka `/sport/Training/Import/Trainings` umožňuje nahrát XLSX
+export KIS. Formulář vyžaduje aktivní sezónu, fázi pro nově vytvořené tréninky
+a soubor do 10 MiB. Soubor musí obsahovat list `Export` se sloupci `Datum`,
+`Čas od`, `Čas do`, `Soupiska`, `Název`, `Místo`, `Typ` a `Poznámka trenéra`.
+Opakovaná hlavička v datech se ignoruje. Rozvrh na stránku odkazuje tlačítkem
+„Import tréninků“ a návrat na rozvrh zajišťuje tlačítko na importní stránce;
+breadcrumb se nezobrazuje.
 
 `Soupiska` se jednoznačně páruje s aktivní `SeasonCategory.Name` vybrané
 sezóny a `Místo` s `Location.Name`; lokalita se nevolí ve formuláři. Typ `Led`

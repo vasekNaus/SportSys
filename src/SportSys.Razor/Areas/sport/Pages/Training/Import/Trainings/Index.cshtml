@@ -1,0 +1,73 @@
+@page
+@model SportSys.Razor.Areas.sport.Pages.Training.Import.Trainings.IndexModel
+@{
+    ViewData["Title"] = "Import tréninků";
+}
+
+<a class="button secondary" asp-area="sport" asp-page="/Training/Schedule/Index">
+    <i class="fa-solid fa-arrow-left fa-fw"></i> Zpět na rozvrh
+</a>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="infobox">
+        <i class="fa-solid fa-circle-check fa-fw"></i> @Model.StatusMessage
+    </div>
+}
+
+<section>
+    <h2>Import tréninků z KIS</h2>
+
+    <form method="post" enctype="multipart/form-data" asp-page-handler="Import">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="filter-row">
+            <div class="field">
+                <label asp-for="Import.SeasonId"></label>
+                <select asp-for="Import.SeasonId">
+                    <option value="">— vyberte sezónu —</option>
+                    @foreach (var season in Model.Seasons)
+                    {
+                        <option value="@season.Id">@season.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="Import.SeasonId" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Import.TrainingPhaseId"></label>
+                <select asp-for="Import.TrainingPhaseId">
+                    <option value="">— vyberte fázi —</option>
+                    @foreach (var phase in Model.TrainingPhases)
+                    {
+                        <option value="@phase.Id">@phase.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="Import.TrainingPhaseId" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="ImportFile">Soubor XLSX</label>
+                <input asp-for="ImportFile"
+                       type="file"
+                       accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <span class="description">Soubor XLSX, maximálně 10 MiB.</span>
+                <span asp-validation-for="ImportFile" class="field-validation-error"></span>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="button">
+                    <i class="fa-solid fa-upload fa-fw"></i> Importovat
+                </button>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.ImportWarnings.Count > 0)
+    {
+        <h3>Varování importu</h3>
+        <ul>
+            @foreach (var warning in Model.ImportWarnings)
+            {
+                <li>Řádek @warning.RowNumber: @warning.Message</li>
+            }
+        </ul>
+    }
+</section>

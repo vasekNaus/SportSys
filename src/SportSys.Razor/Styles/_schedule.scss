@@ -35,7 +35,8 @@ $header-height:   1.75rem;
     }
 
     select,
-    input[type="date"] {
+    input[data-date-input],
+    input[data-time-input] {
       font-family:      $FontFamily;
       font-size:        1rem;
       padding:          .45rem .75rem;

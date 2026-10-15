@@ -71,7 +71,8 @@
 
             <p>
                 <label asp-for="Input.AcquisitionDate"></label>
-                <input asp-for="Input.AcquisitionDate" type="date" />
+                @Html.EditorFor(m => m.Input.AcquisitionDate, "Date")
+                <span asp-validation-for="Input.AcquisitionDate" class="field-validation-error"></span>
             </p>
 
             <p>
@@ -126,7 +127,8 @@
 
                 <p>
                     <label asp-for="Input.WarrantyUntil"></label>
-                    <input asp-for="Input.WarrantyUntil" type="date" />
+                    @Html.EditorFor(m => m.Input.WarrantyUntil, "Date")
+                    <span asp-validation-for="Input.WarrantyUntil" class="field-validation-error"></span>
                 </p>
 
                 <p>

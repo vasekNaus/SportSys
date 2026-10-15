@@ -1,0 +1,102 @@
+.flatpickr-calendar {
+  background:    var(--color-surface-1);
+  border-color:  var(--color-border-strong);
+  box-shadow:    var(--shadow-md);
+  color:         var(--color-text-primary);
+  font-family:   'Segoe UI', Arial, Helvetica, sans-serif;
+
+  &.arrowTop::before {
+    border-bottom-color: var(--color-border-strong);
+  }
+
+  &.arrowTop::after {
+    border-bottom-color: var(--color-surface-1);
+  }
+
+  &.arrowBottom::before {
+    border-top-color: var(--color-border-strong);
+  }
+
+  &.arrowBottom::after {
+    border-top-color: var(--color-surface-1);
+  }
+}
+
+.flatpickr-months,
+.flatpickr-weekdays {
+  background: var(--color-surface-1);
+}
+
+.flatpickr-current-month,
+.flatpickr-months .flatpickr-month,
+.flatpickr-weekday,
+.flatpickr-day {
+  color: var(--color-text-primary);
+  fill:  var(--color-text-primary);
+}
+
+.flatpickr-day {
+  &.today {
+    border-color: var(--color-brand-primary);
+  }
+
+  &:hover,
+  &:focus {
+    background: var(--color-interactive-hover);
+    border-color: var(--color-interactive-hover);
+  }
+
+  &.selected,
+  &.startRange,
+  &.endRange,
+  &.selected.inRange,
+  &.startRange.inRange,
+  &.endRange.inRange,
+  &.selected:focus,
+  &.startRange:focus,
+  &.endRange:focus,
+  &.selected:hover,
+  &.startRange:hover,
+  &.endRange:hover {
+    background:   var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color:        var(--color-on-brand-primary);
+  }
+
+  &.flatpickr-disabled,
+  &.prevMonthDay,
+  &.nextMonthDay {
+    color: var(--color-text-muted);
+  }
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+  color: var(--color-text-secondary);
+  fill:  var(--color-text-secondary);
+
+  &:hover {
+    color: var(--color-brand-primary);
+    fill:  var(--color-brand-primary);
+  }
+}
+
+.flatpickr-current-month input.cur-year,
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+  color: var(--color-text-primary);
+}
+
+.flatpickr-time input,
+.flatpickr-time .flatpickr-am-pm {
+  color: var(--color-text-primary);
+
+  &:hover,
+  &:focus {
+    background: var(--color-interactive-hover);
+  }
+}
+
+.flatpickr-time .flatpickr-time-separator,
+.flatpickr-time .flatpickr-am-pm {
+  color: var(--color-text-primary);
+}

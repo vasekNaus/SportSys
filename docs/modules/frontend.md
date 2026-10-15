@@ -211,6 +211,26 @@ Tlačítka mimo gridy (nadpisové akce, formulářová tlačítka) mohou mít te
 
 Vanilla JS bez frameworků. JS pouze tam, kde server-side logiku nelze použít.
 
+## Datum a čas ve formulářích
+
+Datumová pole se vykreslují přes `Pages/Shared/EditorTemplates/Date.cshtml`,
+časová přes `Time.cshtml`. Pro jednorázová pole používej explicitně
+`@Html.EditorFor(..., "Date")` nebo `@Html.EditorFor(..., "Time")`; třídu lze
+předat přes `InputCssClass`. Výsledkem je textový vstup, který se na klientu
+vylepší knihovnou flatpickr (CDN, verze `4.6.13`) s českou lokalizací.
+
+- Datum: `d. M. yyyy` (např. `5. 10. 2026`), ručně lze zadat i `5.10.2026`
+  nebo ISO `2026-10-05`.
+- Čas: 24hodinové `HH:mm`; server přijme i sekundy.
+- `CzechDateTimeModelBinder` parsuje hodnoty nezávisle na kultuře GET/POST
+  value provideru a vrací českou validační chybu pro neplatný vstup.
+- Ručně psané datumy/časy nenechávej jako nativní `type="date"` /
+  `type="time"`: jejich zobrazovaný formát určuje prohlížeč/OS. Nativní vstup
+  nahraď příslušným EditorTemplate.
+- Flatpickr má `disableMobile: true`, aby mobilní zařízení nevrátila nativní
+  vstup. Bez načteného JavaScriptu zůstává textové pole použitelné a server
+  stále validuje hodnotu.
+
 ---
 
 ## Fulltextový multiselect (`<search-multiselect>`)
@@ -263,6 +283,7 @@ jednotlivých modulech. Sdílené CSS kontrakty tvoří třídy `button`, `grid`
 - Razor závisí pouze na `SportSys.Contract`.
 - Font Awesome 6 je načítán z CDN.
 - Tom Select 2.6.2 (`<search-multiselect>`) je načítán z CDN.
+- Flatpickr 4.6.13 včetně české lokalizace je načítán z CDN.
 
 ## Závislosti
 

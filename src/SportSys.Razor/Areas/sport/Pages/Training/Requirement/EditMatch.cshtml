@@ -25,12 +25,12 @@
 
     <div class="field">
         <label asp-for="Input.From"></label>
-        <input asp-for="Input.From" type="date" class="textbox" />
+        @Html.EditorFor(m => m.Input.From, "Date", new { InputCssClass = "textbox" })
         <span asp-validation-for="Input.From"></span>
     </div>
     <div class="field">
         <label asp-for="Input.To"></label>
-        <input asp-for="Input.To" type="date" class="textbox" />
+        @Html.EditorFor(m => m.Input.To, "Date", new { InputCssClass = "textbox" })
         <span asp-validation-for="Input.To"></span>
     </div>
     <div class="field">
