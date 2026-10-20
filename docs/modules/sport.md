@@ -359,18 +359,29 @@ panelu otevře `/sport/Training/Schedule/Edit?id={id}`. Kliknutím na blok
 obecného plánu v `/sport/Training/Plan` se obdobně otevře
 `/sport/Training/Plan/Edit?id={id}`.
 
-Formulář umožňuje měnit pouze datum, čas od, čas do, lokalitu a poznámku.
+Základní část formuláře umožňuje měnit datum, čas od, čas do, lokalitu a
+poznámku.
 Lokalita je povinný výběr ze společného číselníku; nově zvolená neaktivní
 lokalita nebo neexistující ID jsou odmítnuty i Contract službou. Aktuálně
 přiřazená neaktivní lokalita zůstává při editaci dostupná.
-Kategorie a typ tréninku jsou pouze informativní; fáze, stav, trenéři, vazba na
-plán a členství ve skupině se nemění.
+Kategorie a typ tréninku jsou pouze informativní; fáze, stav, vazba na plán a
+členství ve skupině se nemění.
 
 U spojených tréninků stránka zobrazí tabulku všech členů. Pokud mají všichni
 členové shodné editovatelné hodnoty, uloží se změny atomicky celé skupině.
 Pokud se alespoň jedna hodnota liší, stránka rozdíly zobrazí a editaci zablokuje
 v UI i v Contract službě. `DurationMinutes` se při editaci nenastavuje v C#;
 zůstává databázovým persisted computed sloupcem.
+
+Sekce **Trenéři** na stránce editace zobrazuje přiřazení v tabulce Trenér,
+Kategorie, Docházka a Poznámka. Docházka používá stávající stavy
+`ParticipationType`, poznámka má limit 50 znaků. Lze přidat trenéra k vybrané
+kategorii; stav nového přiřazení je `Absent` („Neúčast“). U existujícího řádku
+jsou trenér a kategorie pouze informativní a přiřazení nelze odebrat. Jeden
+trenér může být v rámci spojeného tréninku přiřazen pouze k jedné kategorii.
+Změna stavu aktualizuje aktuální evidovanou účast, ale neukládá auditní historii
+předchozích stavů. Přiřazení i editovatelná data tréninku se ověřují a ukládají
+v rámci jedné transakce; souběžná změna se odmítne jako konflikt.
 
 Editace tréninkového plánu používá stejný technický princip, ale mění pouze
 platnost od a do, den týdne, čas od a do, lokalitu a přiřazené trenéry.

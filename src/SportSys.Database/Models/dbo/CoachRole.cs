@@ -11,6 +11,7 @@ using SportSys.Database.Models.sport;
 namespace SportSys.Database.Models.dboSchema;
 
 [Table(nameof(CoachRole), Schema = Schemas.Dbo)]
+[Index(nameof(Code), IsUnique = true, Name = "UX_CoachRole_Code")]
 public partial class CoachRole
 {
     [Key]
@@ -18,6 +19,13 @@ public partial class CoachRole
 
     [StringLength(50)]
     public required string Name { get; set; }
+
+    [StringLength(1, MinimumLength = 1)]
+    [Column(TypeName = "char(1)")]
+    [Unicode(false)]
+    public required string Code { get; set; }
+
+    public int Order { get; set; }
 
     public virtual ICollection<CoachTrainingRequirement> CoachTrainingRequirementCoachRoles { get; set; } = new List<CoachTrainingRequirement>();
 

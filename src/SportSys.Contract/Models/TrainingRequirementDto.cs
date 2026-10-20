@@ -23,6 +23,21 @@ public abstract class RequirementCoachListItem : CoachSelectItem
 {
     public int CoachRoleId { get; set; }
     public string CoachRoleName { get; set; } = string.Empty;
+    public string CoachRoleCode { get; set; } = string.Empty;
+    public int CoachRoleOrder { get; set; }
+
+    public string LastName
+    {
+        get
+        {
+            var name = DisplayName.Trim();
+            if (name.Length == 0)
+                return PersonalNumber;
+
+            var lastSpaceIndex = name.LastIndexOf(' ');
+            return lastSpaceIndex < 0 ? name : name[(lastSpaceIndex + 1)..];
+        }
+    }
 
     public string DisplayText
         => $"{(string.IsNullOrWhiteSpace(DisplayName) ? PersonalNumber : DisplayName)} ({CoachRoleName})";

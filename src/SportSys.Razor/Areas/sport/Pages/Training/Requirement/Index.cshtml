@@ -235,9 +235,7 @@ else
                             <td>@requirement.To.ToString("dd.MM.yyyy")</td>
                             <td>@requirement.DurationHours.ToString("0.##")</td>
                             <td>
-                                @(requirement.CoachAssignments.Count == 0
-                                    ? "-"
-                                    : string.Join(", ", requirement.CoachAssignments.Select(assignment => assignment.DisplayText)))
+                                <partial name="_CoachGroups" model="requirement.CoachAssignments" />
                             </td>
                             <td class="buttons">
                                 <a class="button secondary icon-btn"
@@ -286,9 +284,7 @@ else
                             <td>@requirement.To.ToString("dd.MM.yyyy")</td>
                             <td>@requirement.MatchCount</td>
                             <td>
-                                @(requirement.CoachAssignments.Count == 0
-                                    ? "-"
-                                    : string.Join(", ", requirement.CoachAssignments.Select(assignment => assignment.DisplayText)))
+                                <partial name="_CoachGroups" model="requirement.CoachAssignments" />
                             </td>
                             <td class="buttons">
                                 <a class="button secondary icon-btn"

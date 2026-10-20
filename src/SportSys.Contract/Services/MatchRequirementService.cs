@@ -63,7 +63,7 @@ public class MatchRequirementService
                         ?? assignment.Coach.UserName
                         ?? assignment.Coach.Email)
                     .ThenBy(assignment => assignment.Coach.PersonalNumber)
-                    .ThenBy(assignment => assignment.CoachRole.Name)
+                    .ThenBy(assignment => assignment.CoachRole.Order)
                     .ThenBy(assignment => assignment.CoachId)
                     .ThenBy(assignment => assignment.CoachRoleId)
                     .Select(assignment => new MatchRequirementCoachListItem
@@ -78,6 +78,8 @@ public class MatchRequirementService
                         PersonalNumber = assignment.Coach.PersonalNumber,
                         CoachRoleId = assignment.CoachRoleId,
                         CoachRoleName = assignment.CoachRole.Name,
+                        CoachRoleCode = assignment.CoachRole.Code,
+                        CoachRoleOrder = assignment.CoachRole.Order,
                     })
                     .ToList(),
             })

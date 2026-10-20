@@ -107,7 +107,7 @@ EF Core bez explicitního názvu generuje náhodný hash (např. `DF__Location__
 
 ## Lookup (číselníkové) tabulky
 
-Lookup tabulky: `TrainingType`, `TrainingState`, `TrainingPhase`, `ParticipationType`, `MatchType`, `CoachRole`; z modulu Inventory: `TransactionType`. Vzor: `int Id` (PK) + `required string Name`.
+Lookup tabulky: `TrainingType`, `TrainingState`, `TrainingPhase`, `ParticipationType`, `MatchType`, `CoachRole`; z modulu Inventory: `TransactionType`. Vzor: `int Id` (PK) + `required string Name`. `CoachRole` navíc obsahuje `Code` (`char(1)`, unikátní, zkrácené označení role) a `Order` (pořadí role); role se v seznamech řadí podle `Order`.
 
 ### Enum pro každou lookup tabulku
 

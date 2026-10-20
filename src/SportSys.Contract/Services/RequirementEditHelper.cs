@@ -28,7 +28,8 @@ internal static class RequirementEditHelper
         CancellationToken ct)
         => db.CoachRoles
             .AsNoTracking()
-            .OrderBy(role => role.Id)
+            .OrderBy(role => role.Order)
+            .ThenBy(role => role.Id)
             .Select(role => new LookupSelectItem { Id = role.Id, Name = role.Name })
             .ToListAsync(ct);
 

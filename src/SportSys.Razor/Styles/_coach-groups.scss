@@ -1,0 +1,14 @@
+// Trenéři seskupení podle role s pevnou šířkou popisku role
+.coach-group {
+  display:               grid;
+  grid-template-columns: 18ch 1fr;
+  column-gap:            .5rem;
+}
+
+.coach-group-role {
+  white-space: nowrap;
+}
+
+.coach-group-names {
+  overflow-wrap: anywhere;
+}

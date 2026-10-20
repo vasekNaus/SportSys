@@ -60,12 +60,24 @@ namespace SportSys.Database.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .IsUnicode(false)
+                        .HasColumnType("char(1)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex(new[] { "Code" }, "UX_CoachRole_Code")
+                        .IsUnique();
 
                     b.ToTable("CoachRole", "dbo");
 
@@ -73,32 +85,44 @@ namespace SportSys.Database.Migrations
                         new
                         {
                             Id = 1,
-                            Name = "Hlavní"
+                            Code = "H",
+                            Name = "Hlavní",
+                            Order = 1
                         },
                         new
                         {
                             Id = 2,
-                            Name = "Asistent"
+                            Code = "A",
+                            Name = "Asistent",
+                            Order = 2
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Obránci"
+                            Code = "O",
+                            Name = "Obránci",
+                            Order = 3
                         },
                         new
                         {
                             Id = 4,
-                            Name = "Gólmani"
+                            Code = "B",
+                            Name = "Gólmani",
+                            Order = 4
                         },
                         new
                         {
                             Id = 5,
-                            Name = "Fyzio"
+                            Code = "F",
+                            Name = "Fyzio",
+                            Order = 5
                         },
                         new
                         {
                             Id = 6,
-                            Name = "Kondiční"
+                            Code = "K",
+                            Name = "Kondiční",
+                            Order = 6
                         });
                 });
 
