@@ -66,15 +66,15 @@ public class TrainingPlanEditDtoTests
     }
 
     [Fact]
-    public void Validate_RejectsWhitespaceLocation()
+    public void Validate_RejectsMissingLocationId()
     {
         var dto = CreateDto();
-        dto.Location = " ";
+        dto.LocationId = 0;
 
         var results = Validate(dto);
 
         Assert.Contains(results, result =>
-            result.MemberNames.Contains(nameof(TrainingPlanEditDto.Location)));
+            result.MemberNames.Contains(nameof(TrainingPlanEditDto.LocationId)));
     }
 
     private static TrainingPlanEditDto CreateDto()
@@ -87,7 +87,7 @@ public class TrainingPlanEditDtoTests
             DayName = nameof(DayOfWeek.Monday),
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(18, 0),
-            Location = "Zimní stadion",
+            LocationId = 1,
         };
 
     private static List<ValidationResult> Validate(TrainingPlanEditDto dto)

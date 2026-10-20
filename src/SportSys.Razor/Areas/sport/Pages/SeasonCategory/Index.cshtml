@@ -54,6 +54,8 @@ else
                 <th>Sezóna</th>
                 <th>Kategorie</th>
                 <th>Pořadí</th>
+                <th>Délka zápasu</th>
+                <th>Rozbruslení</th>
                 <th>Kód soutěže</th>
                 <th>Tým v soutěži</th>
                 <th>Stav</th>
@@ -65,8 +67,10 @@ else
             {
                 <tr class="@(!category.IsActive ? "inactive-row" : null)">
                     <td>@category.SeasonName</td>
-                    <td>@category.Name</td>
+                    <td>@category.Code</td>
                     <td>@category.Order</td>
+                    <td>@category.MatchDurationMinutes min</td>
+                    <td>@category.WarmupDurationMinutes min</td>
                     <td>@category.CompetitionCode</td>
                     <td>@category.CompetitionTeamName</td>
                     <td>@(category.IsActive ? "Aktivní" : "Neaktivní")</td>
@@ -74,14 +78,14 @@ else
                         <a class="button secondary icon-btn"
                            asp-page="Edit"
                            asp-route-seasonId="@category.SeasonId"
-                           asp-route-name="@category.Name"
+                           asp-route-code="@category.Code"
                            title="Upravit">
                             <i class="fa-solid fa-pen fa-fw"></i>
                         </a>
                         <form method="post"
                               asp-page-handler="SetActive"
                               asp-route-seasonId="@category.SeasonId"
-                              asp-route-name="@category.Name"
+                              asp-route-code="@category.Code"
                               asp-route-isActive="@(!category.IsActive)"
                               asp-route-search="@Model.Search"
                               style="display:inline">

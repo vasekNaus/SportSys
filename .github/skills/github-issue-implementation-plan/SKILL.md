@@ -2,7 +2,7 @@
 name: github-issue-implementation-plan
 description: >
   Vytvoří podrobný implementační plán pro SportSys z odkazu na GitHub issue
-  a uloží jej do .github/tasks/. Použij tento skill, když uživatel pošle URL
+  a uloží jej do tasks/. Použij tento skill, když uživatel pošle URL
   GitHub issue a požádá o plán, specifikaci, technický návrh nebo přípravu
   implementace, i když zadání obsahuje jen odkaz a krátkou instrukci.
 user-invocable: true
@@ -27,7 +27,7 @@ uživatel výslovně nepožádá samostatně.
 - GitHub CLI `gh` je přihlášené a má přístup k issue.
 - Issue se vztahuje k aktuálnímu repozitáři. Pokud URL míří do jiného
   repozitáře a vazba na aktuální kód není zřejmá, vyžádej si upřesnění.
-- Výstupní adresář je vždy `.github/tasks/`.
+- Výstupní adresář je vždy `tasks/`.
 
 ## Postup
 
@@ -96,7 +96,7 @@ použít stávající řešení.
 Použij cestu:
 
 ```text
-.github/tasks/{issue-number}-{slug-nazvu}.md
+tasks/{issue-number}-{slug-nazvu}.md
 ```
 
 Pravidla názvu:
@@ -110,7 +110,7 @@ Pravidla názvu:
 Příklad:
 
 ```text
-.github/tasks/12-export-treninku-do-excelu.md
+tasks/12-export-treninku-do-excelu.md
 ```
 
 Pokud soubor pro stejné issue již existuje, nejprve jej přečti a aktualizuj.
@@ -169,7 +169,7 @@ Před dokončením ověř:
 
 - Nevytvářej ani neupravuj zdrojový kód, konfiguraci aplikace, závislosti nebo
   migrace.
-- Neukládej tasky do kořenové složky `tasks/`; vždy použij `.github/tasks/`.
+- Neukládej tasky do `.github/tasks/`; vždy použij kořenovou složku `tasks/`.
 - Nekopíruj issue beze změny. Plán musí doplnit technickou analýzu repozitáře.
 - Neoznačuj plán jako implementovaný, dokud implementace skutečně neexistuje
   a nebyla ověřena.
@@ -186,7 +186,7 @@ Před dokončením ověř:
 - [ ] Popsány implementační fáze a jejich návaznosti
 - [ ] Popsány automatické testy a manuální akceptace
 - [ ] Vymezeny části beze změny a mimo rozsah
-- [ ] Plán uložen do `.github/tasks/{issue-number}-{slug}.md`
+- [ ] Plán uložen do `tasks/{issue-number}-{slug}.md`
 - [ ] Nebyl změněn zdrojový kód ani vytvořena migrace
 
 ## Příklady aktivace
@@ -209,4 +209,4 @@ Naplánuj toto issue: https://github.com/vasekNaus/HoSys/issues/12
 - [Microsoft Learn: Skills overview for agents](https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/skills-overview)
 - [Microsoft Learn: Create a skill for an agent](https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/skills-create)
 - `.github/copilot-instructions.md`
-- `.github/tasks/`
+- `tasks/`

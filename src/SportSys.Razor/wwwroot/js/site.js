@@ -126,3 +126,110 @@
         });
     });
 })();
+
+// ── Víceúběr s fulltextovým vyhledáváním (Tom Select) ────────────────────────
+
+(function () {
+    if (typeof TomSelect === 'undefined') return;
+
+    document.querySelectorAll('select[data-search-multiselect]').forEach(function (select) {
+        new TomSelect(select, {
+            plugins: {
+                remove_button: { title: select.dataset.removeLabel || 'Odebrat' },
+                // Vyhledávací pole se šíří jen podle zadaného textu, takže
+                // zůstává v řádku s vybranými hodnotami místo vlastního řádku.
+                input_autogrow: {},
+            },
+            placeholder: select.dataset.placeholder || '',
+            searchField: ['text'],
+            maxItems: null,
+            closeAfterSelect: false,
+            // Po výběru položky vymaže rozepsaný hledaný text (jinak
+            // zůstává viditelný i po přidání položky do výběru).
+            clearAfterSelect: true,
+        });
+    });
+})();
+
+// ── Česká datumová a časová pole ─────────────────────────────────────────────
+
+(function () {
+    if (typeof flatpickr === 'undefined') return;
+    if (!flatpickr.l10ns || !flatpickr.l10ns.cs) {
+        throw new Error('Chybí česká lokalizace knihovny flatpickr.');
+    }
+
+    function createDate(year, month, day) {
+        var date = new Date(0);
+        date.setFullYear(year, month - 1, day);
+        date.setHours(0, 0, 0, 0);
+
+        if (date.getFullYear() === year &&
+            date.getMonth() === month - 1 &&
+            date.getDate() === day) {
+            return date;
+        }
+
+        return undefined;
+    }
+
+    function parseCzechDate(value, format) {
+        var input = value.trim();
+        var match = /^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/.exec(input);
+        if (match) {
+            var day = Number(match[1]);
+            var month = Number(match[2]);
+            var year = Number(match[3]);
+            return createDate(year, month, day);
+        }
+
+        var iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
+        if (iso) {
+            return createDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+        }
+
+        return flatpickr.parseDate(input, format);
+    }
+
+    function parseCzechTime(value, format) {
+        var input = value.trim();
+        var match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(input);
+        if (match) {
+            var hour = Number(match[1]);
+            var minute = Number(match[2]);
+            var second = Number(match[3] || 0);
+            if (hour <= 23 && minute <= 59 && second <= 59) {
+                var parsed = new Date(2000, 0, 1, hour, minute, second);
+                parsed.setMilliseconds(0);
+                return parsed;
+            }
+
+            return undefined;
+        }
+
+        return flatpickr.parseDate(input, format);
+    }
+
+    document.querySelectorAll('[data-date-input]').forEach(function (input) {
+        flatpickr(input, {
+            locale: flatpickr.l10ns.cs,
+            dateFormat: 'j. n. Y',
+            allowInput: true,
+            disableMobile: true,
+            parseDate: parseCzechDate,
+        });
+    });
+
+    document.querySelectorAll('[data-time-input]').forEach(function (input) {
+        flatpickr(input, {
+            locale: flatpickr.l10ns.cs,
+            enableTime: true,
+            noCalendar: true,
+            time_24hr: true,
+            dateFormat: 'H:i',
+            allowInput: true,
+            disableMobile: true,
+            parseDate: parseCzechTime,
+        });
+    });
+})();

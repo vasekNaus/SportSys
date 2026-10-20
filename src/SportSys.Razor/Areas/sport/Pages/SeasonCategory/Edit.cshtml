@@ -17,22 +17,22 @@
             <span asp-validation-for="Input.SeasonId" class="field-validation-error"></span>
         </p>
         <p>
-            <label asp-for="Input.Name">Název</label>
-            <input asp-for="Input.Name" type="text" />
-            <span asp-validation-for="Input.Name" class="field-validation-error"></span>
+            <label asp-for="Input.Code">Kód</label>
+            <input asp-for="Input.Code" type="text" />
+            <span asp-validation-for="Input.Code" class="field-validation-error"></span>
         </p>
     }
     else
     {
         <input type="hidden" asp-for="Input.SeasonId" />
-        <input type="hidden" asp-for="Input.Name" />
+        <input type="hidden" asp-for="Input.Code" />
         <p>
             <label asp-for="Input.SeasonId">Sezóna</label>
             <select asp-for="Input.SeasonId" asp-items="Model.SeasonItems" disabled></select>
         </p>
         <p>
-            <label asp-for="Input.Name">Název</label>
-            <input asp-for="Input.Name" type="text" readonly />
+            <label asp-for="Input.Code">Kód</label>
+            <input asp-for="Input.Code" type="text" readonly />
         </p>
     }
 

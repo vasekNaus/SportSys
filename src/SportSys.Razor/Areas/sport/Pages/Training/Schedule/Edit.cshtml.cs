@@ -22,6 +22,9 @@ public class EditModel : PageModel
 
     public TrainingEditContextDto Context { get; private set; } = null!;
     public List<SelectListItem> LocationIdItems { get; private set; } = [];
+    public List<SelectListItem> CoachItems { get; private set; } = [];
+    public List<SelectListItem> TrainingItems { get; private set; } = [];
+    public List<SelectListItem> ParticipationTypeItems { get; private set; } = [];
 
     [TempData]
     public string? StatusMessage { get; set; }
@@ -34,12 +37,14 @@ public class EditModel : PageModel
 
         Context = context;
         Input = context.Input;
+        LoadCoachAssignmentItems();
         await LoadLocationsAsync(ct);
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
+        Input.CoachAssignments ??= [];
         if (!ModelState.IsValid)
             return await ReloadPageAsync(Input.Id, ct);
 
@@ -65,7 +70,33 @@ public class EditModel : PageModel
                     "Vybraná lokalita neexistuje nebo není aktivní.");
                 return await ReloadPageAsync(Input.Id, ct);
 
+            case TrainingUpdateResult.DuplicateCoachAssignment:
+                await ReloadPageAsync(Input.Id, ct);
+                var duplicateCoachId = Input.CoachAssignments
+                    .Select(assignment => assignment.ExistingCoachId ?? assignment.CoachId)
+                    .OfType<int>()
+                    .GroupBy(coachId => coachId)
+                    .FirstOrDefault(group => group.Count() > 1)
+                    ?.Key;
+                var duplicateCoachName = duplicateCoachId.HasValue
+                    ? Context.AvailableCoaches
+                        .FirstOrDefault(coach => coach.Id == duplicateCoachId.Value)
+                        ?.DisplayName ?? duplicateCoachId.Value.ToString()
+                    : "Vybraný trenér";
+                ModelState.AddModelError(
+                    string.Empty,
+                    $"Trenér {duplicateCoachName} je již k tomuto tréninku přiřazen.");
+                return Page();
+
+            case TrainingUpdateResult.CoachAssignmentRemovalNotAllowed:
+                await ReloadPageAsync(Input.Id, ct);
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Existující přiřazení trenéra nelze odebrat.");
+                return Page();
+
             case TrainingUpdateResult.Conflict:
+                ModelState.Clear();
                 ModelState.AddModelError(
                     string.Empty,
                     "Trénink nebo jeho skupina se mezitím změnily. Zkontrolujte aktuální údaje a odešlete formulář znovu.");
@@ -94,8 +125,74 @@ public class EditModel : PageModel
         Context = context;
         if (useCurrentInput)
             Input = context.Input;
+        else
+            RestoreMissingExistingCoachAssignments();
+        LoadCoachAssignmentItems();
         await LoadLocationsAsync(ct);
         return Page();
+    }
+
+    private void RestoreMissingExistingCoachAssignments()
+    {
+        Input.CoachAssignments ??= [];
+        var submittedKeys = Input.CoachAssignments
+            .Where(assignment =>
+                assignment.ExistingCoachId.HasValue &&
+                assignment.ExistingTrainingId.HasValue &&
+                assignment.ExistingParticipationTypeId.HasValue)
+            .Select(assignment => (
+                assignment.ExistingCoachId,
+                assignment.ExistingTrainingId,
+                assignment.ExistingParticipationTypeId))
+            .ToHashSet();
+
+        foreach (var assignment in Context.CoachAssignments)
+        {
+            var key = (
+                (int?)assignment.CoachId,
+                (int?)assignment.TrainingId,
+                (int?)assignment.ParticipationTypeId);
+            if (submittedKeys.Contains(key))
+                continue;
+
+            Input.CoachAssignments.Add(new TrainingCoachAssignmentInputDto
+            {
+                ExistingCoachId = assignment.CoachId,
+                ExistingTrainingId = assignment.TrainingId,
+                ExistingParticipationTypeId = assignment.ParticipationTypeId,
+                ParticipationTypeId = assignment.ParticipationTypeId,
+                Note = assignment.Note,
+            });
+        }
+    }
+
+    private void LoadCoachAssignmentItems()
+    {
+        CoachItems =
+        [
+            new SelectListItem("— vyberte trenéra —", string.Empty),
+            .. Context.AvailableCoaches.Select(
+                coach => new SelectListItem(coach.DisplayName, coach.Id.ToString())),
+        ];
+
+        TrainingItems =
+        [
+            new SelectListItem("— vyberte kategorii —", string.Empty),
+            .. Context.AvailableCategories.Select(
+                category => new SelectListItem(
+                    category.CategoryCode,
+                    category.TrainingId.ToString())),
+        ];
+
+        ParticipationTypeItems =
+        [
+            new SelectListItem("— vyberte stav docházky —", string.Empty),
+            .. Context.ParticipationTypes.Select(
+                participationType => new SelectListItem(
+                    participationType.DisplayName,
+                    participationType.Id.ToString(),
+                    participationType.IsDefault)),
+        ];
     }
 
     private async Task LoadLocationsAsync(CancellationToken ct)

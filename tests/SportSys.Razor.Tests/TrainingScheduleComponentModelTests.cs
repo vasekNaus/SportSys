@@ -15,7 +15,7 @@ public class TrainingScheduleComponentModelTests
                 Date = new DateOnly(2026, 9, 8),
                 TimeFrom = new TimeOnly(17, 0),
                 TimeTo = new TimeOnly(18, 0),
-                SeasonCategoryName = "U12",
+                SeasonCategoryCode = "U12",
                 TrainingTypeName = "Led",
                 TrainingPhaseName = "Sezóna",
             });
@@ -71,7 +71,7 @@ public class TrainingScheduleComponentModelTests
                 Date = new DateOnly(2026, 9, 8),
                 TimeFrom = new TimeOnly(17, 0),
                 TimeTo = new TimeOnly(18, 0),
-                SeasonCategoryName = "U12",
+                SeasonCategoryCode = "U12",
                 TrainingTypeName = "Led",
                 TrainingPhaseName = "Sezóna",
             });
@@ -95,7 +95,7 @@ public class TrainingScheduleComponentModelTests
                 DayName = nameof(DayOfWeek.Monday),
                 TimeFrom = new TimeOnly(17, 0),
                 TimeTo = new TimeOnly(18, 0),
-                SeasonCategoryName = "U12",
+                SeasonCategoryCode = "U12",
                 TrainingTypeName = "Led",
                 TrainingPhaseName = "Sezóna",
             });
@@ -132,7 +132,7 @@ public class TrainingScheduleComponentModelTests
                 Date = new DateOnly(2026, 9, 8),
                 TimeFrom = new TimeOnly(17, 0),
                 TimeTo = new TimeOnly(18, 0),
-                SeasonCategoryName = "U12",
+                SeasonCategoryCode = "U12",
                 TrainingTypeName = "Led",
                 TrainingPhaseName = "Sezóna",
                 TrainingStateId = 5,
@@ -142,8 +142,9 @@ public class TrainingScheduleComponentModelTests
         var model = TrainingScheduleComponentModel.Create(source);
 
         var block = GetSingleBlock(model);
-        Assert.Equal("❌", block.StateIcon);
-        Assert.Null(block.StateTooltip);
+        var trainingEvent = Assert.IsType<TrainingEventModel>(block.Source);
+        Assert.Equal("❌", trainingEvent.StateIcon);
+        Assert.Null(trainingEvent.StateTooltip);
     }
 
     [Fact]
@@ -161,8 +162,76 @@ public class TrainingScheduleComponentModelTests
         var model = TrainingScheduleComponentModel.Create(source);
 
         var block = GetSingleBlock(model);
-        Assert.Equal(TrainingStateVisual.UnknownIcon, block.StateIcon);
-        Assert.Equal("❌ U12\n📅 U14", block.StateTooltip);
+        var trainingEvent = Assert.IsType<TrainingEventModel>(block.Source);
+        Assert.Equal(TrainingStateVisual.UnknownIcon, trainingEvent.StateIcon);
+        Assert.Equal("❌ U12\n📅 U14", trainingEvent.StateTooltip);
+    }
+
+    [Fact]
+    public void Create_TrainingPlanWithEmptyTitleHasEmptyPlanTitleSummary()
+    {
+        var source = CreateViewModel(
+            new TrainingPlanScheduleItemDto
+            {
+                Id = 3,
+                From = new DateOnly(2026, 9, 1),
+                To = new DateOnly(2026, 9, 30),
+                DayName = nameof(DayOfWeek.Monday),
+                TimeFrom = new TimeOnly(17, 0),
+                TimeTo = new TimeOnly(18, 0),
+                SeasonCategoryCode = "U12",
+                TrainingTypeName = "Led",
+                TrainingPhaseName = "Sezóna",
+                Title = string.Empty,
+            });
+
+        var model = TrainingScheduleComponentModel.Create(source);
+
+        var block = GetSingleBlock(model);
+        var planEvent = Assert.IsType<TrainingPlanEventModel>(block.Source);
+        Assert.Equal(string.Empty, planEvent.PlanTitleSummary);
+    }
+
+    [Fact]
+    public void Create_TrainingPlanWithTitleMapsPlanTitleSummary()
+    {
+        var source = CreateViewModel(
+            new TrainingPlanScheduleItemDto
+            {
+                Id = 3,
+                From = new DateOnly(2026, 9, 1),
+                To = new DateOnly(2026, 9, 30),
+                DayName = nameof(DayOfWeek.Monday),
+                TimeFrom = new TimeOnly(17, 0),
+                TimeTo = new TimeOnly(18, 0),
+                SeasonCategoryCode = "U12",
+                TrainingTypeName = "Led",
+                TrainingPhaseName = "Sezóna",
+                Title = "Testování",
+            });
+
+        var model = TrainingScheduleComponentModel.Create(source);
+
+        var block = GetSingleBlock(model);
+        var planEvent = Assert.IsType<TrainingPlanEventModel>(block.Source);
+        Assert.Equal("Testování", planEvent.PlanTitleSummary);
+    }
+
+    [Fact]
+    public void Create_GroupedTrainingPlansWithDifferentTitlesJoinDistinctValues()
+    {
+        var groupId = Guid.NewGuid();
+        var first = CreateTrainingPlan(8, "U14", 2, groupId);
+        first.Title = "Herní trénink";
+        var second = CreateTrainingPlan(5, "U12", 1, groupId);
+        second.Title = "Testování";
+        var source = CreateViewModel(first, second);
+
+        var model = TrainingScheduleComponentModel.Create(source);
+
+        var block = GetSingleBlock(model);
+        var planEvent = Assert.IsType<TrainingPlanEventModel>(block.Source);
+        Assert.Equal("Herní trénink, Testování", planEvent.PlanTitleSummary);
     }
 
     private static TrainingScheduleItemDto CreateTraining(
@@ -177,7 +246,7 @@ public class TrainingScheduleComponentModelTests
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(18, 0),
             GroupId = groupId,
-            SeasonCategoryName = category,
+            SeasonCategoryCode = category,
             SeasonCategoryOrder = categoryOrder,
             TrainingTypeName = "Led",
             TrainingPhaseName = "Sezóna",
@@ -197,7 +266,7 @@ public class TrainingScheduleComponentModelTests
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(18, 0),
             GroupId = groupId,
-            SeasonCategoryName = category,
+            SeasonCategoryCode = category,
             SeasonCategoryOrder = categoryOrder,
             TrainingTypeName = "Led",
             TrainingPhaseName = "Sezóna",
@@ -212,10 +281,10 @@ public class TrainingScheduleComponentModelTests
         params ITrainingScheduleItem[] items)
     {
         var events = items.All(item => item is TrainingScheduleItemDto)
-            ? ScheduleEventModelFactory.CreateTrainings(
+            ? EventModelFactory.CreateTrainings(
                 items.Cast<TrainingScheduleItemDto>().ToList(),
                 allowEditing)
-            : ScheduleEventModelFactory.CreateTrainingPlans(
+            : EventModelFactory.CreateTrainingPlans(
                 items.Cast<TrainingPlanScheduleItemDto>().ToList(),
                 allowEditing);
 
@@ -228,7 +297,7 @@ public class TrainingScheduleComponentModelTests
                     Items = events,
                 },
             ],
-            items.Select(item => item.SeasonCategoryName).ToList(),
+            items.Select(item => item.SeasonCategoryCode).ToList(),
             allowEditing);
     }
 

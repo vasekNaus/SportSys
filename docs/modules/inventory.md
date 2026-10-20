@@ -586,5 +586,5 @@ InventoryItem │
 
 - [features.md](../features.md) – přehled všech funkcí systému
 - [architecture.md](../architecture.md) – technická architektura
-- [historický plán datové vrstvy](../../.github/tasks/inventory-data-layer.md)
-- [historický plán UI vrstvy](../../.github/tasks/inventory-ui-layer-impl.md)
+- [historický plán datové vrstvy](../../tasks/inventory-data-layer.md)
+- [historický plán UI vrstvy](../../tasks/inventory-ui-layer-impl.md)

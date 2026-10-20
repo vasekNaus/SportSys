@@ -38,7 +38,11 @@ public class Coach : User
 
   public ICollection<CoachTrainingRequirement> CoachTrainingRequirementCoaches { get; set; } = [];
 
+  public ICollection<CoachMatchRequirement> CoachMatchRequirements { get; set; } = [];
+
   public ICollection<CoachTrainingPlan> CoachTrainingPlans { get; set; } = [];
 
   public ICollection<CoachTraining> CoachTrainings { get; set; } = [];
+
+  public ICollection<CoachMatch> CoachMatches { get; set; } = [];
 }

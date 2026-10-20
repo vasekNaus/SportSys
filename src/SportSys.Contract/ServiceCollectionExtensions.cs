@@ -60,7 +60,8 @@ public static class ServiceCollectionExtensions
       //     p => p.RequireClaim(PermissionClaimTypes.Permission, "invoice.approve"));
     });
 
-    services.AddScoped<CsvMatchImportService>();
+    services.AddScoped<KisMatchImportService>();
+    services.AddScoped<KisTrainingImportService>();
     services.AddScoped<SportLocationService>();
     services.AddScoped<TeamService>();
     services.AddScoped<SeasonService>();
@@ -70,6 +71,7 @@ public static class ServiceCollectionExtensions
     services.AddScoped<TrainingService>();
     services.AddScoped<TrainingPlanService>();
     services.AddScoped<TrainingRequirementService>();
+    services.AddScoped<MatchRequirementService>();
     services.AddScoped<CoachService>();
     services.AddScoped<CoachAttendanceService>();
 

@@ -46,12 +46,12 @@ else
         <input type="hidden" asp-for="SettingInput.CoachId" />
         <p>
             <label asp-for="SettingInput.ValidFrom"></label>
-            <input asp-for="SettingInput.ValidFrom" type="date" />
+            @Html.EditorFor(m => m.SettingInput.ValidFrom, "Date")
             <span asp-validation-for="SettingInput.ValidFrom" class="field-validation-error"></span>
         </p>
         <p>
             <label asp-for="SettingInput.ValidTo"></label>
-            <input asp-for="SettingInput.ValidTo" type="date" />
+            @Html.EditorFor(m => m.SettingInput.ValidTo, "Date")
             <span asp-validation-for="SettingInput.ValidTo" class="field-validation-error"></span>
         </p>
         <p>

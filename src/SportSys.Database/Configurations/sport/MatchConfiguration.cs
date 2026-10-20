@@ -16,6 +16,12 @@ public class MatchConfiguration : IEntityTypeConfiguration<Match>
         builder.Property(e => e.DurationMinutes)
                .HasComputedColumnSql("(datediff(minute,[TimeFrom],[TimeTo]))", stored: true);
 
+        // Nullable sloupec, ale nově vytvářené zápasy mají dostat stav "Plán" (Id 1),
+        // pokud volající kód hodnotu explicitně nenastaví. TPC dědičnost nepodporuje
+        // pojmenované DEFAULT constrainty (viz komentář u Id výše) – jednoparametrový overload.
+        builder.Property(e => e.MatchStateId)
+               .HasDefaultValueSql("(1)");
+
         // Výsledek zápasu jako JSON sloupec přes value converter.
         // OwnsOne...ToJson není kompatibilní s TPC dědičností (EF Core omezení).
         builder.Property(e => e.Result)

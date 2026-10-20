@@ -1,0 +1,62 @@
+@page
+@model SportSys.Razor.Areas.sport.Pages.Training.Import.Matches.IndexModel
+@{
+    ViewData["Title"] = "Import zápasů";
+}
+
+<a class="button secondary" asp-area="sport" asp-page="/Training/Schedule/Index">
+    <i class="fa-solid fa-arrow-left fa-fw"></i> Zpět na rozvrh
+</a>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="infobox">
+        <i class="fa-solid fa-circle-check fa-fw"></i> @Model.StatusMessage
+    </div>
+}
+
+<section>
+    <h2>Import zápasů z KIS</h2>
+
+    <form method="post" enctype="multipart/form-data" asp-page-handler="ImportMatches">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="filter-row">
+            <div class="field">
+                <label asp-for="MatchImport.SeasonId"></label>
+                <select asp-for="MatchImport.SeasonId">
+                    <option value="">— vyberte sezónu —</option>
+                    @foreach (var season in Model.Seasons)
+                    {
+                        <option value="@season.Id">@season.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="MatchImport.SeasonId" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="MatchImportFile">Soubor XLSX</label>
+                <input asp-for="MatchImportFile"
+                       type="file"
+                       accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <span class="description">Export games.xlsx z KIS, maximálně 10 MiB.</span>
+                <span asp-validation-for="MatchImportFile" class="field-validation-error"></span>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="button">
+                    <i class="fa-solid fa-upload fa-fw"></i> Importovat
+                </button>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.MatchImportWarnings.Count > 0)
+    {
+        <h3>Varování importu zápasů</h3>
+        <ul>
+            @foreach (var warning in Model.MatchImportWarnings)
+            {
+                <li>Řádek @warning.RowNumber: @warning.Message</li>
+            }
+        </ul>
+    }
+</section>

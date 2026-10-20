@@ -23,7 +23,7 @@ public class SeasonCategoryService
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(c =>
-                c.Name.Contains(search) ||
+                c.Code.Contains(search) ||
                 c.CompetitionCode.Contains(search) ||
                 c.CompetitionTeamName.Contains(search) ||
                 c.Season.Name.Contains(search));
@@ -34,13 +34,16 @@ public class SeasonCategoryService
         return await query
             .OrderByDescending(c => c.Season.From)
             .ThenBy(c => c.Order)
-            .ThenBy(c => c.Name)
+            .ThenBy(c => c.Code)
             .Select(c => new SeasonCategoryListItem
             {
                 SeasonId = c.SeasonId,
                 SeasonName = c.Season.Name,
+                Code = c.Code,
                 Name = c.Name,
                 Order = c.Order,
+                MatchDurationMinutes = c.MatchDurationMinutes,
+                WarmupDurationMinutes = c.WarmupDurationMinutes,
                 CompetitionCode = c.CompetitionCode,
                 CompetitionTeamName = c.CompetitionTeamName,
                 IsActive = c.IsActive,
@@ -50,16 +53,19 @@ public class SeasonCategoryService
 
     public async Task<SeasonCategoryEditDto?> GetByIdAsync(
         int seasonId,
-        string name,
+        string code,
         CancellationToken ct = default)
     {
         return await _db.SeasonCategories
-            .Where(c => c.SeasonId == seasonId && c.Name == name)
+            .Where(c => c.SeasonId == seasonId && c.Code == code)
             .Select(c => new SeasonCategoryEditDto
             {
                 SeasonId = c.SeasonId,
+                Code = c.Code,
                 Name = c.Name,
                 Order = c.Order,
+                MatchDurationMinutes = c.MatchDurationMinutes,
+                WarmupDurationMinutes = c.WarmupDurationMinutes,
                 CompetitionCode = c.CompetitionCode,
                 CompetitionTeamName = c.CompetitionTeamName,
                 BirthYears = c.BirthYears,
@@ -75,8 +81,11 @@ public class SeasonCategoryService
         var entity = new DbSeasonCategory
         {
             SeasonId = dto.SeasonId,
+            Code = dto.Code!,
             Name = dto.Name!,
             Order = dto.Order,
+            MatchDurationMinutes = dto.MatchDurationMinutes,
+            WarmupDurationMinutes = dto.WarmupDurationMinutes,
             CompetitionCode = dto.CompetitionCode!,
             CompetitionTeamName = dto.CompetitionTeamName!,
             BirthYears = dto.BirthYears!,
@@ -90,11 +99,14 @@ public class SeasonCategoryService
 
     public async Task UpdateAsync(SeasonCategoryEditDto dto, CancellationToken ct = default)
     {
-        var entity = await _db.SeasonCategories.FindAsync([dto.SeasonId, dto.Name!], ct)
+        var entity = await _db.SeasonCategories.FindAsync([dto.SeasonId, dto.Code!], ct)
             ?? throw new InvalidOperationException(
-                $"Kategorie {dto.Name} v sezóně {dto.SeasonId} nebyla nalezena.");
+                $"Kategorie {dto.Code} v sezóně {dto.SeasonId} nebyla nalezena.");
 
+        entity.Name = dto.Name!;
         entity.Order = dto.Order;
+        entity.MatchDurationMinutes = dto.MatchDurationMinutes;
+        entity.WarmupDurationMinutes = dto.WarmupDurationMinutes;
         entity.CompetitionCode = dto.CompetitionCode!;
         entity.CompetitionTeamName = dto.CompetitionTeamName!;
         entity.BirthYears = dto.BirthYears!;
@@ -105,13 +117,13 @@ public class SeasonCategoryService
 
     public async Task SetActiveAsync(
         int seasonId,
-        string name,
+        string code,
         bool isActive,
         CancellationToken ct = default)
     {
-        var entity = await _db.SeasonCategories.FindAsync([seasonId, name], ct)
+        var entity = await _db.SeasonCategories.FindAsync([seasonId, code], ct)
             ?? throw new InvalidOperationException(
-                $"Kategorie {name} v sezóně {seasonId} nebyla nalezena.");
+                $"Kategorie {code} v sezóně {seasonId} nebyla nalezena.");
 
         entity.IsActive = isActive;
         await _db.SaveChangesAsync(ct);

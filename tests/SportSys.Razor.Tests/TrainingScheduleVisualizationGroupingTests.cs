@@ -154,7 +154,7 @@ public class TrainingScheduleVisualizationGroupingTests
             TimeTo = timeTo,
             GroupId = groupId,
             SeasonCategoryOrder = id,
-            SeasonCategoryName = $"Category {id}",
+            SeasonCategoryCode = $"Category {id}",
         };
     }
 
@@ -168,6 +168,6 @@ public class TrainingScheduleVisualizationGroupingTests
             TimeFrom = new TimeOnly(16, 0),
             TimeTo = new TimeOnly(17, 0),
             SeasonCategoryOrder = id,
-            SeasonCategoryName = $"Category {id}",
+            SeasonCategoryCode = $"Category {id}",
         };
 }

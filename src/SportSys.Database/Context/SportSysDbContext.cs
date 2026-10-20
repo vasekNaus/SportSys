@@ -39,7 +39,11 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
 
   public virtual DbSet<CoachTraining> CoachTrainings { get; set; }
 
+  public virtual DbSet<CoachMatch> CoachMatches { get; set; }
+
   public virtual DbSet<CoachTrainingRequirement> CoachTrainingRequirements { get; set; }
+
+  public virtual DbSet<CoachMatchRequirement> CoachMatchRequirements { get; set; }
 
   public virtual DbSet<CoachTrainingPlan> CoachTrainingPlans { get; set; }
 
@@ -47,7 +51,11 @@ public class SportSysDbContext : IdentityDbContext<User, Role, int, UserClaim, U
 
   public virtual DbSet<Match> Matches { get; set; }
 
+  public virtual DbSet<MatchRequirement> MatchRequirements { get; set; }
+
   public virtual DbSet<MatchType> MatchTypes { get; set; }
+
+  public virtual DbSet<MatchState> MatchStates { get; set; }
 
   public virtual DbSet<Team> Teams { get; set; }
 

@@ -2,9 +2,15 @@ using SportSys.Contract.Models;
 
 namespace SportSys.Razor.Models.TrainingSchedule;
 
+public sealed class TrainingScheduleCoachParticipation
+{
+    public required string CategoryCode { get; init; }
+    public required CoachParticipationDto Participation { get; init; }
+}
+
 public sealed class TrainingScheduleCategorySegment
 {
-    public required string CategoryName { get; init; }
+    public required string CategoryCode { get; init; }
     public string? StateIcon { get; init; }
 }
 
@@ -14,7 +20,8 @@ public sealed class TrainingScheduleBlockData
     public required string Title { get; init; }
     public required IReadOnlyList<string> TrainingTypeNames { get; init; }
     public required IReadOnlyList<string> Locations { get; init; }
-    public required IReadOnlyList<string> CoachNames { get; init; }
+    public required IReadOnlyList<SimpleCoachDto> Coaches { get; init; }
+    public required IReadOnlyList<TrainingScheduleCoachParticipation> CoachParticipations { get; init; }
     public required IReadOnlyList<string> TrainingTypeLocationSummaries { get; init; }
     public required IReadOnlyList<TrainingScheduleCategorySegment> CategorySegments { get; init; }
     public TimeOnly TimeFrom { get; init; }
@@ -26,10 +33,16 @@ public sealed class TrainingScheduleBlockData
     public string? UniformStateCssClass { get; init; }
     public string? UniformStateIcon { get; init; }
     public string? UniformStateName { get; init; }
+    public bool IsDryTraining { get; init; }
 
     public string TrainingTypeSummary => string.Join(", ", TrainingTypeNames);
     public string LocationSummary => string.Join(", ", Locations);
-    public string CoachSummary => CoachNames.Count == 0 ? "-" : string.Join(", ", CoachNames);
+    public string CoachSummary => Coaches.Count == 0
+        ? "-"
+        : string.Join(", ", Coaches.Select(coach => coach.FullName));
+    public string CoachSurnameSummary => Coaches.Count == 0
+        ? "-"
+        : string.Join(", ", Coaches.Select(coach => coach.LastName));
     public string TrainingTypeLocationSummary => string.Join(", ", TrainingTypeLocationSummaries);
 }
 
@@ -65,7 +78,7 @@ public static class TrainingScheduleBlockFactory
     {
         var items = sourceItems
             .OrderBy(item => item.SeasonCategoryOrder)
-            .ThenBy(item => item.SeasonCategoryName, StringComparer.Ordinal)
+            .ThenBy(item => item.SeasonCategoryCode, StringComparer.Ordinal)
             .ThenBy(item => item.Id)
             .ToList();
 
@@ -77,6 +90,10 @@ public static class TrainingScheduleBlockFactory
             && stateIds.All(id => id.HasValue)
             && stateIds.Distinct().Count() == 1;
         var hasMixedState = hasAnyState && !isUniformState;
+
+        var dryFlags = items.Select(item => item.IsDryTraining).Distinct().ToList();
+        var isUniformTrainingType = dryFlags.Count == 1;
+        var isDryTraining = isUniformTrainingType && dryFlags[0];
 
         string? uniformStateCssClass = null;
         string? uniformStateIcon = null;
@@ -92,15 +109,27 @@ public static class TrainingScheduleBlockFactory
         return new TrainingScheduleBlockData
         {
             Items = items,
-            Title = string.Join(" + ", items.Select(item => item.SeasonCategoryName)),
+            Title = string.Join(" + ", items.Select(item => item.SeasonCategoryCode)),
             TrainingTypeNames = DistinctOrdered(items.Select(item => item.TrainingTypeName)),
             Locations = DistinctOrdered(items
                 .Select(item => item.LocationName)
                 .Where(location => !string.IsNullOrWhiteSpace(location))),
-            CoachNames = items
-                .SelectMany(item => item.CoachFullNames)
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(name => name, StringComparer.Ordinal)
+            // Při spojení více tréninků/plánů do jednoho bloku se stejný trenér
+            // může objevit vícekrát (každý člen skupiny má svou vlastní sadu
+            // trenérů) — duplicity se záměrně nefiltrují. V budoucnu budeme
+            // tento stav (stejný trenér u více členů skupiny) nějak zvýrazňovat.
+            Coaches = items
+                .SelectMany(item => item.Coaches)
+                .OrderBy(coach => coach.FullName, StringComparer.Ordinal)
+                .ToList(),
+            CoachParticipations = items
+                .OfType<TrainingScheduleItemDto>()
+                .SelectMany(item => item.CoachParticipations.Select(participation =>
+                    new TrainingScheduleCoachParticipation
+                    {
+                        CategoryCode = item.SeasonCategoryCode,
+                        Participation = participation,
+                    }))
                 .ToList(),
             TrainingTypeLocationSummaries = DistinctOrdered(items.Select(item =>
                 string.IsNullOrWhiteSpace(item.LocationName)
@@ -109,7 +138,7 @@ public static class TrainingScheduleBlockFactory
             CategorySegments = items
                 .Select(item => new TrainingScheduleCategorySegment
                 {
-                    CategoryName = item.SeasonCategoryName,
+                    CategoryCode = item.SeasonCategoryCode,
                     StateIcon = TrainingStateVisual.Get(item.TrainingStateId)?.Icon,
                 })
                 .ToList(),
@@ -118,6 +147,7 @@ public static class TrainingScheduleBlockFactory
             UniformStateCssClass = uniformStateCssClass,
             UniformStateIcon = uniformStateIcon,
             UniformStateName = uniformStateName,
+            IsDryTraining = isDryTraining,
             TimeFrom = items.Min(item => item.TimeFrom),
             TimeTo = items.Max(item => item.TimeTo),
             SeasonCategoryOrder = primaryItem.SeasonCategoryOrder,

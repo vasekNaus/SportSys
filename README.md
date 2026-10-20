@@ -57,7 +57,7 @@ dotnet ef database update --project src\SportSys.Database
 | [Instrukce pro AI](.github/copilot-instructions.md) | Pravidla a navigace pro agenty |
 
 Produktový kontext je v [přehledovém dokumentu](docs/overview.md). Historické
-implementační plány jsou v `.github/tasks/` a výzkumné podklady v
+implementační plány jsou v `tasks/` a výzkumné podklady v
 `docs/research/`; nejsou zdrojem aktuálního stavu.
 
 ## Licence

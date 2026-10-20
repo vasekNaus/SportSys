@@ -11,7 +11,7 @@ public class ScheduleEventModelFactoryTests
         var scheduleEvent = ScheduleEventModelFactory.CreateMatch(new MatchScheduleItemDto
         {
             Id = 10,
-            SeasonCategoryName = "Dorost",
+            SeasonCategoryCode = "Dorost",
             SeasonCategoryOrder = 2,
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(19, 0),
@@ -38,7 +38,7 @@ public class ScheduleEventModelFactoryTests
         var scheduleEvent = ScheduleEventModelFactory.CreateMatch(new MatchScheduleItemDto
         {
             Id = 10,
-            SeasonCategoryName = "Dorost",
+            SeasonCategoryCode = "Dorost",
             OpponentName = "HC Plzeň",
             HomeTeamName = "HC Klatovy",
             AwayTeamName = "HC Plzeň",
@@ -102,8 +102,50 @@ public class ScheduleEventModelFactoryTests
         Assert.All(row.Lanes, lane => Assert.True(Assert.Single(lane).Width >= 3));
     }
 
+    [Fact]
+    public void CreateTrainings_MapsCoachSurnamesLocationAndIsDryTraining()
+    {
+        var events = ScheduleEventModelFactory.CreateTrainings(
+            [
+                CreateTraining(
+                    1,
+                    "U12",
+                    1,
+                    groupId: null,
+                    stateId: 1,
+                    stateName: "Plán",
+                    location: "Zimní stadion Klatovy",
+                    coaches: ["Jan Novák"],
+                    isDryTraining: true),
+            ],
+            allowEditing: false);
+
+        var scheduleEvent = Assert.Single(events);
+        Assert.Equal("Novák", scheduleEvent.DetailLine1);
+        Assert.Equal("Zimní stadion Klatovy", scheduleEvent.DetailLine2);
+        Assert.True(scheduleEvent.IsDryTraining);
+    }
+
+    [Fact]
+    public void CreateMatch_IsNeverDryTraining()
+    {
+        var scheduleEvent = ScheduleEventModelFactory.CreateMatch(new MatchScheduleItemDto
+        {
+            Id = 10,
+            SeasonCategoryCode = "Dorost",
+            OpponentName = "HC Plzeň",
+            HomeTeamName = "HC Klatovy",
+            AwayTeamName = "HC Plzeň",
+            IsHome = true,
+            LocationName = "ZS Klatovy",
+            MatchTypeName = "Liga",
+        });
+
+        Assert.False(scheduleEvent.IsDryTraining);
+    }
+
     private static TrainingScheduleComponentModel CreateComponent(
-        params ScheduleEventModel[] items)
+        params EventModel[] items)
         => TrainingScheduleComponentModel.Create(new TrainingScheduleViewModel(
             [
                 new TrainingScheduleRow
@@ -116,14 +158,12 @@ public class ScheduleEventModelFactoryTests
             ["U12"],
             allowEditing: true));
 
-    private static ScheduleEventModel CreateEvent(
-        ScheduleEventType eventType,
+    private static EventModel CreateEvent(
         int id,
         int hourFrom,
         int hourTo)
         => new()
         {
-            EventType = eventType,
             SourceId = id,
             SeasonCategoryOrder = 1,
             ColorKey = "U12",
@@ -139,9 +179,12 @@ public class ScheduleEventModelFactoryTests
         int id,
         string category,
         int categoryOrder,
-        Guid groupId,
+        Guid? groupId,
         int stateId,
-        string stateName)
+        string stateName,
+        string location = "",
+        IReadOnlyList<string>? coaches = null,
+        bool isDryTraining = false)
         => new()
         {
             Id = id,
@@ -149,11 +192,32 @@ public class ScheduleEventModelFactoryTests
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(18, 0),
             GroupId = groupId,
-            SeasonCategoryName = category,
+            SeasonCategoryCode = category,
             SeasonCategoryOrder = categoryOrder,
+            LocationName = location,
             TrainingTypeName = "Led",
+            IsDryTraining = isDryTraining,
             TrainingPhaseName = "Sezóna",
+            Coaches = (coaches ?? [])
+                .Select(fullName => new SimpleCoachDto
+                {
+                    FullName = fullName,
+                    LastName = ExtractLastName(fullName),
+                })
+                .ToList(),
             TrainingStateId = stateId,
             TrainingStateName = stateName,
         };
+
+    private static string ExtractLastName(string fullName)
+    {
+        var trimmed = fullName.Trim();
+        if (trimmed.Length == 0)
+            return string.Empty;
+
+        var lastSpaceIndex = trimmed.LastIndexOf(' ');
+        return lastSpaceIndex < 0
+            ? trimmed
+            : trimmed[(lastSpaceIndex + 1)..];
+    }
 }

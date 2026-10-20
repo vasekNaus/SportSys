@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Models;
+using SportSys.Contract.Models.hr;
 using SportSys.Database.Context;
+using SportSys.Database.Models.sport;
 
 namespace SportSys.Contract.Services;
 
@@ -12,6 +14,9 @@ public class TrainingRequirementService
     {
         _db = db;
     }
+
+    public Task<List<CoachSelectItem>> GetCoachesAsync(CancellationToken ct = default)
+        => RequirementEditHelper.GetCoachesAsync(_db, ct);
 
     public async Task<List<SeasonDto>> GetSeasonsAsync(CancellationToken ct = default)
     {
@@ -35,11 +40,11 @@ public class TrainingRequirementService
             .AsNoTracking()
             .Where(category => category.SeasonId == seasonId && category.IsActive)
             .OrderBy(category => category.Order)
-            .ThenBy(category => category.Name)
+            .ThenBy(category => category.Code)
             .Select(category => new SeasonCategoryDto
             {
                 SeasonId = category.SeasonId,
-                Name = category.Name,
+                Code = category.Code,
                 Order = category.Order,
             })
             .ToListAsync(ct);
@@ -75,19 +80,30 @@ public class TrainingRequirementService
 
     public async Task<List<TrainingRequirementListItem>> GetAllAsync(
         int seasonId,
-        IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<string> categoryCodes,
         IReadOnlyCollection<int> trainingTypeIds,
         IReadOnlyCollection<int> trainingPhaseIds,
+        DateOnly? validOn = null,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
         var query = _db.TrainingRequirements
             .AsNoTracking()
             .Where(requirement => requirement.SeasonId == seasonId);
 
-        if (categoryNames.Count > 0)
+        query = query.FilterByCoachIds(coachIds);
+
+        if (validOn.HasValue)
+        {
+            var date = validOn.Value;
+            query = query.Where(requirement =>
+                requirement.From <= date && requirement.To >= date);
+        }
+
+        if (categoryCodes.Count > 0)
         {
             query = query.Where(requirement =>
-                categoryNames.Contains(requirement.SeasonCategoryName));
+                categoryCodes.Contains(requirement.SeasonCategoryCode));
         }
 
         if (trainingTypeIds.Count > 0)
@@ -105,7 +121,7 @@ public class TrainingRequirementService
         return await query
             .OrderByDescending(requirement => requirement.SeasonCategory.Season.From)
             .ThenBy(requirement => requirement.SeasonCategory.Order)
-            .ThenBy(requirement => requirement.SeasonCategoryName)
+            .ThenBy(requirement => requirement.SeasonCategoryCode)
             .ThenBy(requirement => requirement.From)
             .ThenBy(requirement => requirement.To)
             .ThenBy(requirement => requirement.TrainingType.Name)
@@ -116,7 +132,7 @@ public class TrainingRequirementService
                 Id = requirement.Id,
                 SeasonId = requirement.SeasonId,
                 SeasonName = requirement.SeasonCategory.Season.Name,
-                SeasonCategoryName = requirement.SeasonCategoryName,
+                SeasonCategoryCode = requirement.SeasonCategoryCode,
                 SeasonCategoryOrder = requirement.SeasonCategory.Order,
                 TrainingTypeId = requirement.TrainingTypeId,
                 TrainingTypeName = requirement.TrainingType.Name,
@@ -131,7 +147,7 @@ public class TrainingRequirementService
                         ?? assignment.Coach.UserName
                         ?? assignment.Coach.Email)
                     .ThenBy(assignment => assignment.Coach.PersonalNumber)
-                    .ThenBy(assignment => assignment.CoachRole.Name)
+                    .ThenBy(assignment => assignment.CoachRole.Order)
                     .ThenBy(assignment => assignment.CoachId)
                     .ThenBy(assignment => assignment.CoachRoleId)
                     .Select(assignment => new TrainingRequirementCoachListItem
@@ -146,9 +162,106 @@ public class TrainingRequirementService
                         PersonalNumber = assignment.Coach.PersonalNumber,
                         CoachRoleId = assignment.CoachRoleId,
                         CoachRoleName = assignment.CoachRole.Name,
+                        CoachRoleCode = assignment.CoachRole.Code,
+                        CoachRoleOrder = assignment.CoachRole.Order,
                     })
                     .ToList(),
             })
             .ToListAsync(ct);
+    }
+
+    public async Task<RequirementEditContextDto<TrainingRequirementEditDto>?> GetEditAsync(
+        int id,
+        CancellationToken ct = default)
+    {
+        var requirement = await _db.TrainingRequirements
+            .AsNoTracking()
+            .Where(item => item.Id == id)
+            .Select(item => new
+            {
+                item.Id,
+                item.From,
+                item.To,
+                item.DurationHours,
+                SeasonName = item.SeasonCategory.Season.Name,
+                item.SeasonCategoryCode,
+                TrainingTypeName = item.TrainingType.Name,
+                TrainingPhaseName = item.TrainingPhase.Name,
+                Assignments = item.CoachTrainingRequirements
+                    .Select(a => new { a.CoachId, a.CoachRoleId })
+                    .ToList(),
+            })
+            .SingleOrDefaultAsync(ct);
+
+        if (requirement is null)
+            return null;
+
+        return new RequirementEditContextDto<TrainingRequirementEditDto>
+        {
+            Input = new TrainingRequirementEditDto
+            {
+                Id = requirement.Id,
+                From = requirement.From,
+                To = requirement.To,
+                DurationHours = requirement.DurationHours,
+                CoachAssignments = requirement.Assignments
+                    .Select(a => new RequirementCoachAssignmentInput
+                    {
+                        CoachId = a.CoachId,
+                        CoachRoleId = a.CoachRoleId,
+                    })
+                    .ToList(),
+            },
+            SeasonName = requirement.SeasonName,
+            SeasonCategoryCode = requirement.SeasonCategoryCode,
+            TrainingTypeName = requirement.TrainingTypeName,
+            TrainingPhaseName = requirement.TrainingPhaseName,
+            AvailableCoaches = await RequirementEditHelper.GetCoachesAsync(_db, ct),
+            CoachRoles = await RequirementEditHelper.GetRolesAsync(_db, ct),
+        };
+    }
+
+    public async Task<RequirementEditResult> UpdateAsync(
+        TrainingRequirementEditDto dto,
+        CancellationToken ct = default)
+    {
+        if (dto.From > dto.To || dto.DurationHours <= 0 || dto.DurationHours > 999.99m)
+            return new RequirementEditResult(RequirementEditStatus.InvalidInput);
+
+        var invalid = await RequirementEditHelper.ValidateAssignmentsAsync(
+            _db, dto.CoachAssignments, ct);
+        if (invalid is not null)
+            return invalid;
+
+        var requirement = await _db.TrainingRequirements
+            .Include(item => item.CoachTrainingRequirements)
+            .SingleOrDefaultAsync(item => item.Id == dto.Id, ct);
+        if (requirement is null)
+            return new RequirementEditResult(RequirementEditStatus.NotFound);
+
+        requirement.From = dto.From;
+        requirement.To = dto.To;
+        requirement.DurationHours = dto.DurationHours;
+
+        var wanted = dto.CoachAssignments
+            .Select(a => (CoachId: a.CoachId!.Value, RoleId: a.CoachRoleId!.Value))
+            .ToHashSet();
+        var existing = requirement.CoachTrainingRequirements
+            .ToDictionary(a => (a.CoachId, RoleId: a.CoachRoleId));
+
+        _db.CoachTrainingRequirements.RemoveRange(
+            existing.Where(pair => !wanted.Contains(pair.Key)).Select(pair => pair.Value));
+        foreach (var key in wanted.Where(key => !existing.ContainsKey(key)))
+        {
+            _db.CoachTrainingRequirements.Add(new CoachTrainingRequirement
+            {
+                CoachId = key.CoachId,
+                CoachRoleId = key.RoleId,
+                TrainingRequirementId = requirement.Id,
+            });
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return new RequirementEditResult(RequirementEditStatus.Success);
     }
 }

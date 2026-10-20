@@ -18,7 +18,15 @@ projektu `SportSys.Contract`.
 
 `Training` a `Match` jsou TPC potomci `SportEvent` se sdílenou sekvencí.
 `TrainingPlan` popisuje obecný týdenní plán a `TrainingRequirement` požadovaný
-rozsah. Vazební tabulky trenérů odkazují na stabilní `hr.Coach.Id`.
+rozsah. `MatchRequirement` eviduje požadovaný počet zápasů kategorie v období.
+Vazební tabulky trenérů (`CoachTrainingRequirement`, `CoachMatchRequirement`)
+odkazují na stabilní `hr.Coach.Id` a `dbo.CoachRole.Id`.
+
+Skutečnou účast trenéra evidují `sport.CoachTraining` a
+`sport.CoachMatch`. Obě vazby obsahují trenéra, konkrétní událost, stav z
+`sport.ParticipationType` a poznámku do 50 znaků. Složený databázový klíč
+obsahuje i stav účasti; aplikační služby proto vynucují invariant nejvýše
+jednoho stavu jednoho trenéra pro jednu událost.
 
 `TrainingGroup` a `TrainingPlanGroup` jsou nezávislé; jejich ID se mezi
 reálnými tréninky a plány nekopíruje.
@@ -29,28 +37,41 @@ reálnými tréninky a plány nekopíruje.
 |---|---|---|
 | Reálný rozvrh | `/sport/Training/Schedule` | `sport.Training`, `sport.Match` |
 | Obecný týdenní plán | `/sport/Training/Plan` | `sport.TrainingPlan` |
-| Požadavky na tréninky | `/sport/Training/Requirement` | `sport.TrainingRequirement` |
+| Požadavky na tréninky a zápasy | `/sport/Training/Requirement` | `sport.TrainingRequirement`, `sport.MatchRequirement` |
+| Import tréninků z KIS | `/sport/Training/Import/Trainings` | import XLSX přes Contract |
+| Import zápasů z KIS | `/sport/Training/Import/Matches` | import XLSX přes Contract |
 
 Původní route `/sport/Schedule` není zachována.
 
-## Požadavky na tréninky
+## Požadavky na tréninky a zápasy
 
 Stránka `/sport/Training/Requirement` je read-only přehled požadavků pro
-plánování sezóny. Zobrazuje sezónu, kategorii, typ a fázi tréninku, interval
-platnosti, požadovaný rozsah v hodinách a přiřazené trenéry včetně jejich rolí.
-Trenér bez zobrazovaného jména je identifikován osobním číslem; požadavek bez
-trenéra zobrazuje `-`.
+plánování sezóny. První tabulka zobrazuje požadavky na tréninky: sezónu,
+kategorii, typ a fázi tréninku, interval platnosti, požadovaný rozsah v
+hodinách a přiřazené trenéry včetně jejich rolí. Druhá tabulka pod ní zobrazuje
+požadavky na zápasy z `sport.MatchRequirement`: sezónu, kategorii, interval
+platnosti, požadovaný počet zápasů (`MatchCount`) a trenéry z
+`sport.CoachMatchRequirement` včetně rolí. Trenér bez zobrazovaného jména je
+identifikován osobním číslem; požadavek bez trenéra zobrazuje `-`.
 
-Přehled používá GET filtry:
+Přehled používá společné GET filtry pro obě tabulky:
 
 - aktivní sezóna; výchozí je nejnovější aktivní sezóna,
 - nula, jedna nebo více aktivních kategorií vybrané sezóny,
+- nula, jeden nebo více trenérů; prázdný výběr znamená všechny požadavky,
+  neprázdný výběr vrací jen požadavky s alespoň jedním vybraným trenérem
+  (logika OR).
+
+Dále lze filtrovat pouze požadavky na tréninky (zápasy tyto dimenze nemají a
+filtry ignorují):
+
 - nula, jeden nebo více typů tréninku,
 - nula, jedna nebo více fází tréninku.
 
 Prázdný výběr kategorií, typů nebo fází znamená všechny hodnoty. Neplatné
-hodnoty z URL se před načtením dat odstraní. Stránka data pouze čte a nemění
-databázové schéma ani obsah tabulek.
+hodnoty z URL se před načtením dat odstraní. Obě tabulky mají samostatný
+prázdný stav. Stránka data pouze čte a nemění databázové schéma ani obsah
+tabulek. Požadavky na zápasy načítá `MatchRequirementService`.
 
 ### Společné datové kontrakty
 
@@ -99,7 +120,7 @@ nevyjadřuje vzájemnou vazbu.
 
 Komponenta seskupuje položky pouze uvnitř aktuálního řádku a teprve potom
 rozděluje výsledné bloky do lanes. Titulek spojeného bloku obsahuje názvy všech
-kategorií oddělené ` + ` a seřazené podle `SeasonCategory.Order`, názvu
+kategorií oddělené ` + ` a seřazené podle `SeasonCategory.Order`, kódu
 kategorie a ID položky. Časový rozsah vede od nejčasnějšího začátku po
 nejpozdější konec; případná časová mezera mezi členy je tedy součástí
 společného bloku. Barvu určuje první kategorie a tooltip zachovává informace
@@ -110,26 +131,62 @@ Legenda se sestavuje z výsledných bloků, nikoliv přímo ze seznamu vybranýc
 kategorií. Spojený blok se proto v legendě zobrazí pod stejným názvem jako
 v rozvrhu, například `U12 + U14`, a každá kombinace je uvedena pouze jednou.
 
-Každý blok zobrazuje čtyři řádky: kategorie, čas, unikátní typy tréninku a
-unikátní osobní čísla přiřazených trenérů. Údaje spojeného bloku se agregují ze
-všech jeho členů a oddělují čárkou. Pokud trénink nemá přiřazeného trenéra,
-zobrazí se `-`. U plánů se zahrnou přiřazení z `CoachTrainingPlan`,
-jejichž interval platnosti se překrývá s intervalem `TrainingPlan.From–To`.
-Osobní číslo je dočasným identifikátorem do zavedení vazby `hr.Coach` na
-`identity.User`.
+Blok skutečného tréninku zobrazuje kategorii, čas od–do, lokalitu a seznam
+příjmení trenérů; za každým příjmením je ikona jeho účasti. Ikony odpovídají
+stabilním ID `sport.ParticipationType`: `1` ✅ účast, `2` ❓ bez reakce,
+`3` ❌ neúčast, `4` 🔗 spojený trénink a `5` ↔ neúčast – jiný trénink.
+Název stavu z číselníku je dostupný u ikony a celý tooltip události obsahuje
+celá jména trenérů i jejich stav. U bloku sloučených tréninků se zobrazuje
+každá účast zvlášť, včetně opakovaného trenéra; tooltip zachovává kategorii
+každého zdrojového tréninku. Seznam se při nedostatku místa zalamuje
+(`schedule-block-coaches--wrap`); výška dráhy se přizpůsobí nejvyššímu bloku.
+U tréninkového plánu se nadále zobrazují pouze příjmení přiřazených trenérů,
+bez indikace účasti.
 
-Zápasový blok používá stejnou časovou osu, ale zobrazuje kategorii, čas,
-soupeře a výsledek. Neznámý výsledek se zobrazuje jako `-`. Zápas nemá
-editační odkaz ani stavovou ikonu. Překryv zápasu s tréninkem nebo jiným
-zápasem vytvoří další lane.
+U tréninkového plánu s neprázdnou
+textovou vlastností `sport.TrainingPlan.Title` zobrazuje řádek lokality
+text ve tvaru `Title - Lokalita`; pokud je `Title` prázdný, zobrazí se jen
+název lokality beze změny (`TrainingPlanEventModel.PlanTitleSummary`,
+`EventModelFactory.CreateTrainingPlanBlock`). U spojeného bloku více plánů
+se neprázdné hodnoty `Title` deduplikují a spojují čárkou. Reálný trénink
+(`Training`) sloupec `Title` nemá a jeho řádek lokality se tímto nemění.
+Blok zápasu zobrazuje kategorii, čas, výsledek, soupeře a samostatný seznam
+trenérů s ikonami účasti ve stejném formátu jako skutečný trénink. Tooltip
+obsahuje také celá jména trenérů a názvy jejich stavů. Výsledek ani soupeř se
+zobrazením trenérů nenahrazují. Typ
+tréninku (led / suchá příprava) se v bloku nevypisuje textem — rozlišuje ho
+vizuální vykreslení pozadí: led má plnou barvu podle kategorie beze změny,
+suchá příprava stejnou barvu doplněnou o jemné diagonální šrafování
+(modifikátor `schedule-block--dry`, CSS `repeating-linear-gradient`, bez
+obrázků a bez JS). Příjmení trenéra se odvozuje jako poslední mezerou
+oddělené slovo z `User.DisplayName` — výpočet provádí jednou
+`TrainingScheduleService` (Contract) a předává přes DTO `SimpleCoachDto`
+(`FullName` + `LastName`), Razor vrstva už žádný řetězec neparsuje. Údaje
+spojeného bloku se agregují ze všech jeho členů a oddělují čárkou. Pokud
+trénink nemá přiřazeného trenéra, zobrazí se `-`. U plánů se zahrnou
+přiřazení z `CoachTrainingPlan`, jejichž interval platnosti se překrývá s
+intervalem `TrainingPlan.From–To`. Pokud spojený blok obsahuje položky s
+různým typem tréninku (led i suchá příprava), šrafování se nezobrazí a blok
+se vykreslí jako plná barva — stejný bezpečný fallback jako u smíšeného
+stavu tréninku (`HasMixedState`). Celá jména trenérů i text typu tréninku
+zůstávají dostupné v tooltipu bloku a v Excel exportu rozvrhu
+(`TrainingScheduleBlockData.CoachSummary`/`TrainingTypeSummary`), export se
+touto úpravou nemění.
+
+Zápasový blok používá stejnou časovou osu, zobrazuje kategorii, čas, výsledek,
+soupeře a přiřazené trenéry s ikonami účasti. Neznámý výsledek se zobrazuje
+jako `-`. Zápas nemá editační odkaz, ale zobrazuje také stavovou ikonu podle
+`Match.MatchStateId` (viz níže). Překryv zápasu s tréninkem nebo jiným zápasem
+vytvoří další lane.
 
 Při materializaci více reálných tréninků z propojených plánů se pro vzniklé
 tréninky vytvoří nová skupina v `TrainingGroup`. Identifikátor skupiny z
 `TrainingPlanGroup` se mezi tabulkami nekopíruje.
 
-Reálný trénink navíc nese stav (`sport.TrainingState`). Kategorie se nikdy
-nebarví podle stavu; vizualizace je omezena na ikonu v pravém dolním rohu
-bloku. Mapování `TrainingStateId → ikona` je v
+Reálný trénink navíc nese vlastní stav (`sport.TrainingState`), nezávislý na
+účasti trenérů. Kategorie se nikdy nebarví podle stavu; stav tréninku se
+zobrazuje samostatnou ikonou v pravém dolním rohu bloku. Mapování
+`TrainingStateId → ikona` je v
 `src/SportSys.Razor/Models/TrainingSchedule/TrainingStateVisual.cs`. Pokud
 blok obsahuje jediný trénink nebo spojené tréninky se shodným stavem, zobrazí
 se ikona tohoto stavu bez tooltipu. Pokud mají spojené tréninky rozdílné
@@ -138,6 +195,17 @@ stavy, zobrazí se místo toho sentinel „Stav neznámý“ (`TrainingStateVisu
 kategorie` pro každý dílčí trénink, seřazený podle `SeasonCategory.Order`.
 Plán (`TrainingPlan`) stav nemá, takže stránka `/sport/Training/Plan` ikonu
 nikdy nezobrazuje.
+
+Zápas nese vlastní, samostatný stav (`sport.MatchState`, sloupec
+`Match.MatchStateId`), nezávislý na číselníku stavů tréninku. Hodnoty jsou
+`1. Plán`, `2. Potvrzený` a `3. Zrušený`. Sloupec je nullable — historické a
+importované zápasy bez zdroje dat mohou mít stav nevyplněný a blok pak ikonu
+nezobrazí. Nově založený zápas dostává výchozí hodnotu `1` (Plán) přímo z
+databáze (`DEFAULT` na sloupci), pokud volající kód hodnotu nenastaví
+explicitně. Mapování `MatchStateId → ikona` je v
+`src/SportSys.Razor/Models/TrainingSchedule/MatchStateVisual.cs`; na rozdíl od
+tréninku zápas nikdy nevytváří spojené bloky, takže odpadá sentinel pro
+smíšený stav.
 
 Při aktivním GET filtru **Spojovat tréninky** (`MergeTrainings`, tedy
 `AllowEditing == false`) se stavová ikona ani tooltip nezobrazují na žádné
@@ -152,18 +220,49 @@ víkendovým zvýrazněním.
 
 ### Filtry Schedule
 
+Formulář je vizuálně seskupen do panelů: přepínač „Zobrazit v rozvrhu“ nahoře,
+pod ním panel „Společné filtry“ a dále (podle stavu přepínače) panely
+„Tréninky“ a „Zápasy“ vedle sebe s jemným barevným akcentem (bez vlivu na
+filtrovací logiku). Pod panely je akční lišta s odkazem „Vymazat filtry“
+(GET navigace na stránku bez parametrů, obnoví výchozí hodnoty všech filtrů)
+a tlačítkem „Použít filtry“.
+
+- přepínač „Zobrazit v rozvrhu“ — dva nezávislé checkboxy „Tréninky“ /
+  „Zápasy“ (výchozí oba zapnuté); podle nich se zobrazují jen relevantní
+  specifické filtry a načítají jen relevantní data,
 - aktivní sezóna,
-- jedna nebo více aktivních kategorií,
-- nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
-- nula, jeden nebo více stavů tréninku; prázdný výběr znamená všechny stavy,
-- nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality,
+- jedna nebo více aktivních kategorií (společné pro tréninky i zápasy),
+- nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality —
+  filtr je společný a omezuje tréninky i zápasy zároveň,
+- nula, jeden nebo více trenérů; prázdný výběr znamená bez omezení, filtr je
+  společný pro tréninky i zápasy a více trenérů se kombinuje logikou OR,
 - datum od a do,
-- volitelné spojování časově překrývajících se nebo navazujících tréninků.
+- nula, jeden nebo více dnů v týdnu (checkbox skupina Pondělí–Neděle); prázdný
+  výběr znamená všechny dny. Filtr omezuje přímo načtená data (tréninky i
+  zápasy) stejně jako ostatní společné filtry — při výběru jen vybraných dnů
+  se načítají a zobrazují (i exportují) výhradně bloky spadající na tyto dny,
+  ostatní dny se v intervalu Datum od–do zobrazují jako řádky bez položek
+  (podle volby „Zobrazovat prázdné řádky“ stejně jako ostatní dny bez
+  tréninku/zápasu),
+- při zapnutém „Tréninky“: nula, jeden nebo více typů tréninku (prázdný výběr
+  = všechny typy), nula, jeden nebo více stavů tréninku (prázdný výběr =
+  všechny stavy) a volitelné spojování časově překrývajících se nebo
+  navazujících tréninků,
+- při zapnutém „Zápasy“: nula, jeden nebo více typů zápasu (prázdný výběr =
+  všechny typy) a nula, jeden nebo více stavů zápasu (prázdný výběr = všechny
+  stavy).
 
 Řádky odpovídají konkrétním datům z vybraného intervalu, včetně dnů bez tréninku.
-Sezóna, kategorie a datum omezují tréninky i zápasy. Typ tréninku, stav,
-lokalita vybraná podle jejího ID a volba spojování se vztahují pouze na tréninky; zápasy se
-nikdy neslučují s tréninky ani mezi sebou.
+Sezóna, kategorie, datum, den v týdnu a lokalita omezují tréninky i zápasy. Typ
+tréninku, stav tréninku a volba spojování se vztahují pouze na tréninky; zápasy
+se nikdy neslučují s tréninky ani mezi sebou. Typ zápasu a stav zápasu se
+vztahují pouze na zápasy a používají odlišné číselníky
+(`sport.MatchType`, `sport.MatchState`) než tréninkové filtry; zápas s
+nevyplněným `MatchStateId` se do vybraných stavů nepočítá.
+
+Pokud jsou vypnuté oba přepínače „Tréninky“ i „Zápasy“, rozvrh nenačítá ani
+nezobrazuje žádné položky (zůstávají jen prázdné, resp. skryté řádky podle
+volby „Zobrazovat prázdné řádky“).
 
 Pokud rozvrh obsahuje alespoň jeden blok, lze aktuálně vyfiltrovaná data
 exportovat do souboru `.xlsx`. Export obsahuje sloupce Kategorie, Datum, Čas od,
@@ -185,10 +284,73 @@ obsahující pouze zápasy exportní akci nenabízí.
 ### Časový interval zápasu
 
 `Match` ukládá `TimeFrom` a `TimeTo`; `DurationMinutes` je persisted computed
-sloupec. Import svazového CSV obsahuje pouze začátek, proto novému zápasu
-nastaví `TimeTo = TimeFrom`. Takový zápas má délku `0` a koncový čas lze
-následně ručně upřesnit. Vizualizace nulový interval vykreslí minimální
-čitelnou šířkou a dvě bodové události ve stejném čase rozdělí do různých lanes.
+sloupec. Import KIS nastaví `TimeTo` jako začátek utkání zvýšený o
+`SeasonCategory.MatchDurationMinutes`. `WarmupDurationMinutes` je samostatná
+administrativní konfigurace rozbruslení před začátkem utkání; nemění
+`Match.TimeFrom` ani `Match.TimeTo`.
+
+### Import zápasů z KIS
+
+Samostatná stránka `/sport/Training/Import/Matches` nabízí importní formulář,
+který vyžaduje sezónu a export `games.xlsx` do 10 MiB. Po importu zobrazí
+počty vložených, již existujících a přeskočených zápasů a nejvýše 20 varování
+s číslem řádku a důvodem. Neplatný soubor se zobrazí jako validační chyba.
+Rozvrh na stránku odkazuje tlačítkem „Import zápasů“ a návrat na rozvrh
+zajišťuje tlačítko na importní stránce; breadcrumb se nezobrazuje.
+
+Konzolová aplikace importuje export `games.xlsx` příkazem:
+
+```powershell
+dotnet run --project src\SportSys.ConsoleApp -- import-kis <cesta-k-xlsx> <id-sezony>
+```
+
+Soubor musí obsahovat list `Export` se sloupci `Datum`, `Čas`, `Soupiska`,
+`Domácí`, `Hosté`, `Místo` a `Typ`. `Soupiska` se jednoznačně páruje s
+`SeasonCategory.Name` vybrané sezony, týmy s `Team.Name` a místo s
+`Location.Name`. Typy `Ligový zápas`, `Příprava` a `Turnaj` se mapují na
+pevný číselník `MatchType`.
+
+KIS neposkytuje externí identifikátor. Opakovaný import proto považuje zápas
+za existující pouze při shodě lokace, data, začátku, kategorie, domácího a
+hostujícího týmu. Neznámé, nejednoznačné či chybějící hodnoty nezakládají
+číselníky; příslušný řádek se přeskočí a konzole vypíše číslo řádku s důvodem.
+
+### Import tréninků z KIS
+
+Samostatná stránka `/sport/Training/Import/Trainings` umožňuje nahrát XLSX
+export KIS. Formulář vyžaduje aktivní sezónu, fázi pro nově vytvořené tréninky
+a soubor do 10 MiB. Soubor musí obsahovat list `Export` se sloupci `Datum`,
+`Čas od`, `Čas do`, `Soupiska`, `Název`, `Místo`, `Typ` a `Poznámka trenéra`.
+Opakovaná hlavička v datech se ignoruje. Rozvrh na stránku odkazuje tlačítkem
+„Import tréninků“ a návrat na rozvrh zajišťuje tlačítko na importní stránce;
+breadcrumb se nezobrazuje.
+
+`Soupiska` se jednoznačně páruje s aktivní `SeasonCategory.Name` vybrané
+sezóny a `Místo` s `Location.Name`; lokalita se nevolí ve formuláři. Typ `Led`
+se mapuje na `Ice` a `Suchá příprava` na `Dry`. Ostatní typy, včetně
+`Schůzka s rodiči`, se nezakládají a řádek se uvede ve varování importu.
+Sloupce `Název` a `Poznámka trenéra` se neukládají, protože pro ně model
+tréninku nemá samostatné atributy.
+
+Import páruje trénink podle data, kategorie, lokality a typu. Při shodě
+obou časů nastaví stav `ConfirmedKis`. Má-li jediný kandidát jiný interval,
+nastaví časy z KIS a stav `TimeChanged`. Pokud kandidát neexistuje, vytvoří
+trénink bez vazby na plán se stavem `KisOnly` a zvolenou fází. Více kandidátů,
+neplatné intervaly a neznámé nebo nejednoznačné reference se přeskočí
+s číslem řádku a důvodem. Po změně času je opakovaný import přesnou shodou,
+
+### Import docházky trenérů
+
+HR stránka `/hr/Attendance/Index` importuje řádky XLSX na existující sportovní
+události. Trénink se páruje přes sezonu, kategorii, datum a přesný časový
+interval; zrušené, přesunuté a poruchou arény dotčené tréninky nejsou
+kandidáty. Zápas se páruje přes sezonu, kategorii, datum a názvy domácího a
+hostujícího týmu. Čas zápasu slouží jen k rozlišení více kandidátů, protože
+export docházky může obsahovat čas srazu.
+
+Import události nezakládá ani nemění. Každý řádek musí být jednoznačný a celý
+soubor se zapisuje atomicky společně s archivem v `hr.CoachAttendance`. Po změně času je opakovaný import přesnou shodou,
+proto nevytváří duplicitní tréninky.
 
 ### Editace tréninku a tréninkového plánu
 
@@ -197,12 +359,13 @@ panelu otevře `/sport/Training/Schedule/Edit?id={id}`. Kliknutím na blok
 obecného plánu v `/sport/Training/Plan` se obdobně otevře
 `/sport/Training/Plan/Edit?id={id}`.
 
-Formulář umožňuje měnit pouze datum, čas od, čas do, lokalitu a poznámku.
+Základní část formuláře umožňuje měnit datum, čas od, čas do, lokalitu a
+poznámku.
 Lokalita je povinný výběr ze společného číselníku; nově zvolená neaktivní
 lokalita nebo neexistující ID jsou odmítnuty i Contract službou. Aktuálně
 přiřazená neaktivní lokalita zůstává při editaci dostupná.
-Kategorie a typ tréninku jsou pouze informativní; fáze, stav, trenéři, vazba na
-plán a členství ve skupině se nemění.
+Kategorie a typ tréninku jsou pouze informativní; fáze, stav, vazba na plán a
+členství ve skupině se nemění.
 
 U spojených tréninků stránka zobrazí tabulku všech členů. Pokud mají všichni
 členové shodné editovatelné hodnoty, uloží se změny atomicky celé skupině.
@@ -210,31 +373,89 @@ Pokud se alespoň jedna hodnota liší, stránka rozdíly zobrazí a editaci zab
 v UI i v Contract službě. `DurationMinutes` se při editaci nenastavuje v C#;
 zůstává databázovým persisted computed sloupcem.
 
+Sekce **Trenéři** na stránce editace zobrazuje přiřazení v tabulce Trenér,
+Kategorie, Docházka a Poznámka. Docházka používá stávající stavy
+`ParticipationType`, poznámka má limit 50 znaků. Lze přidat trenéra k vybrané
+kategorii; stav nového přiřazení je `Absent` („Neúčast“). U existujícího řádku
+jsou trenér a kategorie pouze informativní a přiřazení nelze odebrat. Jeden
+trenér může být v rámci spojeného tréninku přiřazen pouze k jedné kategorii.
+Změna stavu aktualizuje aktuální evidovanou účast, ale neukládá auditní historii
+předchozích stavů. Přiřazení i editovatelná data tréninku se ověřují a ukládají
+v rámci jedné transakce; souběžná změna se odmítne jako konflikt.
+
 Editace tréninkového plánu používá stejný technický princip, ale mění pouze
-platnost od a do, den týdne, čas od a do a lokalitu. Kategorie a typ jsou
-informativní; fáze, trenéři a členství v `TrainingPlanGroup` se nemění.
-U spojených plánů se kontroluje shoda všech editovatelných hodnot a
+platnost od a do, den týdne, čas od a do, lokalitu a přiřazené trenéry.
+Kategorie a typ jsou informativní; fáze a členství v `TrainingPlanGroup` se
+nemění. U spojených plánů se kontroluje shoda všech editovatelných hodnot a
 konzistentní skupina se ukládá atomicky. Hodnota `DayName` zůstává přesným
 anglickým názvem dne `Monday` až `Sunday`.
 
+Pole **Trenéři** je multivýběr založený na stejné komponentě
+(`data-multiselect`) jako filtry stránky Plan; umožňuje vybrat libovolný
+počet trenérů včetně žádného. U nespojeného plánu je pole jedno a váže se na
+`TrainingPlan.Id` editovaného plánu. U spojeného plánu (skupina s více
+tréninky, např. `U12 + U14`) stránka místo jednoho sdíleného pole zobrazuje
+tabulku Kategorie + Trenér s vlastním multivýběrem pro každý člen skupiny —
+protože editace celé skupiny má jediný vstupní bod (`EditItemId =
+block.MinimumItemId`), jinak by trenéři ostatních členů nebyli editovatelní.
+
+> **Dočasný stav (HACK):** Validace, že jeden trenér smí být v rámci skupiny
+> přiřazen nejvýše k jednomu tréninku, je v
+> `TrainingPlanService.UpdateAsync` dočasně vypnutá (zakomentovaná, označená
+> komentářem `HACK`), takže stejný trenér může být nyní přiřazen k více
+> spojeným plánům současně. `TrainingPlanUpdateResult.DuplicateCoachAssignment`
+> i pomocná metoda `HasDuplicateCoachAcrossPlans` v kódu zůstávají
+> zachované pro případné obnovení validace. Jde o přechodné řešení do
+> finálního rozhodnutí; tento odstavec je potřeba opravit zpět (nebo kód
+> trvale odstranit), jakmile padne finální verdikt.
+
+Při uložení se vybraní trenéři (za každý `TrainingPlan.Id` ve skupině
+samostatně) sesynchronizují s `sport.CoachTrainingPlan`: nově vybraní se
+přidají, odebraní se smažou a u ponechaných se interval platnosti
+(`ValidFrom`/`ValidTo`) nastaví na aktuální `From`/`To` plánu, pokud se liší.
+Neplatná nebo neexistující ID trenérů i cizí/neexistující ID tréninku
+z requestu se tiše ignorují. Verze pro optimistickou konkurenci
+(`TrainingPlan.OriginalVersion`) zahrnuje přiřazené trenéry všech členů
+skupiny, takže souběžná změna trenéra u jiného člena skupiny je detekována
+jako konflikt.
+
 ### Filtry Plan
+
+Celý filtr je vizuálně obalen jedním panelem „Tréninky“ (ikona
+`fa-person-skating`, levý barevný akcent `--color-brand-primary`), shodně se
+stejnojmenným panelem na stránce Schedule — stránka Plan řeší jen tréninky,
+takže není potřeba dělit filtry na společné/specifické jako na Schedule.
+Vnořené Kategorie používají stejnou třídu `schedule-filter-categories--nested`
+jako na Schedule. Tlačítko „Zobrazit plán“ zůstává beze změny; pod panelem je
+akční lišta s odkazem „Vymazat filtry“ (GET navigace na stránku bez
+parametrů, obnoví výchozí hodnoty všech filtrů, stejné provedení jako na
+stránce Schedule).
 
 - aktivní sezóna,
 - jedna nebo více aktivních kategorií,
 - nula, jeden nebo více typů tréninku; prázdný výběr znamená všechny typy,
 - nula, jedna nebo více lokalit; prázdný výběr znamená všechny lokality,
-- jedna fáze tréninku,
+- nula, jeden nebo více trenérů; prázdný výběr znamená všechny plány,
+  neprázdný výběr vrací plán s alespoň jedním vybraným trenérem, jehož
+  přiřazení se překrývá s platností plánu,
+- nula nebo jedna fáze tréninku; prázdný výběr znamená všechny fáze,
 - nepovinné datum platnosti; zobrazí plány, pro které platí
   `From <= datum <= To`,
+- nula, jeden nebo více dnů v týdnu (checkbox skupina za polem „Datum
+  platnosti“); prázdný výběr znamená všechny dny. Na rozdíl od ostatních
+  filtrů zde vybrané dny přímo určují, které řádky (Pondělí–Neděle) se vůbec
+  vykreslí — pro nevybrané dny se nezobrazí ani prázdný řádek, bez ohledu na
+  volbu „Zobrazovat prázdné řádky“,
 - volitelné spojování časově překrývajících se nebo navazujících plánů.
 
-Plan vždy vykreslí pondělí až neděli včetně prázdných dnů. Při nevyplněném
-datu zobrazuje všechny odpovídající záznamy bez omezení podle `From–To`.
-Při vyplněném datu se hranice platnosti vyhodnocují inkluzivně. Překrývající
-se záznamy a plány s různými obdobími platnosti jsou rozděleny do samostatných
-lanes, pokud není zapnuté spojování tréninků. Při zapnutém spojování se plány
-ve stejném dni týdne seskupují pouze podle času; jejich období platnosti není
-další podmínkou spojení. Platnost je uvedena v tooltipu.
+Plan bez filtru „Den“ vykreslí pondělí až neděli včetně prázdných dnů. Při
+nevyplněném datu zobrazuje všechny odpovídající záznamy bez omezení podle
+`From–To`. Při vyplněném datu se hranice platnosti vyhodnocují inkluzivně.
+Překrývající se záznamy a plány s různými obdobími platnosti jsou rozděleny
+do samostatných lanes, pokud není zapnuté spojování tréninků. Při zapnutém
+spojování se plány ve stejném dni týdne seskupují pouze podle času; jejich
+období platnosti není další podmínkou spojení. Platnost je uvedena v
+tooltipu.
 
 `TrainingPlan.DayName` musí obsahovat přesnou anglickou hodnotu `Monday` až
 `Sunday`. Neplatná hodnota vyvolá explicitní chybu a není tiše přeskočena.
@@ -249,8 +470,8 @@ další podmínkou spojení. Platnost je uvedena v tooltipu.
 | Kategorie sezón | `sport.SeasonCategory` | `Areas/sport/Pages/SeasonCategory/` |
 
 Enumové lookup tabulky `TrainingType`, `TrainingState`, `TrainingPhase`,
-`ParticipationType` a `MatchType` se přes administrační UI nespravují. Jejich
-identifikátory jsou svázané s C# enumy a seed konfigurací.
+`ParticipationType`, `MatchType` a `MatchState` se přes administrační UI
+nespravují. Jejich identifikátory jsou svázané s C# enumy a seed konfigurací.
 
 ## Administrační vzor
 
@@ -298,7 +519,7 @@ Administrace spravuje `Name`, `From`, `To` a `IsActive`. Platí invariant
 
 ### SeasonCategory
 
-Entita má složený primární klíč `SeasonId + Name`. Při vytvoření jsou obě části
+Entita má složený primární klíč `SeasonId + Code` (`Code` je `varchar(10)`). Při vytvoření jsou obě části
 klíče povinné; při editaci jsou neměnné. Formulář dále spravuje `Order`,
 `CompetitionCode`, `CompetitionTeamName`, `BirthYears` a `IsActive`.
 
@@ -346,6 +567,7 @@ vazby zápasů i domácích lokalit týmů.
 | Editace tréninku | `src/SportSys.Contract/Services/TrainingService.cs` |
 | Editace tréninkového plánu | `src/SportSys.Contract/Services/TrainingPlanService.cs` |
 | Požadavky | `src/SportSys.Contract/Services/TrainingRequirementService.cs` |
+| Požadavky na zápasy | `src/SportSys.Contract/Services/MatchRequirementService.cs` |
 | ViewComponent | `src/SportSys.Razor/ViewComponents/TrainingScheduleViewComponent.cs` |
 | Prezentační model | `src/SportSys.Razor/Models/TrainingSchedule/` |
 | Razor Area | `src/SportSys.Razor/Areas/sport/Pages/` |

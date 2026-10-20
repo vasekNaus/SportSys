@@ -62,6 +62,10 @@ public class CoachAttendanceFilter : IValidatableObject
 
 public class CoachAttendanceUploadDto
 {
+    [Range(1, int.MaxValue, ErrorMessage = "Sezona je povinná.")]
+    [Display(Name = "Sezona")]
+    public int SeasonId { get; set; }
+
     [Range(1, int.MaxValue, ErrorMessage = "Trenér je povinný.")]
     [Display(Name = "Trenér")]
     public int CoachId { get; set; }

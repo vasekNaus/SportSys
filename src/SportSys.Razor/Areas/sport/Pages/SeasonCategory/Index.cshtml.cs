@@ -32,11 +32,11 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostSetActiveAsync(
         int seasonId,
-        string name,
+        string code,
         bool isActive,
         CancellationToken ct)
     {
-        await _service.SetActiveAsync(seasonId, name, isActive, ct);
+        await _service.SetActiveAsync(seasonId, code, isActive, ct);
         StatusMessage = isActive
             ? "Kategorie sezóny byla aktivována."
             : "Kategorie sezóny byla zneaktivněna.";

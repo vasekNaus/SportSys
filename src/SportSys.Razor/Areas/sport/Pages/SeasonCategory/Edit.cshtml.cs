@@ -32,20 +32,20 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(
         int? seasonId,
-        string? name,
+        string? code,
         CancellationToken ct)
     {
-        if (seasonId is null && name is null)
+        if (seasonId is null && code is null)
         {
             Creating = true;
             await LoadSeasonsAsync(ct);
             return Page();
         }
 
-        if (seasonId is null || string.IsNullOrWhiteSpace(name))
+        if (seasonId is null || string.IsNullOrWhiteSpace(code))
             return BadRequest();
 
-        var dto = await _service.GetByIdAsync(seasonId.Value, name, ct);
+        var dto = await _service.GetByIdAsync(seasonId.Value, code, ct);
         if (dto is null)
             return NotFound();
 
@@ -78,7 +78,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostSetActiveAsync(bool isActive, CancellationToken ct)
     {
-        await _service.SetActiveAsync(Input.SeasonId, Input.Name!, isActive, ct);
+        await _service.SetActiveAsync(Input.SeasonId, Input.Code!, isActive, ct);
         StatusMessage = isActive
             ? "Kategorie sezóny byla aktivována."
             : "Kategorie sezóny byla zneaktivněna.";

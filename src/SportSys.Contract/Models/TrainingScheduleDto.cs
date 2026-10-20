@@ -9,8 +9,23 @@ public class SeasonDto
 public class SeasonCategoryDto
 {
     public int SeasonId { get; set; }
-    public string Name { get; set; } = "";
+    public string Code { get; set; } = "";
     public int Order { get; set; }
+}
+
+public sealed class SimpleCoachDto
+{
+    public required string FullName { get; init; }
+    public required string LastName { get; init; }
+}
+
+public sealed class CoachParticipationDto
+{
+    public int CoachId { get; init; }
+    public required string FullName { get; init; }
+    public required string LastName { get; init; }
+    public int ParticipationTypeId { get; init; }
+    public required string ParticipationTypeName { get; init; }
 }
 
 public interface ITrainingScheduleItem
@@ -22,11 +37,12 @@ public interface ITrainingScheduleItem
     Guid? GroupId { get; }
     Guid? VisualizationGroupId { get; set; }
     int SeasonCategoryOrder { get; }
-    string SeasonCategoryName { get; }
+    string SeasonCategoryCode { get; }
     string LocationName { get; }
     string TrainingTypeName { get; }
+    bool IsDryTraining { get; }
     string TrainingPhaseName { get; }
-    IReadOnlyList<string> CoachFullNames { get; }
+    IReadOnlyList<SimpleCoachDto> Coaches { get; }
     string Note { get; }
     int? TrainingStateId { get; }
     string? TrainingStateName { get; }
@@ -38,18 +54,20 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public DateOnly From { get; set; }
     public DateOnly To { get; set; }
     public string DayName { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
     public TimeOnly TimeFrom { get; set; }
     public TimeOnly TimeTo { get; set; }
     public int? DurationMinutes { get; set; }
     public Guid? GroupId { get; set; }
     public Guid? VisualizationGroupId { get; set; }
     public int SeasonCategoryOrder { get; set; }
-    public string SeasonCategoryName { get; set; } = string.Empty;
-    public string Location { get; set; } = string.Empty;
-    public string LocationName => Location;
+    public string SeasonCategoryCode { get; set; } = string.Empty;
+    public int LocationId { get; set; }
+    public string LocationName { get; set; } = string.Empty;
     public string TrainingTypeName { get; set; } = string.Empty;
+    public bool IsDryTraining { get; set; }
     public string TrainingPhaseName { get; set; } = string.Empty;
-    public IReadOnlyList<string> CoachFullNames { get; set; } = [];
+    public IReadOnlyList<SimpleCoachDto> Coaches { get; set; } = [];
     public string Note { get; set; } = string.Empty;
     public int? TrainingStateId { get; set; }
     public string? TrainingStateName { get; set; }
@@ -78,8 +96,10 @@ public class TrainingScheduleItemDto : SportEventDto, ITrainingScheduleItem
     public int LocationId { get; set; }
     public string LocationName { get; set; } = string.Empty;
     public string TrainingTypeName { get; set; } = string.Empty;
+    public bool IsDryTraining { get; set; }
     public string TrainingPhaseName { get; set; } = string.Empty;
-    public IReadOnlyList<string> CoachFullNames { get; set; } = [];
+    public IReadOnlyList<SimpleCoachDto> Coaches { get; set; } = [];
+    public IReadOnlyList<CoachParticipationDto> CoachParticipations { get; set; } = [];
     public int? TrainingStateId { get; set; }
     public string? TrainingStateName { get; set; }
 }

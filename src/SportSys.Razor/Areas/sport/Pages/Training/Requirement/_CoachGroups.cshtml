@@ -1,0 +1,21 @@
+@model IReadOnlyList<SportSys.Contract.Models.RequirementCoachListItem>
+@{
+    var groups = SportSys.Razor.Models.RequirementCoachGroups.Group(Model);
+}
+
+@if (groups.Count == 0)
+{
+    <text>-</text>
+}
+else
+{
+    <div class="coach-groups">
+        @foreach (var group in groups)
+        {
+            <div class="coach-group">
+                <strong class="coach-group-role">@group.RoleName:</strong>
+                <span class="coach-group-names">@string.Join(", ", group.LastNames)</span>
+            </div>
+        }
+    </div>
+}

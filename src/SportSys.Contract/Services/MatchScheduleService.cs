@@ -16,23 +16,41 @@ public sealed class MatchScheduleService
 
     public async Task<List<MatchScheduleItemDto>> GetMatchesAsync(
         int seasonId,
-        IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<string> categoryCodes,
         DateOnly dateFrom,
         DateOnly dateTo,
+        IReadOnlyCollection<int>? matchStateIds = null,
+        IReadOnlyCollection<int>? locationIds = null,
+        IReadOnlyCollection<int>? matchTypeIds = null,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
-        var matches = await _db.Matches
+        var query = _db.Matches
             .Where(match => match.SeasonId == seasonId
-                && categoryNames.Contains(match.SeasonCategoryName)
+                && categoryCodes.Contains(match.SeasonCategoryCode)
                 && match.Date >= dateFrom
-                && match.Date <= dateTo)
+                && match.Date <= dateTo);
+
+        query = query.FilterByCoachIds(coachIds);
+
+        if (matchStateIds is { Count: > 0 })
+            query = query.Where(match => match.MatchStateId.HasValue
+                && matchStateIds.Contains(match.MatchStateId.Value));
+
+        if (locationIds is { Count: > 0 })
+            query = query.Where(match => locationIds.Contains(match.LocationId));
+
+        if (matchTypeIds is { Count: > 0 })
+            query = query.Where(match => matchTypeIds.Contains(match.MatchTypeId));
+
+        var matches = await query
             .OrderBy(match => match.Date)
             .ThenBy(match => match.TimeFrom)
             .Select(match => new MatchProjection
             {
                 Id = match.Id,
                 SeasonId = match.SeasonId,
-                SeasonCategoryName = match.SeasonCategoryName,
+                SeasonCategoryCode = match.SeasonCategoryCode,
                 SeasonCategoryOrder = match.SeasonCategory.Order,
                 CompetitionTeamName = match.SeasonCategory.CompetitionTeamName,
                 Date = match.Date,
@@ -46,10 +64,76 @@ public sealed class MatchScheduleService
                 HomeTeamName = match.HomeTeam.Name,
                 AwayTeamName = match.AwayTeam.Name,
                 Result = match.Result,
+                MatchStateId = match.MatchStateId,
+                MatchStateName = match.MatchState == null ? null : match.MatchState.Name,
             })
             .ToListAsync(ct);
 
-        return matches.Select(CreateDto).ToList();
+        var matchDtos = matches.Select(CreateDto).ToList();
+        await AssignCoachParticipationsAsync(matchDtos, ct);
+        return matchDtos;
+    }
+
+    private async Task AssignCoachParticipationsAsync(
+        IReadOnlyList<MatchScheduleItemDto> matches,
+        CancellationToken ct)
+    {
+        if (matches.Count == 0)
+            return;
+
+        var matchIds = matches.Select(match => match.Id).ToList();
+        var participations = await _db.CoachMatches
+            .Where(assignment => matchIds.Contains(assignment.MatchId))
+            .Select(assignment => new
+            {
+                assignment.MatchId,
+                assignment.CoachId,
+                CoachFullName = assignment.Coach.DisplayName ?? string.Empty,
+                assignment.ParticipationTypeId,
+                ParticipationTypeName = assignment.ParticipationType.Name,
+            })
+            .ToListAsync(ct);
+
+        var participationsByMatchId = participations.ToLookup(item => item.MatchId);
+        foreach (var match in matches)
+        {
+            match.CoachParticipations = participationsByMatchId[match.Id]
+                .OrderBy(item => item.CoachFullName)
+                .ThenBy(item => item.ParticipationTypeId)
+                .Select(item => new CoachParticipationDto
+                {
+                    CoachId = item.CoachId,
+                    FullName = item.CoachFullName,
+                    LastName = ExtractLastName(item.CoachFullName),
+                    ParticipationTypeId = item.ParticipationTypeId,
+                    ParticipationTypeName = item.ParticipationTypeName,
+                })
+                .ToList();
+        }
+    }
+
+    public async Task<List<LookupSelectItem>> GetMatchStatesAsync(CancellationToken ct = default)
+    {
+        return await _db.MatchStates
+            .OrderBy(state => state.Id)
+            .Select(state => new LookupSelectItem
+            {
+                Id = state.Id,
+                Name = state.Name,
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<LookupSelectItem>> GetMatchTypesAsync(CancellationToken ct = default)
+    {
+        return await _db.MatchTypes
+            .OrderBy(type => type.Id)
+            .Select(type => new LookupSelectItem
+            {
+                Id = type.Id,
+                Name = type.Name,
+            })
+            .ToListAsync(ct);
     }
 
     internal static MatchScheduleItemDto CreateDto(MatchProjection match)
@@ -73,7 +157,7 @@ public sealed class MatchScheduleService
         {
             Id = match.Id,
             SeasonId = match.SeasonId,
-            SeasonCategoryName = match.SeasonCategoryName,
+            SeasonCategoryCode = match.SeasonCategoryCode,
             SeasonCategoryOrder = match.SeasonCategoryOrder,
             Date = match.Date,
             TimeFrom = match.TimeFrom,
@@ -91,6 +175,8 @@ public sealed class MatchScheduleService
             IsHome = homeIsOwnTeam,
             HomeGoals = match.Result?.HomeGoals,
             AwayGoals = match.Result?.AwayGoals,
+            MatchStateId = match.MatchStateId,
+            MatchStateName = match.MatchStateName,
         };
     }
 
@@ -116,11 +202,23 @@ public sealed class MatchScheduleService
                 StringComparison.OrdinalIgnoreCase);
     }
 
+    private static string ExtractLastName(string fullName)
+    {
+        var trimmed = fullName.Trim();
+        if (trimmed.Length == 0)
+            return string.Empty;
+
+        var lastSpaceIndex = trimmed.LastIndexOf(' ');
+        return lastSpaceIndex < 0
+            ? trimmed
+            : trimmed[(lastSpaceIndex + 1)..];
+    }
+
     internal sealed class MatchProjection
     {
         public int Id { get; init; }
         public int SeasonId { get; init; }
-        public required string SeasonCategoryName { get; init; }
+        public required string SeasonCategoryCode { get; init; }
         public int SeasonCategoryOrder { get; init; }
         public required string CompetitionTeamName { get; init; }
         public DateOnly Date { get; init; }
@@ -134,5 +232,7 @@ public sealed class MatchScheduleService
         public required string HomeTeamName { get; init; }
         public required string AwayTeamName { get; init; }
         public MatchResult? Result { get; init; }
+        public int? MatchStateId { get; init; }
+        public string? MatchStateName { get; init; }
     }
 }

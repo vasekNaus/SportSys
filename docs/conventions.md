@@ -70,7 +70,7 @@ Všude, kde atribut přijímá název C# symbolu, používat `nameof`.
 **Složený FK** — `nameof` vrací compile-time konstantu, konkatenace je platná:
 
 ```csharp
-[ForeignKey(nameof(Season_Id) + ", " + nameof(SeasonCategory_Name))]
+[ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryCode))]
 ```
 
 ---
@@ -107,7 +107,7 @@ EF Core bez explicitního názvu generuje náhodný hash (např. `DF__Location__
 
 ## Lookup (číselníkové) tabulky
 
-Lookup tabulky: `TrainingType`, `TrainingState`, `TrainingPhase`, `ParticipationType`, `MatchType`, `CoachRole`; z modulu Inventory: `TransactionType`. Vzor: `int Id` (PK) + `required string Name`.
+Lookup tabulky: `TrainingType`, `TrainingState`, `TrainingPhase`, `ParticipationType`, `MatchType`, `CoachRole`; z modulu Inventory: `TransactionType`. Vzor: `int Id` (PK) + `required string Name`. `CoachRole` navíc obsahuje `Code` (`char(1)`, unikátní, zkrácené označení role) a `Order` (pořadí role); role se v seznamech řadí podle `Order`.
 
 ### Enum pro každou lookup tabulku
 
@@ -175,7 +175,7 @@ Vzor sdílené sekvence (`SportEvent → Training / Match`, `InventoryItem → E
 - `UseTpcMappingStrategy()` v Fluent API
 - Apollo `IdConvention()` pojmenuje FK sloupce zděděné z bázové třídy automaticky — ❌ nepřidávat `HasColumnName` pro zděděné FK
 
-**Výjimka:** FK sdílené ve dvou navigacích TPC hierarchie (např. `SeasonId`, `SeasonCategoryName` v `SportEventConfiguration`) — zde `HasColumnName` explicitně nastavit.
+**Výjimka:** FK sdílené ve dvou navigacích TPC hierarchie (např. `SeasonId`, `SeasonCategoryCode` v `SportEventConfiguration`) — zde `HasColumnName` explicitně nastavit.
 
 ### TPT výjimka pro Identity
 
@@ -212,6 +212,10 @@ Frontendové konvence mají jediný zdroj pravdy v
 `docs/modules/frontend.md`. Zejména platí, že
 `src/SportSys.Razor/wwwroot/css/site.css` je generovaný výstup a ručně se
 neupravuje.
+
+Datumová a časová pole v Razor formulářích vykresluj přes EditorTemplates
+`Date` / `Time`; hodnoty mají český formát a parsuje je
+`CzechDateTimeModelBinder` stejně pro GET i POST.
 
 ---
 

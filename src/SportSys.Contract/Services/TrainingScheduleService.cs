@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Models;
+using SportSys.Contract.Models.hr;
 using SportSys.Database.Context;
+using SportSys.Database.Enums;
 using SportSys.Database.Models.sport;
 
 namespace SportSys.Contract.Services;
@@ -13,6 +15,9 @@ public class TrainingScheduleService
     {
         _db = db;
     }
+
+    public Task<List<CoachSelectItem>> GetCoachesAsync(CancellationToken ct = default)
+        => RequirementEditHelper.GetCoachesAsync(_db, ct);
 
     public async Task<List<SeasonDto>> GetSeasonsAsync(CancellationToken ct = default)
     {
@@ -31,7 +36,7 @@ public class TrainingScheduleService
             .Select(c => new SeasonCategoryDto
             {
                 SeasonId = c.SeasonId,
-                Name = c.Name,
+                Code = c.Code,
                 Order = c.Order,
             })
             .ToListAsync(ct);
@@ -88,32 +93,43 @@ public class TrainingScheduleService
             .ToListAsync(ct);
     }
 
-    public async Task<List<string>> GetTrainingPlanLocationsAsync(CancellationToken ct = default)
+    public async Task<List<LookupSelectItem>> GetTrainingPlanLocationsAsync(CancellationToken ct = default)
     {
         return await _db.TrainingPlans
-            .Where(p => p.Location != string.Empty)
-            .Select(p => p.Location)
+            .Select(p => p.LocationId)
             .Distinct()
-            .OrderBy(location => location)
+            .Join(
+                _db.SportLocations,
+                locationId => locationId,
+                location => location.Id,
+                (locationId, location) => new LookupSelectItem
+                {
+                    Id = location.Id,
+                    Name = location.Name,
+                })
+            .OrderBy(location => location.Name)
             .ToListAsync(ct);
     }
 
     public async Task<List<TrainingScheduleItemDto>> GetTrainingsAsync(
         int seasonId,
-        IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<string> categoryCodes,
         IReadOnlyCollection<int> trainingTypeIds,
         IReadOnlyCollection<int> trainingStateIds,
         IReadOnlyCollection<int> locationIds,
         DateOnly dateFrom,
         DateOnly dateTo,
         bool mergeOverlapping,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
         var query = _db.Training
             .Where(t => t.SeasonId == seasonId
-                && categoryNames.Contains(t.SeasonCategoryName)
+                && categoryCodes.Contains(t.SeasonCategoryCode)
                 && t.Date >= dateFrom
                 && t.Date <= dateTo);
+
+        query = query.FilterByCoachIds(coachIds);
 
         if (trainingTypeIds.Count > 0)
             query = query.Where(t => trainingTypeIds.Contains(t.TrainingTypeId));
@@ -139,21 +155,24 @@ public class TrainingScheduleService
                     ? null
                     : t.GroupMembership.GroupId,
                 SeasonCategoryOrder = t.SeasonCategory.Order,
-                SeasonCategoryName = t.SeasonCategoryName,
+                SeasonCategoryCode = t.SeasonCategoryCode,
                 LocationId = t.LocationId,
                 LocationName = t.Location.Name,
                 TrainingTypeName = t.TrainingType.Name,
+                IsDryTraining = t.TrainingTypeId == (int)ETrainingType.Dry,
                 TrainingPhaseName = t.TrainingPhase.Name,
                 TrainingStateId = t.TrainingStateId,
                 TrainingStateName = t.TrainingState.Name,
-                CoachFullNames = t.CoachTrainings
-                    .Select(c => c.Coach.DisplayName ?? string.Empty)
-                    .Distinct()
-                    .OrderBy(x => x)
-                    .ToList(),
                 Note = t.Note,
             })
             .ToListAsync(ct);
+
+        // Trenéři se načítají samostatným dotazem, protože EF Core
+        // neumí přeložit korelovaný poddotaz s Distinct/OrderBy uvnitř
+        // projekce, pokud stejná projekce obsahuje i podmíněnou (ternary)
+        // referenční navigaci (GroupMembership) — viz stejný vzor u
+        // AssignCoachesAsync pro tréninkové plány.
+        await AssignCoachesAsync(trainings, ct);
 
         ApplyVisualizationGrouping(trainings, mergeOverlapping);
 
@@ -162,24 +181,29 @@ public class TrainingScheduleService
 
     public async Task<List<TrainingPlanScheduleItemDto>> GetTrainingPlansAsync(
         int seasonId,
-        IReadOnlyCollection<string> categoryNames,
+        IReadOnlyCollection<string> categoryCodes,
         IReadOnlyCollection<int> trainingTypeIds,
-        IReadOnlyCollection<string> locations,
-        int trainingPhaseId,
+        IReadOnlyCollection<int> locationIds,
+        int? trainingPhaseId,
         DateOnly? validOn,
         bool mergeOverlapping,
+        IReadOnlyCollection<int>? coachIds = null,
         CancellationToken ct = default)
     {
         var query = _db.TrainingPlans
             .Where(p => p.SeasonId == seasonId
-                && categoryNames.Contains(p.SeasonCategoryName)
-                && p.TrainingPhaseId == trainingPhaseId);
+                && categoryCodes.Contains(p.SeasonCategoryCode));
+
+        query = query.FilterByCoachIds(coachIds);
+
+        if (trainingPhaseId.HasValue)
+            query = query.Where(p => p.TrainingPhaseId == trainingPhaseId.Value);
 
         if (trainingTypeIds.Count > 0)
             query = query.Where(p => trainingTypeIds.Contains(p.TrainingTypeId));
 
-        if (locations.Count > 0)
-            query = query.Where(p => locations.Contains(p.Location));
+        if (locationIds.Count > 0)
+            query = query.Where(p => locationIds.Contains(p.LocationId));
 
         query = ApplyValidityFilter(query, validOn);
 
@@ -192,6 +216,7 @@ public class TrainingScheduleService
                 From = p.From,
                 To = p.To,
                 DayName = p.DayName,
+                Title = p.Title,
                 TimeFrom = p.TimeFrom,
                 TimeTo = p.TimeTo,
                 DurationMinutes = p.DurationMinutes,
@@ -199,11 +224,13 @@ public class TrainingScheduleService
                     ? null
                     : p.GroupMembership.GroupId,
                 SeasonCategoryOrder = p.SeasonCategory.Order,
-                SeasonCategoryName = p.SeasonCategoryName,
-                Location = p.Location,
+                SeasonCategoryCode = p.SeasonCategoryCode,
+                LocationId = p.LocationId,
+                LocationName = p.Location.Name,
                 TrainingTypeName = p.TrainingType.Name,
+                IsDryTraining = p.TrainingTypeId == (int)ETrainingType.Dry,
                 TrainingPhaseName = p.TrainingPhase.Name,
-                CoachFullNames = new List<string>(),
+                Coaches = new List<SimpleCoachDto>(),
                 Note = string.Empty,
             })
             .ToListAsync(ct);
@@ -211,7 +238,7 @@ public class TrainingScheduleService
         // Přiřazení trenérů se řeší samostatným dotazem, protože EF Core
         // neumí přeložit korelovaný poddotaz filtrovaný na rozsah datumů
         // (ValidFrom/ValidTo), pokud je zároveň součástí kompozitního klíče.
-        await AssignCoachFullNamesAsync(plans, ct);
+        await AssignCoachesAsync(plans, ct);
 
         var orderedPlans = plans
             .OrderBy(p => p.DayOfWeek)
@@ -224,7 +251,58 @@ public class TrainingScheduleService
         return orderedPlans;
     }
 
-    private async Task AssignCoachFullNamesAsync(
+    private async Task AssignCoachesAsync(
+        IReadOnlyList<TrainingScheduleItemDto> trainings,
+        CancellationToken ct)
+    {
+        if (trainings.Count == 0)
+            return;
+
+        var trainingIds = trainings.Select(t => t.Id).ToList();
+
+        var assignments = await _db.CoachTrainings
+            .Where(c => trainingIds.Contains(c.TrainingId))
+            .Select(c => new
+            {
+                c.TrainingId,
+                c.CoachId,
+                CoachFullName = c.Coach.DisplayName ?? string.Empty,
+                c.ParticipationTypeId,
+                ParticipationTypeName = c.ParticipationType.Name,
+            })
+            .ToListAsync(ct);
+
+        var assignmentsByTrainingId = assignments.ToLookup(a => a.TrainingId);
+
+        foreach (var training in trainings)
+        {
+            var trainingAssignments = assignmentsByTrainingId[training.Id];
+            training.Coaches = trainingAssignments
+                .Select(a => a.CoachFullName)
+                .Distinct()
+                .OrderBy(fullName => fullName)
+                .Select(fullName => new SimpleCoachDto
+                {
+                    FullName = fullName,
+                    LastName = ExtractLastName(fullName),
+                })
+                .ToList();
+            training.CoachParticipations = trainingAssignments
+                .OrderBy(a => a.CoachFullName)
+                .ThenBy(a => a.ParticipationTypeId)
+                .Select(a => new CoachParticipationDto
+                {
+                    CoachId = a.CoachId,
+                    FullName = a.CoachFullName,
+                    LastName = ExtractLastName(a.CoachFullName),
+                    ParticipationTypeId = a.ParticipationTypeId,
+                    ParticipationTypeName = a.ParticipationTypeName,
+                })
+                .ToList();
+        }
+    }
+
+    private async Task AssignCoachesAsync(
         IReadOnlyList<TrainingPlanScheduleItemDto> plans,
         CancellationToken ct)
     {
@@ -249,13 +327,36 @@ public class TrainingScheduleService
 
         foreach (var plan in plans)
         {
-            plan.CoachFullNames = assignmentsByPlanId[plan.Id]
+            plan.Coaches = assignmentsByPlanId[plan.Id]
                 .Where(a => a.ValidFrom <= plan.To && a.ValidTo >= plan.From)
                 .Select(a => a.CoachFullName)
                 .Distinct()
                 .OrderBy(x => x)
+                .Select(fullName => new SimpleCoachDto
+                {
+                    FullName = fullName,
+                    LastName = ExtractLastName(fullName),
+                })
                 .ToList();
         }
+    }
+
+    /// <summary>
+    /// Odvodí příjmení z celého jména trenéra jako poslední mezerou oddělené
+    /// slovo. <see cref="SportSys.Database.Models.identity.User.DisplayName"/>
+    /// je jediný textový sloupec se jménem, databáze nemá samostatné sloupce
+    /// jméno/příjmení.
+    /// </summary>
+    private static string ExtractLastName(string fullName)
+    {
+        var trimmed = fullName.Trim();
+        if (trimmed.Length == 0)
+            return string.Empty;
+
+        var lastSpaceIndex = trimmed.LastIndexOf(' ');
+        return lastSpaceIndex < 0
+            ? trimmed
+            : trimmed[(lastSpaceIndex + 1)..];
     }
 
     internal static void ApplyVisualizationGrouping(
@@ -293,7 +394,7 @@ public class TrainingScheduleService
                 .OrderBy(item => item.TimeFrom)
                 .ThenBy(item => item.TimeTo)
                 .ThenBy(item => item.SeasonCategoryOrder)
-                .ThenBy(item => item.SeasonCategoryName, StringComparer.Ordinal)
+                .ThenBy(item => item.SeasonCategoryCode, StringComparer.Ordinal)
                 .ThenBy(item => item.Id)
                 .ToList();
 

@@ -6,5 +6,5 @@ public class TrainingScheduleRow
     public string? SecondaryLabel { get; init; }
     public required TrainingScheduleRowParity Parity { get; init; }
     public bool IsWeekend { get; init; }
-    public IReadOnlyList<ScheduleEventModel> Items { get; init; } = [];
+    public IReadOnlyList<EventModel> Items { get; init; } = [];
 }

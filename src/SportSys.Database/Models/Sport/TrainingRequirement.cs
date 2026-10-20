@@ -20,7 +20,7 @@ public partial class TrainingRequirement
 
     [StringLength(10)]
     [Unicode(false)]
-    public required string SeasonCategoryName { get; set; }
+    public required string SeasonCategoryCode { get; set; }
 
     public int TrainingTypeId { get; set; }
 
@@ -35,7 +35,7 @@ public partial class TrainingRequirement
 
     public virtual ICollection<CoachTrainingRequirement> CoachTrainingRequirements { get; set; } = new List<CoachTrainingRequirement>();
 
-    [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryName))]
+    [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryCode))]
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]
     public virtual SeasonCategory SeasonCategory { get; set; } = null!;
 

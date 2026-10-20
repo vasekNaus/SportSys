@@ -60,12 +60,24 @@ namespace SportSys.Database.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .IsUnicode(false)
+                        .HasColumnType("char(1)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex(new[] { "Code" }, "UX_CoachRole_Code")
+                        .IsUnique();
 
                     b.ToTable("CoachRole", "dbo");
 
@@ -73,32 +85,44 @@ namespace SportSys.Database.Migrations
                         new
                         {
                             Id = 1,
-                            Name = "Hlavní"
+                            Code = "H",
+                            Name = "Hlavní",
+                            Order = 1
                         },
                         new
                         {
                             Id = 2,
-                            Name = "Asistent"
+                            Code = "A",
+                            Name = "Asistent",
+                            Order = 2
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Obránci"
+                            Code = "O",
+                            Name = "Obránci",
+                            Order = 3
                         },
                         new
                         {
                             Id = 4,
-                            Name = "Gólmani"
+                            Code = "B",
+                            Name = "Gólmani",
+                            Order = 4
                         },
                         new
                         {
                             Id = 5,
-                            Name = "Fyzio"
+                            Code = "F",
+                            Name = "Fyzio",
+                            Order = 5
                         },
                         new
                         {
                             Id = 6,
-                            Name = "Kondiční"
+                            Code = "K",
+                            Name = "Kondiční",
+                            Order = 6
                         });
                 });
 
@@ -1088,6 +1112,74 @@ namespace SportSys.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SportSys.Database.Models.sport.CoachMatch", b =>
+                {
+                    b.Property<int>("CoachId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MatchId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ParticipationTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue("", "DF_CoachMatch_Note");
+
+                    b.HasKey("CoachId", "MatchId", "ParticipationTypeId");
+
+                    b.HasIndex(new[] { "MatchId" }, "IX_CoachMatch_Match");
+
+                    b.HasIndex(new[] { "ParticipationTypeId" }, "IX_CoachMatch_ParticipationType");
+
+                    b.ToTable("CoachMatch", "sport", t =>
+                        {
+                            t.Property("CoachId")
+                                .HasColumnName("Coach_Id");
+
+                            t.Property("MatchId")
+                                .HasColumnName("Match_Id");
+
+                            t.Property("ParticipationTypeId")
+                                .HasColumnName("ParticipationType_Id");
+                        });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.CoachMatchRequirement", b =>
+                {
+                    b.Property<int>("CoachId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MatchRequirementId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CoachRoleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CoachId", "MatchRequirementId", "CoachRoleId");
+
+                    b.HasIndex(new[] { "CoachRoleId" }, "IX_CoachMatchRequirement_CoachRole");
+
+                    b.HasIndex(new[] { "MatchRequirementId" }, "IX_CoachMatchRequirement_MatchRequirement");
+
+                    b.ToTable("CoachMatchRequirement", "sport", t =>
+                        {
+                            t.Property("CoachId")
+                                .HasColumnName("Coach_Id");
+
+                            t.Property("MatchRequirementId")
+                                .HasColumnName("MatchRequirement_Id");
+
+                            t.Property("CoachRoleId")
+                                .HasColumnName("CoachRole_Id");
+                        });
+                });
+
             modelBuilder.Entity("SportSys.Database.Models.sport.CoachTraining", b =>
                 {
                     b.Property<int>("CoachId")
@@ -1219,6 +1311,46 @@ namespace SportSys.Database.Migrations
                     b.ToTable("Location", "sport");
                 });
 
+            modelBuilder.Entity("SportSys.Database.Models.sport.MatchRequirement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("From")
+                        .HasColumnType("date");
+
+                    b.Property<int>("MatchCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SeasonCategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("To")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "SeasonId", "SeasonCategoryCode", "From", "To" }, "IX_MatchRequirement_SeasonCategory_Period");
+
+                    b.ToTable("MatchRequirement", "sport", t =>
+                        {
+                            t.Property("SeasonCategoryCode")
+                                .HasColumnName("SeasonCategory_Code");
+
+                            t.Property("SeasonId")
+                                .HasColumnName("SeasonCategory_Season_Id");
+                        });
+                });
+
             modelBuilder.Entity("SportSys.Database.Models.sport.Season", b =>
                 {
                     b.Property<int>("Id")
@@ -1253,7 +1385,7 @@ namespace SportSys.Database.Migrations
                     b.Property<int>("SeasonId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Code")
                         .HasMaxLength(10)
                         .IsUnicode(false)
                         .HasColumnType("varchar(10)");
@@ -1285,13 +1417,31 @@ namespace SportSys.Database.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true, "DF_SeasonCategory_IsActive");
 
+                    b.Property<int>("MatchDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("", "DF_SeasonCategory_Name");
+
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
-                    b.HasKey("SeasonId", "Name");
+                    b.Property<int>("WarmupDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.HasKey("SeasonId", "Code");
 
                     b.ToTable("SeasonCategory", "sport", t =>
                         {
+                            t.HasCheckConstraint("CK_SeasonCategory_MatchDurationMinutes", "[MatchDurationMinutes] > 0");
+
+                            t.HasCheckConstraint("CK_SeasonCategory_WarmupDurationMinutes", "[WarmupDurationMinutes] >= 0");
+
                             t.Property("SeasonId")
                                 .HasColumnName("Season_Id");
                         });
@@ -1316,12 +1466,12 @@ namespace SportSys.Database.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<string>("SeasonCategoryName")
+                    b.Property<string>("SeasonCategoryCode")
                         .IsRequired()
                         .HasMaxLength(10)
                         .IsUnicode(false)
                         .HasColumnType("varchar(10)")
-                        .HasColumnName("SeasonCategory_Name");
+                        .HasColumnName("SeasonCategory_Code");
 
                     b.Property<int>("SeasonId")
                         .HasColumnType("int")
@@ -1425,12 +1575,10 @@ namespace SportSys.Database.Migrations
                     b.Property<DateOnly>("From")
                         .HasColumnType("date");
 
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
 
-                    b.Property<string>("SeasonCategoryName")
+                    b.Property<string>("SeasonCategoryCode")
                         .IsRequired()
                         .HasMaxLength(10)
                         .IsUnicode(false)
@@ -1447,6 +1595,11 @@ namespace SportSys.Database.Migrations
                         .HasPrecision(0)
                         .HasColumnType("time(0)");
 
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateOnly>("To")
                         .HasColumnType("date");
 
@@ -1460,8 +1613,11 @@ namespace SportSys.Database.Migrations
 
                     b.ToTable("TrainingPlan", "sport", t =>
                         {
-                            t.Property("SeasonCategoryName")
-                                .HasColumnName("SeasonCategory_Name");
+                            t.Property("LocationId")
+                                .HasColumnName("Location_Id");
+
+                            t.Property("SeasonCategoryCode")
+                                .HasColumnName("SeasonCategory_Code");
 
                             t.Property("SeasonId")
                                 .HasColumnName("SeasonCategory_Season_Id");
@@ -1508,7 +1664,7 @@ namespace SportSys.Database.Migrations
                     b.Property<DateOnly>("From")
                         .HasColumnType("date");
 
-                    b.Property<string>("SeasonCategoryName")
+                    b.Property<string>("SeasonCategoryCode")
                         .IsRequired()
                         .HasMaxLength(10)
                         .IsUnicode(false)
@@ -1530,8 +1686,8 @@ namespace SportSys.Database.Migrations
 
                     b.ToTable("TrainingRequirement", "sport", t =>
                         {
-                            t.Property("SeasonCategoryName")
-                                .HasColumnName("SeasonCategory_Name");
+                            t.Property("SeasonCategoryCode")
+                                .HasColumnName("SeasonCategory_Code");
 
                             t.Property("SeasonId")
                                 .HasColumnName("SeasonCategory_Season_Id");
@@ -1541,6 +1697,41 @@ namespace SportSys.Database.Migrations
 
                             t.Property("TrainingTypeId")
                                 .HasColumnName("TrainingType_Id");
+                        });
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sportSchema.MatchState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MatchState", "sport");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Plán"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Potvrzený"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Zrušený"
                         });
                 });
 
@@ -1837,6 +2028,11 @@ namespace SportSys.Database.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(10)");
 
+                    b.Property<int?>("MatchStateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValueSql("(1)");
+
                     b.Property<int>("MatchTypeId")
                         .HasColumnType("int");
 
@@ -1853,8 +2049,8 @@ namespace SportSys.Database.Migrations
                             t.Property("LocationId")
                                 .HasColumnName("Location_Id");
 
-                            t.Property("SeasonCategoryName")
-                                .HasColumnName("SeasonCategory_Name");
+                            t.Property("SeasonCategoryCode")
+                                .HasColumnName("SeasonCategory_Code");
 
                             t.Property("SeasonId")
                                 .HasColumnName("SeasonCategory_Season_Id");
@@ -1864,6 +2060,9 @@ namespace SportSys.Database.Migrations
 
                             t.Property("HomeTeamId")
                                 .HasColumnName("HomeTeam_Id");
+
+                            t.Property("MatchStateId")
+                                .HasColumnName("MatchState_Id");
 
                             t.Property("MatchTypeId")
                                 .HasColumnName("MatchType_Id");
@@ -1900,8 +2099,8 @@ namespace SportSys.Database.Migrations
                             t.Property("LocationId")
                                 .HasColumnName("Location_Id");
 
-                            t.Property("SeasonCategoryName")
-                                .HasColumnName("SeasonCategory_Name");
+                            t.Property("SeasonCategoryCode")
+                                .HasColumnName("SeasonCategory_Code");
 
                             t.Property("SeasonId")
                                 .HasColumnName("SeasonCategory_Season_Id");
@@ -2158,6 +2357,55 @@ namespace SportSys.Database.Migrations
                     b.Navigation("Member");
                 });
 
+            modelBuilder.Entity("SportSys.Database.Models.sport.CoachMatch", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
+                        .WithMany("CoachMatches")
+                        .HasForeignKey("CoachId")
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sport.Match", "Match")
+                        .WithMany("CoachMatches")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sportSchema.ParticipationType", "ParticipationType")
+                        .WithMany("CoachMatches")
+                        .HasForeignKey("ParticipationTypeId")
+                        .IsRequired();
+
+                    b.Navigation("Coach");
+
+                    b.Navigation("Match");
+
+                    b.Navigation("ParticipationType");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.CoachMatchRequirement", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
+                        .WithMany("CoachMatchRequirements")
+                        .HasForeignKey("CoachId")
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.dboSchema.CoachRole", "CoachRole")
+                        .WithMany("CoachMatchRequirements")
+                        .HasForeignKey("CoachRoleId")
+                        .IsRequired();
+
+                    b.HasOne("SportSys.Database.Models.sport.MatchRequirement", "MatchRequirement")
+                        .WithMany("CoachMatchRequirements")
+                        .HasForeignKey("MatchRequirementId")
+                        .IsRequired();
+
+                    b.Navigation("Coach");
+
+                    b.Navigation("CoachRole");
+
+                    b.Navigation("MatchRequirement");
+                });
+
             modelBuilder.Entity("SportSys.Database.Models.sport.CoachTraining", b =>
                 {
                     b.HasOne("SportSys.Database.Models.hr.Coach", "Coach")
@@ -2224,6 +2472,16 @@ namespace SportSys.Database.Migrations
                     b.Navigation("TrainingRequirement");
                 });
 
+            modelBuilder.Entity("SportSys.Database.Models.sport.MatchRequirement", b =>
+                {
+                    b.HasOne("SportSys.Database.Models.sport.SeasonCategory", "SeasonCategory")
+                        .WithMany("MatchRequirements")
+                        .HasForeignKey("SeasonId", "SeasonCategoryCode")
+                        .IsRequired();
+
+                    b.Navigation("SeasonCategory");
+                });
+
             modelBuilder.Entity("SportSys.Database.Models.sport.SeasonCategory", b =>
                 {
                     b.HasOne("SportSys.Database.Models.sport.Season", "Season")
@@ -2256,6 +2514,11 @@ namespace SportSys.Database.Migrations
 
             modelBuilder.Entity("SportSys.Database.Models.sport.TrainingPlan", b =>
                 {
+                    b.HasOne("SportSys.Database.Models.sport.Location", "Location")
+                        .WithMany("TrainingPlans")
+                        .HasForeignKey("LocationId")
+                        .IsRequired();
+
                     b.HasOne("SportSys.Database.Models.sportSchema.TrainingPhase", "TrainingPhase")
                         .WithMany("TrainingPlans")
                         .HasForeignKey("TrainingPhaseId")
@@ -2268,8 +2531,10 @@ namespace SportSys.Database.Migrations
 
                     b.HasOne("SportSys.Database.Models.sport.SeasonCategory", "SeasonCategory")
                         .WithMany("TrainingPlans")
-                        .HasForeignKey("SeasonId", "SeasonCategoryName")
+                        .HasForeignKey("SeasonId", "SeasonCategoryCode")
                         .IsRequired();
+
+                    b.Navigation("Location");
 
                     b.Navigation("SeasonCategory");
 
@@ -2303,7 +2568,7 @@ namespace SportSys.Database.Migrations
 
                     b.HasOne("SportSys.Database.Models.sport.SeasonCategory", "SeasonCategory")
                         .WithMany("TrainingRequirements")
-                        .HasForeignKey("SeasonId", "SeasonCategoryName")
+                        .HasForeignKey("SeasonId", "SeasonCategoryCode")
                         .IsRequired();
 
                     b.Navigation("SeasonCategory");
@@ -2348,6 +2613,10 @@ namespace SportSys.Database.Migrations
                         .HasForeignKey("LocationId")
                         .IsRequired();
 
+                    b.HasOne("SportSys.Database.Models.sportSchema.MatchState", "MatchState")
+                        .WithMany("Matches")
+                        .HasForeignKey("MatchStateId");
+
                     b.HasOne("SportSys.Database.Models.sportSchema.MatchType", "MatchType")
                         .WithMany("Matches")
                         .HasForeignKey("MatchTypeId")
@@ -2360,7 +2629,7 @@ namespace SportSys.Database.Migrations
 
                     b.HasOne("SportSys.Database.Models.sport.SeasonCategory", "SeasonCategory")
                         .WithMany("Matches")
-                        .HasForeignKey("SeasonId", "SeasonCategoryName")
+                        .HasForeignKey("SeasonId", "SeasonCategoryCode")
                         .IsRequired();
 
                     b.Navigation("AwayTeam");
@@ -2368,6 +2637,8 @@ namespace SportSys.Database.Migrations
                     b.Navigation("HomeTeam");
 
                     b.Navigation("Location");
+
+                    b.Navigation("MatchState");
 
                     b.Navigation("MatchType");
 
@@ -2409,7 +2680,7 @@ namespace SportSys.Database.Migrations
 
                     b.HasOne("SportSys.Database.Models.sport.SeasonCategory", "SeasonCategory")
                         .WithMany("Training")
-                        .HasForeignKey("SeasonId", "SeasonCategoryName")
+                        .HasForeignKey("SeasonId", "SeasonCategoryCode")
                         .IsRequired();
 
                     b.Navigation("Location");
@@ -2429,6 +2700,8 @@ namespace SportSys.Database.Migrations
 
             modelBuilder.Entity("SportSys.Database.Models.dboSchema.CoachRole", b =>
                 {
+                    b.Navigation("CoachMatchRequirements");
+
                     b.Navigation("CoachTrainingRequirementCoachRoles");
                 });
 
@@ -2470,7 +2743,14 @@ namespace SportSys.Database.Migrations
 
                     b.Navigation("Matches");
 
+                    b.Navigation("TrainingPlans");
+
                     b.Navigation("Trainings");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.MatchRequirement", b =>
+                {
+                    b.Navigation("CoachMatchRequirements");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sport.Season", b =>
@@ -2486,6 +2766,8 @@ namespace SportSys.Database.Migrations
 
             modelBuilder.Entity("SportSys.Database.Models.sport.SeasonCategory", b =>
                 {
+                    b.Navigation("MatchRequirements");
+
                     b.Navigation("Matches");
 
                     b.Navigation("Training");
@@ -2516,6 +2798,11 @@ namespace SportSys.Database.Migrations
                     b.Navigation("CoachTrainingRequirements");
                 });
 
+            modelBuilder.Entity("SportSys.Database.Models.sportSchema.MatchState", b =>
+                {
+                    b.Navigation("Matches");
+                });
+
             modelBuilder.Entity("SportSys.Database.Models.sportSchema.MatchType", b =>
                 {
                     b.Navigation("Matches");
@@ -2523,6 +2810,8 @@ namespace SportSys.Database.Migrations
 
             modelBuilder.Entity("SportSys.Database.Models.sportSchema.ParticipationType", b =>
                 {
+                    b.Navigation("CoachMatches");
+
                     b.Navigation("CoachTrainings");
                 });
 
@@ -2553,6 +2842,10 @@ namespace SportSys.Database.Migrations
                 {
                     b.Navigation("Attendances");
 
+                    b.Navigation("CoachMatchRequirements");
+
+                    b.Navigation("CoachMatches");
+
                     b.Navigation("CoachTrainingPlans");
 
                     b.Navigation("CoachTrainingRequirementCoaches");
@@ -2564,6 +2857,11 @@ namespace SportSys.Database.Migrations
                     b.Navigation("Licenses");
 
                     b.Navigation("Settings");
+                });
+
+            modelBuilder.Entity("SportSys.Database.Models.sport.Match", b =>
+                {
+                    b.Navigation("CoachMatches");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.sport.Training", b =>

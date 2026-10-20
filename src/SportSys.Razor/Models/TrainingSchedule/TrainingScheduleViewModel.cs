@@ -21,11 +21,11 @@ public class TrainingScheduleViewModel : ITrainingScheduleViewModel
 
     public TrainingScheduleViewModel(
         IReadOnlyList<TrainingScheduleRow> rows,
-        IReadOnlyList<string> categoryNames,
+        IReadOnlyList<string> categoryCodes,
         bool allowEditing = true)
     {
         Rows = rows;
-        CategoryColors = CreateCategoryColors(categoryNames);
+        CategoryColors = CreateCategoryColors(categoryCodes);
         AllowEditing = allowEditing;
 
         var items = rows.SelectMany(r => r.Items).ToList();
@@ -57,12 +57,12 @@ public class TrainingScheduleViewModel : ITrainingScheduleViewModel
     public bool AllowEditing { get; }
 
     private static IReadOnlyDictionary<string, string> CreateCategoryColors(
-        IReadOnlyList<string> categoryNames)
+        IReadOnlyList<string> categoryCodes)
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
-        for (var i = 0; i < categoryNames.Count; i++)
+        for (var i = 0; i < categoryCodes.Count; i++)
             result.TryAdd(
-                categoryNames[i],
+                categoryCodes[i],
                 CategoryColorPalette[i % CategoryColorPalette.Length]);
 
         return result;

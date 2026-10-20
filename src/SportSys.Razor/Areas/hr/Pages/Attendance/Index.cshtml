@@ -12,7 +12,13 @@
 }
 
 <section class="attendance-upload">
-    <h2>Nahrát docházku</h2>
+    <h2>Importovat docházku</h2>
+
+    <p>
+        Import proběhne pouze tehdy, pokud lze všechny řádky jednoznačně spárovat
+        s existujícími tréninky nebo zápasy. Export neobsahuje identitu trenéra,
+        proto pečlivě zkontrolujte jeho výběr. Poznámka může mít nejvýše 50 znaků.
+    </p>
 
     <form method="post" enctype="multipart/form-data" asp-page-handler="Upload">
         <input type="hidden" asp-for="Filter.CoachId" />
@@ -24,6 +30,11 @@
         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
 
         <div class="filter-row">
+            <div class="field">
+                <label asp-for="Upload.SeasonId"></label>
+                <select asp-for="Upload.SeasonId" asp-items="Model.SeasonSelectList"></select>
+                <span asp-validation-for="Upload.SeasonId" class="field-validation-error"></span>
+            </div>
             <div class="field">
                 <label asp-for="Upload.CoachId"></label>
                 <select asp-for="Upload.CoachId" asp-items="Model.UploadCoachSelectList"></select>
@@ -49,7 +60,7 @@
             </div>
             <div class="filter-actions">
                 <button type="submit" class="button">
-                    <i class="fa-solid fa-upload fa-fw"></i> Nahrát
+                    <i class="fa-solid fa-file-import fa-fw"></i> Importovat
                 </button>
             </div>
         </div>

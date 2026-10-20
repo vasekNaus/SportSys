@@ -12,162 +12,196 @@
         1 => selectedTrainingTypeNames[0],
         _ => $"Vybráno: {selectedTrainingTypeNames.Count}",
     };
-    var locationSummary = Model.SelectedLocations.Count switch
+    var locationSummary = Model.SelectedLocationIds.Count switch
     {
         0 => "Všechny lokality",
-        1 => Model.SelectedLocations[0],
-        _ => $"Vybráno: {Model.SelectedLocations.Count}",
+        1 => Model.Locations.FirstOrDefault(location => location.Id == Model.SelectedLocationIds[0])?.Name ?? "Vybráno: 1",
+        _ => $"Vybráno: {Model.SelectedLocationIds.Count}",
     };
 }
 
 <form method="get" class="schedule-filter">
-    <div class="schedule-filter-row">
-        <div class="field">
-            <label for="SeasonId">Sezóna</label>
-            <select id="SeasonId"
-                    name="SeasonId"
-                    class="textbox"
-                    onchange="this.form.submit()">
-                <option value="">— vyberte sezónu —</option>
-                @foreach (var season in Model.Seasons)
-                {
-                    <option value="@season.Id" selected="@(Model.SeasonId == season.Id)">
-                        @season.Name
-                    </option>
-                }
-            </select>
-        </div>
+    <section class="schedule-filter-panel schedule-filter-panel--training">
+        <h2 class="schedule-filter-panel-title">
+            <i class="fa-solid fa-person-skating fa-fw"></i> Tréninky
+        </h2>
 
-        <div class="field">
-            <span class="schedule-filter-label" id="TrainingTypeLabel">Typ tréninku</span>
-            <details class="schedule-multiselect"
-                     data-multiselect
-                     data-empty-label="Všechny typy">
-                <summary aria-labelledby="TrainingTypeLabel">
-                    <span data-multiselect-summary>@trainingTypeSummary</span>
-                </summary>
-                <div class="schedule-multiselect-menu">
-                    <div class="schedule-multiselect-options">
-                        @foreach (var type in Model.TrainingTypes)
-                        {
-                            <label class="schedule-multiselect-option">
-                                <input type="checkbox"
-                                       name="SelectedTrainingTypeIds"
-                                       value="@type.Id"
-                                       checked="@Model.SelectedTrainingTypeIds.Contains(type.Id)" />
-                                <span data-multiselect-option-label>@type.Name</span>
-                            </label>
-                        }
+        <div class="schedule-filter-row">
+            <div class="field">
+                <label for="SeasonId">Sezóna</label>
+                <select id="SeasonId"
+                        name="SeasonId"
+                        class="textbox"
+                        onchange="this.form.submit()">
+                    <option value="">— vyberte sezónu —</option>
+                    @foreach (var season in Model.Seasons)
+                    {
+                        <option value="@season.Id" selected="@(Model.SeasonId == season.Id)">
+                            @season.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="field">
+                <span class="schedule-filter-label" id="TrainingTypeLabel">Typ tréninku</span>
+                <details class="schedule-multiselect"
+                         data-multiselect
+                         data-empty-label="Všechny typy">
+                    <summary aria-labelledby="TrainingTypeLabel">
+                        <span data-multiselect-summary>@trainingTypeSummary</span>
+                    </summary>
+                    <div class="schedule-multiselect-menu">
+                        <div class="schedule-multiselect-options">
+                            @foreach (var type in Model.TrainingTypes)
+                            {
+                                <label class="schedule-multiselect-option">
+                                    <input type="checkbox"
+                                           name="SelectedTrainingTypeIds"
+                                           value="@type.Id"
+                                           checked="@Model.SelectedTrainingTypeIds.Contains(type.Id)" />
+                                    <span data-multiselect-option-label>@type.Name</span>
+                                </label>
+                            }
+                        </div>
+                        <button type="button"
+                                class="schedule-multiselect-clear"
+                                data-multiselect-clear
+                                hidden>
+                            <i class="fa-solid fa-filter-circle-xmark fa-fw"></i>
+                            Vymazat výběr
+                        </button>
                     </div>
-                    <button type="button"
-                            class="schedule-multiselect-clear"
-                            data-multiselect-clear
-                            hidden>
-                        <i class="fa-solid fa-filter-circle-xmark fa-fw"></i>
-                        Vymazat výběr
-                    </button>
-                </div>
-            </details>
-        </div>
+                </details>
+            </div>
 
-        <div class="field">
-            <span class="schedule-filter-label" id="LocationLabel">Lokalita</span>
-            <details class="schedule-multiselect"
-                     data-multiselect
-                     data-empty-label="Všechny lokality">
-                <summary aria-labelledby="LocationLabel">
-                    <span data-multiselect-summary>@locationSummary</span>
-                </summary>
-                <div class="schedule-multiselect-menu">
-                    <div class="schedule-multiselect-options">
-                        @foreach (var location in Model.Locations)
-                        {
-                            <label class="schedule-multiselect-option">
-                                <input type="checkbox"
-                                       name="SelectedLocations"
-                                       value="@location"
-                                       checked="@Model.SelectedLocations.Contains(location)" />
-                                <span data-multiselect-option-label>@location</span>
-                            </label>
-                        }
+            <div class="field">
+                <span class="schedule-filter-label" id="LocationLabel">Lokalita</span>
+                <details class="schedule-multiselect"
+                         data-multiselect
+                         data-empty-label="Všechny lokality">
+                    <summary aria-labelledby="LocationLabel">
+                        <span data-multiselect-summary>@locationSummary</span>
+                    </summary>
+                    <div class="schedule-multiselect-menu">
+                        <div class="schedule-multiselect-options">
+                            @foreach (var location in Model.Locations)
+                            {
+                                <label class="schedule-multiselect-option">
+                                    <input type="checkbox"
+                                           name="SelectedLocationIds"
+                                           value="@location.Id"
+                                           checked="@Model.SelectedLocationIds.Contains(location.Id)" />
+                                    <span data-multiselect-option-label>@location.Name</span>
+                                </label>
+                            }
+                        </div>
+                        <button type="button"
+                                class="schedule-multiselect-clear"
+                                data-multiselect-clear
+                                hidden>
+                            <i class="fa-solid fa-filter-circle-xmark fa-fw"></i>
+                            Vymazat výběr
+                        </button>
                     </div>
-                    <button type="button"
-                            class="schedule-multiselect-clear"
-                            data-multiselect-clear
-                            hidden>
-                        <i class="fa-solid fa-filter-circle-xmark fa-fw"></i>
-                        Vymazat výběr
-                    </button>
-                </div>
-            </details>
+                </details>
+            </div>
+
+            <div class="field">
+                <label for="TrainingPhaseId">Fáze tréninku</label>
+                <select id="TrainingPhaseId" name="TrainingPhaseId" class="textbox">
+                    <option value="">— všechny fáze —</option>
+                    @foreach (var phase in Model.TrainingPhases)
+                    {
+                        <option value="@phase.Id" selected="@(Model.TrainingPhaseId == phase.Id)">
+                            @phase.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="ValidOn">Datum platnosti</label>
+                @Html.EditorFor(
+                    m => m.ValidOn,
+                    "Date",
+                    new { InputCssClass = "textbox", InputOnChange = "this.form.submit()" })
+                <span asp-validation-for="ValidOn" class="field-validation-error"></span>
+            </div>
+
+            <div class="field">
+                <label asp-for="SelectedCoachIds">Trenéři</label>
+                <search-multiselect asp-for="SelectedCoachIds"
+                                    asp-items="Model.CoachSelectList"
+                                    placeholder="Hledat trenéra" />
+            </div>
         </div>
 
-        <div class="field">
-            <label for="TrainingPhaseId">Fáze tréninku</label>
-            <select id="TrainingPhaseId" name="TrainingPhaseId" class="textbox">
-                <option value="">— vyberte fázi —</option>
-                @foreach (var phase in Model.TrainingPhases)
-                {
-                    <option value="@phase.Id" selected="@(Model.TrainingPhaseId == phase.Id)">
-                        @phase.Name
-                    </option>
-                }
-            </select>
-        </div>
-
-        <div class="field">
-            <label for="ValidOn">Datum platnosti</label>
-            <input type="date"
-                   id="ValidOn"
-                   name="ValidOn"
-                   class="textbox"
-                   value="@Model.ValidOn?.ToString("yyyy-MM-dd")"
-                   onchange="this.form.submit()" />
-        </div>
-    </div>
-
-    @if (Model.SeasonCategories.Count > 0)
-    {
-        <fieldset class="schedule-filter-categories">
-            <legend>Kategorie</legend>
+        <fieldset class="schedule-filter-categories schedule-filter-categories--nested">
+            <legend>Den</legend>
             <div class="schedule-filter-checkboxes">
-                @foreach (var category in Model.SeasonCategories)
+                @foreach (var (day, label) in Model.WeekDayOptions)
                 {
                     <label class="checkbox-label">
                         <input type="checkbox"
-                               name="SelectedCategories"
-                               value="@category.Name"
-                               checked="@Model.SelectedCategories.Contains(category.Name)" />
-                        @category.Name
+                               name="SelectedDaysOfWeek"
+                               value="@day"
+                               checked="@Model.SelectedDaysOfWeek.Contains(day)" />
+                        @label
                     </label>
                 }
             </div>
-            <div class="schedule-filter-options">
-                <label class="checkbox-label">
-                    <input asp-for="ShowEmptyRows" />
-                    Zobrazovat prázdné řádky
-                </label>
-                <label class="checkbox-label">
-                    <input asp-for="MergeTrainings"
-                           onchange="this.form.submit()" />
-                    Spojovat tréninky
-                </label>
-            </div>
         </fieldset>
-    }
-    else if (Model.SeasonId.HasValue)
-    {
-        <p class="text-muted">Pro zvolenou sezónu nejsou definovány žádné aktivní kategorie.</p>
-    }
 
-    @if (Model.SeasonId.HasValue && Model.SeasonCategories.Count > 0)
-    {
-        <div class="schedule-filter-actions">
-            <button type="submit" class="button">
-                <i class="fa-solid fa-calendar-week fa-fw"></i> Zobrazit plán
-            </button>
-        </div>
-    }
+        @if (Model.SeasonCategories.Count > 0)
+        {
+            <fieldset class="schedule-filter-categories schedule-filter-categories--nested">
+                <legend>Kategorie</legend>
+                <div class="schedule-filter-checkboxes">
+                    @foreach (var category in Model.SeasonCategories)
+                    {
+                        <label class="checkbox-label">
+                            <input type="checkbox"
+                                   name="SelectedCategoryCodes"
+                                   value="@category.Code"
+                                   checked="@Model.SelectedCategoryCodes.Contains(category.Code)" />
+                            @category.Code
+                        </label>
+                    }
+                </div>
+                <div class="schedule-filter-options">
+                    <label class="checkbox-label">
+                        <input asp-for="ShowEmptyRows" />
+                        Zobrazovat prázdné řádky
+                    </label>
+                    <label class="checkbox-label">
+                        <input asp-for="MergeTrainings"
+                               onchange="this.form.submit()" />
+                        Spojovat tréninky
+                    </label>
+                </div>
+            </fieldset>
+        }
+        else if (Model.SeasonId.HasValue)
+        {
+            <p class="text-muted">Pro zvolenou sezónu nejsou definovány žádné aktivní kategorie.</p>
+        }
+    </section>
+
+    <div class="schedule-filter-actions">
+        <a asp-page="./Index" class="button secondary">
+            <i class="fa-solid fa-filter-circle-xmark fa-fw"></i> Vymazat filtry
+        </a>
+
+        @if (Model.SeasonId.HasValue && Model.SeasonCategories.Count > 0)
+        {
+            <div class="schedule-filter-actions-primary">
+                <button type="submit" class="button">
+                    <i class="fa-solid fa-calendar-week fa-fw"></i> Zobrazit plán
+                </button>
+            </div>
+        }
+    </div>
 </form>
 
 @if (Model.ScheduleView is not null)
@@ -180,4 +214,9 @@
     @await Component.InvokeAsync(
         "TrainingSchedule",
         new { model = Model.ScheduleView })
+
+    @if (Model.PlanRows.Count > 0)
+    {
+        <partial name="_TrainingPlanTable" model="Model" />
+    }
 }

@@ -2,7 +2,7 @@
 @model EditModel
 @{
     ViewData["Title"] = "Upravit trénink";
-    var categories = string.Join(" + ", Model.Context.CategoryNames);
+    var categories = string.Join(" + ", Model.Context.CategoryCodes);
     var trainingTypes = string.Join(
         ", ",
         Model.Context.Members
@@ -36,7 +36,7 @@
         <div class="infobox">
             <i class="fa-solid fa-link fa-fw"></i>
             Změny budou uloženy pro všechny spojené tréninky:
-            @string.Join(", ", Model.Context.CategoryNames).
+            @string.Join(", ", Model.Context.CategoryCodes).
         </div>
     }
     else
@@ -65,7 +65,7 @@
                 @foreach (var member in Model.Context.Members)
                 {
                     <tr>
-                        <td>@member.SeasonCategoryName</td>
+                        <td>@member.SeasonCategoryCode</td>
                         <td>@member.TrainingTypeName</td>
                         <td>@member.Date.ToString("d")</td>
                         <td>@member.TimeFrom.ToString("H:mm")</td>
@@ -85,6 +85,90 @@
 {
     <form method="post">
         @Html.EditorFor(model => model.Input, new { LocationIdItems = Model.LocationIdItems })
+
+        <section aria-labelledby="coach-assignments-heading">
+            <h2 id="coach-assignments-heading">Trenéři</h2>
+            <div class="training-edit-members">
+                <table class="details">
+                    <thead>
+                        <tr>
+                            <th scope="col">Trenér</th>
+                            <th scope="col">Kategorie</th>
+                            <th scope="col">Docházka</th>
+                            <th scope="col">Poznámka</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coach-assignments">
+                        @for (var i = 0; i < Model.Input.CoachAssignments.Count; i++)
+                        {
+                            var assignment = Model.Input.CoachAssignments[i];
+                            var existingAssignment = assignment.ExistingCoachId.HasValue &&
+                                assignment.ExistingTrainingId.HasValue &&
+                                assignment.ExistingParticipationTypeId.HasValue
+                                ? Model.Context.CoachAssignments.FirstOrDefault(item =>
+                                    item.CoachId == assignment.ExistingCoachId.Value &&
+                                    item.TrainingId == assignment.ExistingTrainingId.Value &&
+                                    item.ParticipationTypeId == assignment.ExistingParticipationTypeId.Value)
+                                : null;
+                            <tr>
+                                <td>
+                                    @if (existingAssignment is not null)
+                                    {
+                                        <input type="hidden" asp-for="Input.CoachAssignments[i].ExistingCoachId" />
+                                        <input type="hidden" asp-for="Input.CoachAssignments[i].ExistingTrainingId" />
+                                        <input type="hidden" asp-for="Input.CoachAssignments[i].ExistingParticipationTypeId" />
+                                        @existingAssignment.CoachDisplayName
+                                    }
+                                    else
+                                    {
+                                        <select asp-for="Input.CoachAssignments[i].CoachId"
+                                                asp-items="Model.CoachItems"
+                                                aria-label="Trenér"
+                                                required></select>
+                                        <span asp-validation-for="Input.CoachAssignments[i].CoachId"
+                                              class="field-validation-error"></span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (existingAssignment is not null)
+                                    {
+                                        @existingAssignment.SeasonCategoryCode
+                                    }
+                                    else
+                                    {
+                                        <select asp-for="Input.CoachAssignments[i].TrainingId"
+                                                asp-items="Model.TrainingItems"
+                                                aria-label="Kategorie"
+                                                required></select>
+                                        <span asp-validation-for="Input.CoachAssignments[i].TrainingId"
+                                              class="field-validation-error"></span>
+                                    }
+                                </td>
+                                <td>
+                                    <select asp-for="Input.CoachAssignments[i].ParticipationTypeId"
+                                            asp-items="Model.ParticipationTypeItems"
+                                            aria-label="Docházka"
+                                            required></select>
+                                    <span asp-validation-for="Input.CoachAssignments[i].ParticipationTypeId"
+                                          class="field-validation-error"></span>
+                                </td>
+                                <td>
+                                    <input asp-for="Input.CoachAssignments[i].Note"
+                                           type="text"
+                                           maxlength="50"
+                                           aria-label="Poznámka" />
+                                    <span asp-validation-for="Input.CoachAssignments[i].Note"
+                                          class="field-validation-error"></span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="button secondary" id="add-coach-assignment">
+                <i class="fa-solid fa-plus fa-fw"></i> Přidat trenéra
+            </button>
+        </section>
 
         <footer>
             <button type="submit" class="button">
@@ -107,6 +191,61 @@ else
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <template id="coach-assignment-template">
+        <tr>
+            <td>
+                <select name="Input.CoachAssignments[__index__].CoachId"
+                        id="Input_CoachAssignments___index___CoachId"
+                        aria-label="Trenér"
+                        required>
+                    @foreach (var coach in Model.CoachItems)
+                    {
+                        <option value="@coach.Value">@coach.Text</option>
+                    }
+                </select>
+            </td>
+            <td>
+                <select name="Input.CoachAssignments[__index__].TrainingId"
+                        id="Input_CoachAssignments___index___TrainingId"
+                        aria-label="Kategorie"
+                        required>
+                    @foreach (var category in Model.TrainingItems)
+                    {
+                        <option value="@category.Value">@category.Text</option>
+                    }
+                </select>
+            </td>
+            <td>
+                <select name="Input.CoachAssignments[__index__].ParticipationTypeId"
+                        id="Input_CoachAssignments___index___ParticipationTypeId"
+                        aria-label="Docházka"
+                        required>
+                    @foreach (var participationType in Model.Context.ParticipationTypes)
+                    {
+                        if (participationType.IsDefault)
+                        {
+                            <option value="@participationType.Id" selected>
+                                @participationType.DisplayName
+                            </option>
+                        }
+                        else
+                        {
+                            <option value="@participationType.Id">
+                                @participationType.DisplayName
+                            </option>
+                        }
+                    }
+                </select>
+            </td>
+            <td>
+                <input type="text"
+                       name="Input.CoachAssignments[__index__].Note"
+                       id="Input_CoachAssignments___index___Note"
+                       maxlength="50"
+                       aria-label="Poznámka" />
+            </td>
+        </tr>
+    </template>
     <script>
         function closeTrainingEdit() {
             window.close();
@@ -116,5 +255,18 @@ else
                 }
             }, 100);
         }
+
+        document.getElementById('add-coach-assignment')
+            ?.addEventListener('click', function () {
+                const template = document.getElementById('coach-assignment-template');
+                const rows = document.getElementById('coach-assignments');
+                if (!template || !rows) {
+                    return;
+                }
+
+                const index = rows.querySelectorAll('tr').length;
+                const content = template.innerHTML.replaceAll('__index__', index);
+                rows.insertAdjacentHTML('beforeend', content);
+            });
     </script>
 }

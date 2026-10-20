@@ -20,13 +20,13 @@
         </div>
         <div class="field">
             <label asp-for="Filter.DateFrom"></label>
-            <input asp-for="Filter.DateFrom" type="date"
-                   value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" />
+            @Html.EditorFor(m => m.Filter.DateFrom, "Date")
+            <span asp-validation-for="Filter.DateFrom" class="field-validation-error"></span>
         </div>
         <div class="field">
             <label asp-for="Filter.DateTo"></label>
-            <input asp-for="Filter.DateTo" type="date"
-                   value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" />
+            @Html.EditorFor(m => m.Filter.DateTo, "Date")
+            <span asp-validation-for="Filter.DateTo" class="field-validation-error"></span>
         </div>
         <div class="field" style="align-self: flex-end">
             <label class="checkbox-label">

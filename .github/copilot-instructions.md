@@ -136,5 +136,5 @@ autorizaci.
 4. `.github/copilot-instructions.md` pro globální omezení.
 5. `.github/skills/` pro pracovní postupy.
 
-Soubory v `.github/tasks/` a `docs/research/` jsou historické plány a podklady;
+Soubory v `tasks/` a `docs/research/` jsou historické plány a podklady;
 nepřepisují aktuální implementaci ani ADR.

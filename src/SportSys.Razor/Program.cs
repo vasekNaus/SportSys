@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Serilog;
 using SportSys.Contract;
+using SportSys.Razor.ModelBinding;
 using SportSys.Razor.Services;
 using System.Globalization;
 
@@ -20,6 +22,8 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
 
 builder.Services.AddRazorPages()  //options => options.Conventions.AuthorizeAreaFolder("hr", "/Coach", "SystemAdmin")
+    .AddMvcOptions(options =>
+        options.ModelBinderProviders.Insert(0, new CzechDateTimeModelBinderProvider()))
     .AddMicrosoftIdentityUI();
 
 // Registrace SportSysDbContext, Identity, Claims transformation, Contract servisů a authorization policies

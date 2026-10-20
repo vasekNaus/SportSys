@@ -13,10 +13,10 @@ public abstract class SportEvent
     [Column("SeasonCategory_Season_Id")]
     public int SeasonId { get; set; }
 
-    [Column("SeasonCategory_Name")]
+    [Column("SeasonCategory_Code")]
     [StringLength(10)]
     [Unicode(false)]
-    public required string SeasonCategoryName { get; set; }
+    public required string SeasonCategoryCode { get; set; }
 
     public DateOnly Date { get; set; }
 
@@ -33,7 +33,7 @@ public abstract class SportEvent
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]
     public virtual Season Season { get; set; } = null!;
 
-    [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryName))]
+    [ForeignKey(nameof(SeasonId) + ", " + nameof(SeasonCategoryCode))]
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]
     public virtual SeasonCategory SeasonCategory { get; set; } = null!;
 

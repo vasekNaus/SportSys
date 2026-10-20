@@ -5,7 +5,7 @@
 // ================================================================
 
 $date-col-width:  5rem;
-$track-height:    5rem;
+$track-height:    6.25rem;
 $header-height:   1.75rem;
 
 // ── Filtr ────────────────────────────────────────────────────────
@@ -35,7 +35,8 @@ $header-height:   1.75rem;
     }
 
     select,
-    input[type="date"] {
+    input[data-date-input],
+    input[data-time-input] {
       font-family:      $FontFamily;
       font-size:        1rem;
       padding:          .45rem .75rem;
@@ -195,6 +196,65 @@ $header-height:   1.75rem;
   }
 }
 
+// Vnořený fieldset uvnitř .schedule-filter-panel — bez vlastního rámečku,
+// aby nevznikl efekt "rámeček v rámečku".
+.schedule-filter-categories--nested {
+  border:        none;
+  padding:       0;
+  margin-bottom: 0;
+}
+
+// ── Panely filtrů (Společné / Tréninky / Zápasy) ─────────────────
+
+.schedule-filter-panel {
+  border:            1px solid var(--color-border-default);
+  border-left:       4px solid var(--color-border-default);
+  border-radius:     4px;
+  padding:           1rem;
+  margin-bottom:     1rem;
+  background-color:  var(--color-surface-1);
+}
+
+.schedule-filter-panel--training {
+  border-left-color: var(--color-brand-primary);
+
+  .schedule-filter-panel-title i {
+    color: var(--color-brand-primary);
+  }
+}
+
+.schedule-filter-panel--match {
+  border-left-color: var(--color-brand-secondary);
+
+  .schedule-filter-panel-title i {
+    color: var(--color-brand-secondary);
+  }
+}
+
+.schedule-filter-panel-title {
+  margin:      0 0 .75rem;
+  font-size:   1rem;
+  font-weight: 700;
+  color:       var(--color-text-primary);
+
+  i {
+    margin-right: .5rem;
+  }
+}
+
+// Panely Tréninky/Zápasy vedle sebe; osamocený panel vyplní celou šířku
+.schedule-filter-specific {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       1rem;
+
+  > .schedule-filter-panel {
+    flex:          1 1 320px;
+    min-width:     280px;
+    margin-bottom: 0;
+  }
+}
+
 .schedule-filter-checkboxes {
   display:   flex;
   flex-wrap: wrap;
@@ -221,7 +281,18 @@ $header-height:   1.75rem;
 }
 
 .schedule-filter-actions {
-  margin-top: .5rem;
+  display:         flex;
+  flex-wrap:       wrap;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             .75rem;
+  margin-top:      .5rem;
+}
+
+.schedule-filter-actions-primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap:     .75rem;
 }
 
 // ── Legenda kategorií ────────────────────────────────────────────
@@ -336,9 +407,13 @@ $header-height:   1.75rem;
 }
 
 // Dráha (track) – časová osa
+// Bloky sdílejí jednu buňku mřížky, takže výška dráhy odpovídá nejvyššímu
+// bloku (minimálně $track-height) a dlouhý seznam trenérů dráhu natáhne.
 .schedule-track {
   flex:       1;
   position:   relative;
+  display:    grid;
+  grid-template-columns: minmax(0, 100%);
   min-height: $track-height;
   overflow:   hidden;
 
@@ -371,10 +446,13 @@ $header-height:   1.75rem;
 }
 
 // Blok tréninku
+// Vodorovnou polohu (left/width v %) nastavuje inline styl; svisle blok
+// vyplní buňku mřížky dráhy.
 .schedule-block {
-  position:      absolute;
-  top:           .3125rem;
-  bottom:        .3125rem;
+  position:      relative;
+  grid-area:     1 / 1;
+  margin:        .3125rem 0;
+  min-width:     0;
   border-radius: 3px;
   padding:       .125rem .375rem;
   color:         #fff;
@@ -428,6 +506,16 @@ $header-height:   1.75rem;
   text-shadow: none;
 }
 
+.schedule-block--dry {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, .22) 0,
+    rgba(255, 255, 255, .22) 3px,
+    transparent 3px,
+    transparent 9px
+  );
+}
+
 // ── Editace tréninku ────────────────────────────────────────────
 
 .training-edit-summary {
@@ -465,13 +553,43 @@ $header-height:   1.75rem;
   }
 }
 
-.schedule-block-time,
-.schedule-block-type,
-.schedule-block-coaches {
+.schedule-block-time {
+  font-weight:   700;
+  font-size:     .6rem;
+  line-height:   1.2;
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-block-coaches,
+.schedule-block-location {
   font-size:    .6875rem;
   line-height:  1.2;
   opacity:      .9;
   white-space:  nowrap;
   overflow:     hidden;
   text-overflow: ellipsis;
+}
+
+// Trenéři tréninku/plánu se zalamují na tolik řádků, kolik je potřeba;
+// výšku bloku určuje obsah
+.schedule-block-coaches--wrap {
+  white-space:   normal;
+  overflow:      visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+.schedule-block-coach-participation {
+  display:        inline-flex;
+  align-items:    baseline;
+  gap:            .125rem;
+  margin-right:   .25rem;
+  white-space:    nowrap;
+  text-shadow:    none;
+}
+
+.schedule-block-coach-icon {
+  flex-shrink: 0;
 }
