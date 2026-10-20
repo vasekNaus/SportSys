@@ -1,0 +1,30 @@
+@{
+    Layout = "/Pages/Shared/EditorTemplates/_Layout.cshtml";
+    var fullName = ViewData.TemplateInfo.GetFullHtmlFieldName(string.Empty);
+    if (ViewData.ModelState.TryGetValue(fullName, out var modelState) &&
+        modelState.Errors.Count == 0)
+    {
+        ViewData.ModelState.Remove(fullName);
+    }
+
+    string value = SportSys.Razor.Infrastructure.CzechNumberFormat.FormatDecimal(
+        ViewData.Model,
+        ViewData.ModelMetadata.EditFormatString);
+    var attributes = new Dictionary<string, object>
+    {
+        ["type"] = "text",
+        ["class"] = ViewData["InputCssClass"] as string ?? "short",
+        ["autocomplete"] = "off",
+        ["inputmode"] = "decimal",
+        ["data-decimal-input"] = string.Empty,
+        ["placeholder"] = ViewData.ModelMetadata.Placeholder ?? "0,00",
+    };
+    if (ViewData["InputAttributes"] is IDictionary<string, object> inputAttributes)
+    {
+        foreach (var attribute in inputAttributes)
+        {
+            attributes[attribute.Key] = attribute.Value;
+        }
+    }
+}
+@Html.TextBox(string.Empty, value, attributes)

@@ -87,7 +87,10 @@ public class TrainingPlanServiceTests
     {
         var groupId = Guid.NewGuid();
         var withoutCoach = new[] { CreateMember(1, "U12") };
-        var withCoach = new[] { CreateMember(1, "U12", coachIds: [5]) };
+        var withCoach = new[]
+        {
+            CreateMember(1, "U12", coachAssignments: [CreateAssignment(5, 1)]),
+        };
 
         var withoutCoachVersion = TrainingPlanService.CreateVersion(groupId, withoutCoach);
         var withCoachVersion = TrainingPlanService.CreateVersion(groupId, withCoach);
@@ -96,19 +99,21 @@ public class TrainingPlanServiceTests
     }
 
     [Fact]
-    public void CreateVersion_IsIndependentOfCoachIdOrderAndDuplicates()
+    public void CreateVersion_ChangesWhenCoachRoleChanges()
     {
         var groupId = Guid.NewGuid();
-        var ascendingMembers = new[] { CreateMember(1, "U12", coachIds: [1, 2]) };
-        var descendingMembers = new[] { CreateMember(1, "U12", coachIds: [2, 1]) };
-        var duplicateMembers = new[] { CreateMember(1, "U12", coachIds: [1, 2, 1]) };
+        var original = new[]
+        {
+            CreateMember(1, "U12", coachAssignments: [CreateAssignment(1, 1)]),
+        };
+        var changed = new[]
+        {
+            CreateMember(1, "U12", coachAssignments: [CreateAssignment(1, 2)]),
+        };
 
-        var ascending = TrainingPlanService.CreateVersion(groupId, ascendingMembers);
-        var descending = TrainingPlanService.CreateVersion(groupId, descendingMembers);
-        var withDuplicate = TrainingPlanService.CreateVersion(groupId, duplicateMembers);
-
-        Assert.Equal(ascending, descending);
-        Assert.Equal(ascending, withDuplicate);
+        Assert.NotEqual(
+            TrainingPlanService.CreateVersion(groupId, original),
+            TrainingPlanService.CreateVersion(groupId, changed));
     }
 
     [Fact]
@@ -117,13 +122,13 @@ public class TrainingPlanServiceTests
         var groupId = Guid.NewGuid();
         var original = new[]
         {
-            CreateMember(1, "U12", coachIds: [1]),
-            CreateMember(2, "U14", coachIds: [2]),
+            CreateMember(1, "U12", coachAssignments: [CreateAssignment(1, 1)]),
+            CreateMember(2, "U14", coachAssignments: [CreateAssignment(2, 1)]),
         };
         var changed = new[]
         {
-            CreateMember(1, "U12", coachIds: [1]),
-            CreateMember(2, "U14", coachIds: [3]),
+            CreateMember(1, "U12", coachAssignments: [CreateAssignment(1, 1)]),
+            CreateMember(2, "U14", coachAssignments: [CreateAssignment(3, 1)]),
         };
 
         var originalVersion = TrainingPlanService.CreateVersion(groupId, original);
@@ -133,60 +138,133 @@ public class TrainingPlanServiceTests
     }
 
     [Fact]
-    public void BuildRequestedCoachIdsByPlan_UngroupedPlanUsesSelectedCoachIds()
+    public void BuildRequestedCoachAssignmentsByPlan_UngroupedPlanUsesAssignments()
     {
         var dto = new TrainingPlanEditDto
         {
             Id = 1,
-            SelectedCoachIds = [1, 2, 99],
+            CoachAssignments = [CreateAssignmentInput(1, 1), CreateAssignmentInput(2, 2)],
         };
 
-        var result = TrainingPlanService.BuildRequestedCoachIdsByPlan(
-            dto, groupId: null, memberIds: [1], availableCoachIds: [1, 2]);
+        var result = TrainingPlanService.BuildRequestedCoachAssignmentsByPlan(
+            dto, groupId: null, memberIds: [1]);
 
         Assert.Equal([1], result.Keys);
-        Assert.Equal([1, 2], result[1]);
+        Assert.Equal([1, 2], result[1].Select(assignment => assignment.CoachId));
     }
 
     [Fact]
-    public void BuildRequestedCoachIdsByPlan_GroupedPlanUsesMemberCoachAssignments()
+    public void BuildRequestedCoachAssignmentsByPlan_GroupedPlanUsesMemberAssignments()
     {
         var dto = new TrainingPlanEditDto
         {
             Id = 1,
             MemberCoachAssignments =
             [
-                new TrainingPlanMemberCoachInputDto { TrainingPlanId = 1, CoachIds = [1] },
-                new TrainingPlanMemberCoachInputDto { TrainingPlanId = 2, CoachIds = [2] },
+                new TrainingPlanMemberCoachInputDto
+                {
+                    TrainingPlanId = 1,
+                    CoachAssignments = [CreateAssignmentInput(1, 1)],
+                },
+                new TrainingPlanMemberCoachInputDto
+                {
+                    TrainingPlanId = 2,
+                    CoachAssignments = [CreateAssignmentInput(2, 2)],
+                },
             ],
         };
 
-        var result = TrainingPlanService.BuildRequestedCoachIdsByPlan(
-            dto, groupId: Guid.NewGuid(), memberIds: [1, 2], availableCoachIds: [1, 2]);
+        var result = TrainingPlanService.BuildRequestedCoachAssignmentsByPlan(
+            dto, groupId: Guid.NewGuid(), memberIds: [1, 2]);
 
-        Assert.Equal([1], result[1]);
-        Assert.Equal([2], result[2]);
+        Assert.Equal([1], result[1].Select(assignment => assignment.CoachId));
+        Assert.Equal([2], result[2].Select(assignment => assignment.CoachId));
     }
 
     [Fact]
-    public void BuildRequestedCoachIdsByPlan_GroupedPlanIgnoresUnknownMemberIds()
+    public void BuildRequestedCoachAssignmentsByPlan_GroupedPlanIgnoresUnknownMemberIds()
     {
         var dto = new TrainingPlanEditDto
         {
             Id = 1,
             MemberCoachAssignments =
             [
-                new TrainingPlanMemberCoachInputDto { TrainingPlanId = 1, CoachIds = [1] },
-                new TrainingPlanMemberCoachInputDto { TrainingPlanId = 999, CoachIds = [2] },
+                new TrainingPlanMemberCoachInputDto
+                {
+                    TrainingPlanId = 1,
+                    CoachAssignments = [CreateAssignmentInput(1, 1)],
+                },
+                new TrainingPlanMemberCoachInputDto
+                {
+                    TrainingPlanId = 999,
+                    CoachAssignments = [CreateAssignmentInput(2, 2)],
+                },
             ],
         };
 
-        var result = TrainingPlanService.BuildRequestedCoachIdsByPlan(
-            dto, groupId: Guid.NewGuid(), memberIds: [1, 2], availableCoachIds: [1, 2]);
+        var result = TrainingPlanService.BuildRequestedCoachAssignmentsByPlan(
+            dto, groupId: Guid.NewGuid(), memberIds: [1, 2]);
 
         Assert.Equal([1, 2], result.Keys.OrderBy(id => id));
-        Assert.Equal([1], result[1]);
+        Assert.Equal([1], result[1].Select(assignment => assignment.CoachId));
         Assert.Empty(result[2]);
+    }
+
+    [Fact]
+    public void ValidateCoachAssignments_RejectsSameCoachInDifferentRolesOnSamePlan()
+    {
+        var result = TrainingPlanService.ValidateCoachAssignments(
+            new Dictionary<int, List<TrainingPlanCoachAssignmentInputDto>>
+            {
+                [1] = [CreateAssignmentInput(1, 1), CreateAssignmentInput(1, 2)],
+            },
+            new HashSet<int> { 1 },
+            new HashSet<int> { 1, 2 });
+
+        Assert.Equal(TrainingPlanUpdateResult.DuplicateCoachAssignment, result);
+    }
+
+    [Fact]
+    public void ValidateCoachAssignments_AllowsSameCoachOnDifferentPlans()
+    {
+        var result = TrainingPlanService.ValidateCoachAssignments(
+            new Dictionary<int, List<TrainingPlanCoachAssignmentInputDto>>
+            {
+                [1] = [CreateAssignmentInput(1, 1)],
+                [2] = [CreateAssignmentInput(1, 2)],
+            },
+            new HashSet<int> { 1 },
+            new HashSet<int> { 1, 2 });
+
+        Assert.Equal(TrainingPlanUpdateResult.Success, result);
+    }
+
+    [Fact]
+    public void ValidateCoachAssignments_RejectsUnknownRole()
+    {
+        var result = TrainingPlanService.ValidateCoachAssignments(
+            new Dictionary<int, List<TrainingPlanCoachAssignmentInputDto>>
+            {
+                [1] = [CreateAssignmentInput(1, 99)],
+            },
+            new HashSet<int> { 1 },
+            new HashSet<int> { 1, 2 });
+
+        Assert.Equal(TrainingPlanUpdateResult.InvalidInput, result);
+    }
+
+    [Fact]
+    public void ValidateCoachAssignments_RejectsUnknownCoach()
+    {
+        var result = TrainingPlanService.ValidateCoachAssignments(
+            new Dictionary<int, List<TrainingPlanCoachAssignmentInputDto>>
+            {
+                [1] = [CreateAssignmentInput(99, 1)],
+            },
+            new HashSet<int> { 1 },
+            new HashSet<int> { 1 });
+
+        Assert.Equal(TrainingPlanUpdateResult.InvalidInput, result);
     }
 
     [Fact]
@@ -274,7 +352,7 @@ public class TrainingPlanServiceTests
         string category,
         int locationId = 1,
         string dayName = nameof(DayOfWeek.Monday),
-        IReadOnlyList<int>? coachIds = null)
+        IReadOnlyList<TrainingPlanCoachAssignmentDto>? coachAssignments = null)
         => new()
         {
             Id = id,
@@ -287,7 +365,23 @@ public class TrainingPlanServiceTests
             TimeFrom = new TimeOnly(17, 0),
             TimeTo = new TimeOnly(18, 0),
             LocationId = locationId,
-            CoachIds = coachIds ?? [],
+            CoachAssignments = coachAssignments ?? [],
+        };
+
+    private static TrainingPlanCoachAssignmentInputDto CreateAssignmentInput(
+        int coachId,
+        int coachRoleId)
+        => new() { CoachId = coachId, CoachRoleId = coachRoleId };
+
+    private static TrainingPlanCoachAssignmentDto CreateAssignment(
+        int coachId,
+        int coachRoleId)
+        => new()
+        {
+            CoachId = coachId,
+            CoachDisplayName = $"Coach {coachId}",
+            CoachRoleId = coachRoleId,
+            CoachRoleName = $"Role {coachRoleId}",
         };
 
     private static TrainingPlanEditMemberDto Clone(
@@ -310,5 +404,6 @@ public class TrainingPlanServiceTests
             TimeFrom = timeFrom ?? source.TimeFrom,
             TimeTo = timeTo ?? source.TimeTo,
             LocationId = locationId ?? source.LocationId,
+            CoachAssignments = source.CoachAssignments,
         };
 }

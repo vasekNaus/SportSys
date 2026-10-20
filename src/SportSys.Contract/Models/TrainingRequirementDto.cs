@@ -25,6 +25,7 @@ public abstract class RequirementCoachListItem : CoachSelectItem
     public string CoachRoleName { get; set; } = string.Empty;
     public string CoachRoleCode { get; set; } = string.Empty;
     public int CoachRoleOrder { get; set; }
+    public decimal Hours { get; set; }
 
     public string LastName
     {

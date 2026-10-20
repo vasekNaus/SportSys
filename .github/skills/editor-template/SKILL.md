@@ -72,7 +72,7 @@ Soubor šablony se hledá v:
 | *(žádný)* pro `bool` | `Boolean.cshtml` | `<input type="checkbox">` |
 | *(žádný)* pro `bool?` | `Boolean.cshtml` | tri-state `<select>` |
 | *(žádný)* pro `int`/`long`/... | `Int32.cshtml` → `Number.cshtml` | `<input type="number">` |
-| *(žádný)* pro `decimal` | `Decimal.cshtml` | textbox (formát 0.00) |
+| *(žádný)* pro `decimal` | `Decimal.cshtml` | textbox `inputmode="decimal"`, formát cs-CZ (čárka) |
 | `[ScaffoldColumn(false)]` | — vynecháno zcela | žádný HTML výstup |
 
 ---

@@ -59,7 +59,7 @@ else
         </p>
         <p>
             <label asp-for="ContractInput.RewardAmount"></label>
-            <input asp-for="ContractInput.RewardAmount" type="number" min="0" step="0.01" />
+            @Html.EditorFor(m => m.ContractInput.RewardAmount, "Decimal", new { InputCssClass = "short" })
             <span asp-validation-for="ContractInput.RewardAmount" class="field-validation-error"></span>
         </p>
         <p class="checkbox-field">

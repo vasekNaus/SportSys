@@ -8,4 +8,5 @@ public class RequirementCoachTableModel
     public required IReadOnlyList<RequirementCoachAssignmentInput> Assignments { get; init; }
     public required IReadOnlyList<SelectListItem> CoachItems { get; init; }
     public required IReadOnlyList<SelectListItem> RoleItems { get; init; }
+    public bool ShowHours { get; init; }
 }

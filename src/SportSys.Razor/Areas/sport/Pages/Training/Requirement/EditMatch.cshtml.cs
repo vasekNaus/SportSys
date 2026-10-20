@@ -62,7 +62,7 @@ public class EditMatchModel : PageModel
             case RequirementEditStatus.NotFound:
                 return NotFound();
             case RequirementEditStatus.DuplicateCoach:
-                ModelState.AddModelError(string.Empty, result.Message ?? "Trenér je již přiřazen.");
+                ModelState.AddModelError(string.Empty, result.Message ?? "Trenér je již přiřazen v této roli.");
                 return await ReloadAsync(ct);
             default:
                 ModelState.AddModelError(string.Empty, "Zadané údaje požadavku nejsou platné.");

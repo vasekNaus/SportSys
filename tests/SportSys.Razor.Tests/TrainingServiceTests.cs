@@ -22,6 +22,7 @@ public class TrainingServiceTests
                     ExistingTrainingId = existingKey.TrainingId,
                     ExistingParticipationTypeId = existingKey.ParticipationTypeId,
                     ParticipationTypeId = (int)EParticipationType.Attended,
+                    CoachRoleId = 2,
                     Note = "Dorazí",
                 },
                 new TrainingCoachAssignmentInputDto
@@ -29,10 +30,12 @@ public class TrainingServiceTests
                     CoachId = 2,
                     TrainingId = 11,
                     ParticipationTypeId = (int)EParticipationType.Absent,
+                    CoachRoleId = 1,
                 },
             ],
             [existingKey],
             new HashSet<int> { 10, 11 },
+            new HashSet<int> { 1, 2 },
             new HashSet<int> { 1, 2 });
 
         Assert.Equal(TrainingUpdateResult.Success, result.Result);
@@ -43,6 +46,7 @@ public class TrainingServiceTests
                 Assert.Equal(1, existing.CoachId);
                 Assert.Equal(10, existing.TrainingId);
                 Assert.Equal((int)EParticipationType.Attended, existing.ParticipationTypeId);
+                Assert.Equal(2, existing.CoachRoleId);
                 Assert.Equal((int)EParticipationType.NoResponse, existing.ExistingParticipationTypeId);
                 Assert.Equal("Dorazí", existing.Note);
             },
@@ -51,6 +55,7 @@ public class TrainingServiceTests
                 Assert.Equal(2, added.CoachId);
                 Assert.Equal(11, added.TrainingId);
                 Assert.Equal((int)EParticipationType.Absent, added.ParticipationTypeId);
+                Assert.Equal(1, added.CoachRoleId);
                 Assert.Null(added.ExistingParticipationTypeId);
             });
     }
@@ -64,7 +69,8 @@ public class TrainingServiceTests
             [CreateNewAssignment(coachId: 2, trainingId: 10)],
             [existingKey],
             new HashSet<int> { 10 },
-            new HashSet<int> { 1, 2 });
+            new HashSet<int> { 1, 2 },
+            new HashSet<int> { 1 });
 
         Assert.Equal(TrainingUpdateResult.CoachAssignmentRemovalNotAllowed, result.Result);
         Assert.Empty(result.Assignments);
@@ -80,6 +86,7 @@ public class TrainingServiceTests
             ],
             [],
             new HashSet<int> { 10, 11 },
+            new HashSet<int> { 1 },
             new HashSet<int> { 1 });
 
         Assert.Equal(TrainingUpdateResult.DuplicateCoachAssignment, result.Result);
@@ -93,11 +100,13 @@ public class TrainingServiceTests
             [CreateNewAssignment(coachId: 1, trainingId: 99)],
             [],
             new HashSet<int> { 10 },
+            new HashSet<int> { 1 },
             new HashSet<int> { 1 });
         var unavailableCoach = TrainingService.ValidateCoachAssignments(
             [CreateNewAssignment(coachId: 99, trainingId: 10)],
             [],
             new HashSet<int> { 10 },
+            new HashSet<int> { 1 },
             new HashSet<int> { 1 });
 
         Assert.Equal(TrainingUpdateResult.InvalidInput, foreignTraining.Result);
@@ -120,6 +129,23 @@ public class TrainingServiceTests
             [forgedAssignment],
             [existingKey],
             new HashSet<int> { 10, 11 },
+            new HashSet<int> { 1 },
+            new HashSet<int> { 1 });
+
+        Assert.Equal(TrainingUpdateResult.InvalidInput, result.Result);
+    }
+
+    [Fact]
+    public void ValidateCoachAssignments_RejectsUnknownCoachRole()
+    {
+        var assignment = CreateNewAssignment(coachId: 1, trainingId: 10);
+        assignment.CoachRoleId = 99;
+
+        var result = TrainingService.ValidateCoachAssignments(
+            [assignment],
+            [],
+            new HashSet<int> { 10 },
+            new HashSet<int> { 1 },
             new HashSet<int> { 1 });
 
         Assert.Equal(TrainingUpdateResult.InvalidInput, result.Result);
@@ -148,28 +174,60 @@ public class TrainingServiceTests
         Assert.NotEqual(initial, changedCategory);
     }
 
+    [Fact]
+    public void CreateVersion_ChangesWhenCoachRoleChanges()
+    {
+        var groupId = Guid.NewGuid();
+        var member = CreateMember(10, "U12");
+        var assignment = CreateAssignment(1, 10, (int)EParticipationType.Attended, "Přijde");
+
+        Assert.NotEqual(
+            TrainingService.CreateVersion(groupId, [member], [Clone(assignment, 1)]),
+            TrainingService.CreateVersion(groupId, [member], [Clone(assignment, 2)]));
+    }
+
     private static TrainingCoachAssignmentInputDto CreateNewAssignment(int coachId, int trainingId)
         => new()
         {
             CoachId = coachId,
             TrainingId = trainingId,
             ParticipationTypeId = (int)EParticipationType.Absent,
+            CoachRoleId = 1,
         };
 
     private static TrainingEditCoachAssignmentDto CreateAssignment(
         int coachId,
         int trainingId,
         int participationTypeId,
-        string note)
+        string note,
+        int coachRoleId = 1)
         => new()
         {
             CoachId = coachId,
             TrainingId = trainingId,
             ParticipationTypeId = participationTypeId,
+            CoachRoleId = coachRoleId,
             CoachDisplayName = $"Coach {coachId}",
             SeasonCategoryCode = "U12",
             ParticipationTypeName = "State",
+            CoachRoleName = $"Role {coachRoleId}",
             Note = note,
+        };
+
+    private static TrainingEditCoachAssignmentDto Clone(
+        TrainingEditCoachAssignmentDto source,
+        int coachRoleId)
+        => new()
+        {
+            CoachId = source.CoachId,
+            TrainingId = source.TrainingId,
+            ParticipationTypeId = source.ParticipationTypeId,
+            CoachRoleId = coachRoleId,
+            CoachDisplayName = source.CoachDisplayName,
+            SeasonCategoryCode = source.SeasonCategoryCode,
+            ParticipationTypeName = source.ParticipationTypeName,
+            CoachRoleName = $"Role {coachRoleId}",
+            Note = source.Note,
         };
 
     private static TrainingEditMemberDto CreateMember(int id, string category)

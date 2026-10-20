@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Models.hr;
 using SportSys.Contract.Models;
 using SportSys.Database.Context;
+using SportSys.Database.Enums;
 using SportSys.Database.Models.sport;
 using DbCoachAttendance = SportSys.Database.Models.hr.CoachAttendance;
 
@@ -351,6 +352,7 @@ public class CoachAttendanceService
                         CoachId = coachId,
                         TrainingId = row.EventId,
                         ParticipationTypeId = row.ParticipationTypeId,
+                        CoachRoleId = (int)ECoachRole.Head,
                         Note = row.Note,
                     });
                     result.InsertedCount++;
@@ -373,6 +375,7 @@ public class CoachAttendanceService
                         CoachId = coachId,
                         TrainingId = row.EventId,
                         ParticipationTypeId = row.ParticipationTypeId,
+                        CoachRoleId = existing.CoachRoleId,
                         Note = row.Note,
                     });
                     result.UpdatedCount++;

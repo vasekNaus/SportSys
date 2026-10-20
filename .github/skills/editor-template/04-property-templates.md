@@ -194,23 +194,15 @@ Trigger: `bool` nebo `bool?` (automaticky dle CLR typu).
 
 Trigger: `decimal` CLR typ.
 
-```cshtml
-@{
-    this.Layout = "_Layout.cshtml";
+V SportSys používej textový vstup s `inputmode="decimal"` a formátování
+kulturou `cs-CZ` (desetinná čárka). `CzechDecimalModelBinder` přijímá čárku
+i tečku nezávisle na kultuře value provideru. Pro decimal nepoužívej
+`<input type="number">`, který nepracuje spolehlivě s českou desetinnou
+čárkou.
 
-    object formattedValue;
-    if (ViewData.TemplateInfo.FormattedModelValue == Model) {
-        // Aplikuj formát pouze pokud není vlastní DisplayFormat
-        formattedValue = string.Format(
-            System.Globalization.CultureInfo.CurrentCulture,
-            "{0:0.00}",
-            Model);
-    } else {
-        formattedValue = ViewData.TemplateInfo.FormattedModelValue;
-    }
-}
-@Html.TextBox("", formattedValue, new { @class = "textbox" })
-```
+Aktuální implementace je v
+`src/SportSys.Razor/Pages/Shared/EditorTemplates/Decimal.cshtml`;
+formátování a parsování zajišťuje `CzechNumberFormat`.
 
 ---
 

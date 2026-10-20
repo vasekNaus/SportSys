@@ -25,6 +25,7 @@ public class EditModel : PageModel
     public List<SelectListItem> CoachItems { get; private set; } = [];
     public List<SelectListItem> TrainingItems { get; private set; } = [];
     public List<SelectListItem> ParticipationTypeItems { get; private set; } = [];
+    public List<SelectListItem> CoachRoleItems { get; private set; } = [];
 
     [TempData]
     public string? StatusMessage { get; set; }
@@ -161,6 +162,7 @@ public class EditModel : PageModel
                 ExistingTrainingId = assignment.TrainingId,
                 ExistingParticipationTypeId = assignment.ParticipationTypeId,
                 ParticipationTypeId = assignment.ParticipationTypeId,
+                CoachRoleId = assignment.CoachRoleId,
                 Note = assignment.Note,
             });
         }
@@ -192,6 +194,13 @@ public class EditModel : PageModel
                     participationType.DisplayName,
                     participationType.Id.ToString(),
                     participationType.IsDefault)),
+        ];
+
+        CoachRoleItems =
+        [
+            new SelectListItem("— vyberte roli —", string.Empty),
+            .. Context.CoachRoles.Select(
+                role => new SelectListItem(role.Name, role.Id.ToString())),
         ];
     }
 

@@ -44,14 +44,14 @@ public class TrainingPlanEditDto : IValidatableObject
   [Display(Name = "Název")]
   public string Title { get; set; } = string.Empty;
 
-  [Display(Name = "Trenéři")]
+  [Display(Name = "Přiřazení trenéři")]
   [ScaffoldColumn(false)]
-  public List<int> SelectedCoachIds { get; set; } = [];
+  public List<TrainingPlanCoachAssignmentInputDto> CoachAssignments { get; set; } = [];
 
   /// <summary>
-  /// Výběr trenérů per spojený trénink (jedna položka na člena skupiny).
+  /// Přiřazení trenérů a rolí per spojený trénink (jedna položka na člena skupiny).
   /// Používá se jen pro spojený plán (<see cref="TrainingPlanEditContextDto.IsGrouped"/>);
-  /// u nespojeného plánu je zdrojem pravdy <see cref="SelectedCoachIds"/>.
+  /// u nespojeného plánu je zdrojem pravdy <see cref="CoachAssignments"/>.
   /// </summary>
   [ScaffoldColumn(false)]
   public List<TrainingPlanMemberCoachInputDto> MemberCoachAssignments { get; set; } = [];
@@ -87,7 +87,7 @@ public class TrainingPlanEditDto : IValidatableObject
 }
 
 /// <summary>
-/// Vstupní položka pro model binding výběru trenérů konkrétního spojeného
+/// Vstupní položka pro model binding přiřazení trenérů a rolí konkrétního spojeného
 /// tréninku (viz <see cref="TrainingPlanEditDto.MemberCoachAssignments"/>).
 /// </summary>
 public class TrainingPlanMemberCoachInputDto
@@ -95,7 +95,38 @@ public class TrainingPlanMemberCoachInputDto
   [HiddenInput(DisplayValue = false)]
   public int TrainingPlanId { get; set; }
 
-  public List<int> CoachIds { get; set; } = [];
+  public List<TrainingPlanCoachAssignmentInputDto> CoachAssignments { get; set; } = [];
+}
+
+public class TrainingPlanCoachAssignmentInputDto : IValidatableObject
+{
+  public int? CoachId { get; set; }
+  public int? CoachRoleId { get; set; }
+
+  public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+  {
+    if (CoachId is null or <= 0)
+    {
+      yield return new ValidationResult(
+          "Vyberte trenéra.",
+          [nameof(CoachId)]);
+    }
+
+    if (CoachRoleId is null or <= 0)
+    {
+      yield return new ValidationResult(
+          "Vyberte roli trenéra.",
+          [nameof(CoachRoleId)]);
+    }
+  }
+}
+
+public class TrainingPlanCoachAssignmentDto
+{
+  public int CoachId { get; init; }
+  public required string CoachDisplayName { get; init; }
+  public int CoachRoleId { get; init; }
+  public required string CoachRoleName { get; init; }
 }
 
 public class TrainingPlanEditContextDto
@@ -103,6 +134,7 @@ public class TrainingPlanEditContextDto
   public required TrainingPlanEditDto Input { get; init; }
   public required IReadOnlyList<TrainingPlanEditMemberDto> Members { get; init; }
   public required IReadOnlyList<CoachSelectItem> AvailableCoaches { get; init; }
+  public required IReadOnlyList<LookupSelectItem> CoachRoles { get; init; }
   public bool IsGrouped { get; init; }
   public bool CanEdit { get; init; }
 
@@ -112,11 +144,14 @@ public class TrainingPlanEditContextDto
       .ToList();
 
   /// <summary>
-  /// Trenéři jako <see cref="SelectListItem"/> pro víceúběr se
-  /// znovupoužitelným <c>&lt;search-multiselect asp-items&gt;</c>.
+  /// Dostupní trenéři jako <see cref="SelectListItem"/> pro formulář.
   /// </summary>
   public IReadOnlyList<SelectListItem> AvailableCoachItems => AvailableCoaches
       .Select(coach => new SelectListItem(coach.DisplayName, coach.Id.ToString()))
+      .ToList();
+
+  public IReadOnlyList<SelectListItem> CoachRoleItems => CoachRoles
+      .Select(role => new SelectListItem(role.Name, role.Id.ToString()))
       .ToList();
 }
 
@@ -134,10 +169,10 @@ public class TrainingPlanEditMemberDto
   public int LocationId { get; init; }
 
   /// <summary>
-  /// Aktuálně přiřazení trenéři tohoto konkrétního tréninku (nezávisle na
+  /// Aktuální přiřazení trenérů a rolí tohoto konkrétního plánu (nezávisle na
   /// ostatních členech spojené skupiny).
   /// </summary>
-  public IReadOnlyList<int> CoachIds { get; init; } = [];
+  public IReadOnlyList<TrainingPlanCoachAssignmentDto> CoachAssignments { get; init; } = [];
 
   public string DayDisplayName
       => DayName switch

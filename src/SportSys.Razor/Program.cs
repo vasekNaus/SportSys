@@ -23,7 +23,10 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
 
 builder.Services.AddRazorPages()  //options => options.Conventions.AuthorizeAreaFolder("hr", "/Coach", "SystemAdmin")
     .AddMvcOptions(options =>
-        options.ModelBinderProviders.Insert(0, new CzechDateTimeModelBinderProvider()))
+    {
+        options.ModelBinderProviders.Insert(0, new CzechDecimalModelBinderProvider());
+        options.ModelBinderProviders.Insert(0, new CzechDateTimeModelBinderProvider());
+    })
     .AddMicrosoftIdentityUI();
 
 // Registrace SportSysDbContext, Identity, Claims transformation, Contract servisů a authorization policies

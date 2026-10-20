@@ -74,7 +74,7 @@ public class EditModel : PageModel
       case TrainingPlanUpdateResult.DuplicateCoachAssignment:
         ModelState.AddModelError(
             string.Empty,
-            "Stejný trenér je vybrán u více spojených tréninků. Každý trenér může být přiřazen jen k jednomu tréninku ve skupině.");
+            "Stejný trenér je v rámci jednoho tréninkového plánu přiřazen vícekrát.");
         return await ReloadPageAsync(Input.Id, ct);
 
       case TrainingPlanUpdateResult.LocationUnavailable:
@@ -101,6 +101,66 @@ public class EditModel : PageModel
     }
   }
 
+  public async Task<IActionResult> OnPostAddCoachAsync(
+      int? memberIndex,
+      CancellationToken ct)
+  {
+    Input.CoachAssignments ??= [];
+    Input.MemberCoachAssignments ??= [];
+
+    if (memberIndex.HasValue)
+    {
+      if (Input.MemberCoachAssignments is null ||
+          memberIndex.Value < 0 ||
+          memberIndex.Value >= Input.MemberCoachAssignments.Count)
+      {
+        return BadRequest();
+      }
+
+      Input.MemberCoachAssignments[memberIndex.Value].CoachAssignments.Add(new());
+    }
+    else
+    {
+      Input.CoachAssignments.Add(new());
+    }
+
+    ModelState.Clear();
+    return await ReloadPageAsync(Input.Id, ct);
+  }
+
+  public async Task<IActionResult> OnPostRemoveCoachAsync(
+      int assignmentIndex,
+      int? memberIndex,
+      CancellationToken ct)
+  {
+    if (assignmentIndex < 0)
+      return BadRequest();
+
+    Input.CoachAssignments ??= [];
+    Input.MemberCoachAssignments ??= [];
+
+    if (memberIndex.HasValue)
+    {
+      if (Input.MemberCoachAssignments is null ||
+          memberIndex.Value < 0 ||
+          memberIndex.Value >= Input.MemberCoachAssignments.Count)
+      {
+        return BadRequest();
+      }
+
+      var assignments = Input.MemberCoachAssignments[memberIndex.Value].CoachAssignments;
+      if (assignmentIndex < assignments.Count)
+        assignments.RemoveAt(assignmentIndex);
+    }
+    else if (assignmentIndex < Input.CoachAssignments.Count)
+    {
+      Input.CoachAssignments.RemoveAt(assignmentIndex);
+    }
+
+    ModelState.Clear();
+    return await ReloadPageAsync(Input.Id, ct);
+  }
+
   private async Task<IActionResult> ReloadPageAsync(
       int id,
       CancellationToken ct,
@@ -113,8 +173,28 @@ public class EditModel : PageModel
     Context = context;
     if (useCurrentInput)
       Input = context.Input;
+    EnsureCoachAssignmentsMatchMembers();
     await LoadLocationsAsync(ct);
     return Page();
+  }
+
+  private void EnsureCoachAssignmentsMatchMembers()
+  {
+    Input.CoachAssignments ??= [];
+    Input.MemberCoachAssignments ??= [];
+    if (!Context.IsGrouped)
+      return;
+
+    Input.MemberCoachAssignments = Context.Members
+        .Select(member =>
+        {
+          var assignment = Input.MemberCoachAssignments
+              .FirstOrDefault(item => item.TrainingPlanId == member.Id);
+          return assignment is null || assignment.CoachAssignments is null
+              ? new TrainingPlanMemberCoachInputDto { TrainingPlanId = member.Id }
+              : assignment;
+        })
+        .ToList();
   }
 
   private async Task LoadLocationsAsync(CancellationToken ct)

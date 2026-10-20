@@ -62,6 +62,7 @@ public class TrainingCoachAssignmentInputDto : IValidatableObject
     public int? CoachId { get; set; }
     public int? TrainingId { get; set; }
     public int? ParticipationTypeId { get; set; }
+    public int? CoachRoleId { get; set; }
 
     [StringLength(50, ErrorMessage = "Poznámka trenéra nesmí přesáhnout 50 znaků.")]
     public string? Note { get; set; } = string.Empty;
@@ -104,6 +105,13 @@ public class TrainingCoachAssignmentInputDto : IValidatableObject
                 "Vyberte platný stav docházky.",
                 [nameof(ParticipationTypeId)]);
         }
+
+        if (CoachRoleId is null or <= 0)
+        {
+            yield return new ValidationResult(
+                "Vyberte roli trenéra.",
+                [nameof(CoachRoleId)]);
+        }
     }
 }
 
@@ -115,6 +123,7 @@ public class TrainingEditContextDto
     public IReadOnlyList<TrainingCoachSelectItemDto> AvailableCoaches { get; init; } = [];
     public IReadOnlyList<TrainingCategorySelectItemDto> AvailableCategories { get; init; } = [];
     public IReadOnlyList<TrainingParticipationTypeSelectItemDto> ParticipationTypes { get; init; } = [];
+    public IReadOnlyList<LookupSelectItem> CoachRoles { get; init; } = [];
     public bool IsGrouped { get; init; }
     public bool CanEdit { get; init; }
 
@@ -143,9 +152,11 @@ public class TrainingEditCoachAssignmentDto
     public int CoachId { get; init; }
     public int TrainingId { get; init; }
     public int ParticipationTypeId { get; init; }
+    public int CoachRoleId { get; init; }
     public required string CoachDisplayName { get; init; }
     public required string SeasonCategoryCode { get; init; }
     public required string ParticipationTypeName { get; init; }
+    public required string CoachRoleName { get; init; }
     public required string Note { get; init; }
 }
 
@@ -177,6 +188,7 @@ internal sealed record CoachTrainingAssignmentUpdate(
     int CoachId,
     int TrainingId,
     int ParticipationTypeId,
+    int CoachRoleId,
     string Note,
     int? ExistingParticipationTypeId);
 

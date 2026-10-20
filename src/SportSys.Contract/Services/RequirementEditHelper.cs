@@ -41,7 +41,8 @@ internal static class RequirementEditHelper
         IReadOnlyCollection<RequirementCoachAssignmentInput> assignments,
         CancellationToken ct)
     {
-        if (assignments.Any(a => !a.CoachId.HasValue || !a.CoachRoleId.HasValue))
+        if (assignments.Any(a =>
+                a is null || !a.CoachId.HasValue || !a.CoachRoleId.HasValue))
             return new RequirementEditResult(RequirementEditStatus.InvalidInput);
 
         var coachIds = assignments.Select(a => a.CoachId!.Value).Distinct().ToList();
@@ -63,15 +64,22 @@ internal static class RequirementEditHelper
         if (coachNames.Count != coachIds.Count || existingRoleCount != roleIds.Count)
             return new RequirementEditResult(RequirementEditStatus.InvalidInput);
 
+        return ValidateDuplicateAssignments(assignments, coachNames);
+    }
+
+    public static RequirementEditResult? ValidateDuplicateAssignments(
+        IReadOnlyCollection<RequirementCoachAssignmentInput> assignments,
+        IReadOnlyDictionary<int, string> coachNames)
+    {
         var duplicate = assignments
-            .GroupBy(a => a.CoachId!.Value)
+            .GroupBy(a => (CoachId: a.CoachId!.Value, CoachRoleId: a.CoachRoleId!.Value))
             .FirstOrDefault(group => group.Count() > 1);
         if (duplicate is not null)
         {
             return new RequirementEditResult(
                 RequirementEditStatus.DuplicateCoach,
-                $"Trenér {coachNames[duplicate.Key]} je již k tomuto požadavku přiřazen. "
-                + "Jeden trenér může být v rámci požadavku přiřazen pouze jednou.");
+                $"Trenér {coachNames[duplicate.Key.CoachId]} je již k tomuto požadavku přiřazen ve stejné roli. "
+                + "Každou kombinaci trenéra a role lze přiřadit pouze jednou.");
         }
 
         return null;

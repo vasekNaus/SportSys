@@ -57,33 +57,79 @@
         @if (Model.Context.IsGrouped)
         {
             <div class="training-edit-members">
-                <table class="details">
-                    <thead>
-                        <tr>
-                            <th>Kategorie</th>
-                            <th>Trenér</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (var i = 0; i < Model.Context.Members.Count; i++)
-                        {
-                            var member = Model.Context.Members[i];
-                            var memberLabelId = $"MemberCoachesLabel_{member.Id}";
-                            <tr>
-                                <td>@member.SeasonCategoryCode</td>
-                                <td>
-                                    <input type="hidden"
-                                           name="Input.MemberCoachAssignments[@i].TrainingPlanId"
-                                           value="@member.Id" />
-                                    <search-multiselect asp-for="Input.MemberCoachAssignments[i].CoachIds"
-                                                         asp-items="Model.Context.AvailableCoachItems"
-                                                         placeholder="Vyber trenéry..."
-                                                         aria-labelledby="@memberLabelId" />
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                @for (var i = 0; i < Model.Context.Members.Count; i++)
+                {
+                    var member = Model.Context.Members[i];
+                    <section aria-labelledby="member-coaches-@member.Id">
+                        <h3 id="member-coaches-@member.Id">@member.SeasonCategoryCode</h3>
+                        <input type="hidden"
+                               name="Input.MemberCoachAssignments[@i].TrainingPlanId"
+                               value="@member.Id" />
+                        <table class="details">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Trenér</th>
+                                    <th scope="col">Role</th>
+                                    <th scope="col">Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var j = 0; j < Model.Input.MemberCoachAssignments[i].CoachAssignments.Count; j++)
+                                {
+                                    var assignment = Model.Input.MemberCoachAssignments[i].CoachAssignments[j];
+                                    <tr>
+                                        <td>
+                                            <select name="Input.MemberCoachAssignments[@i].CoachAssignments[@j].CoachId"
+                                                    aria-label="Trenér"
+                                                    required>
+                                                <option value="">— vyberte trenéra —</option>
+                                                @foreach (var coach in Model.Context.AvailableCoaches)
+                                                {
+                                                    <option value="@coach.Id" selected="@(assignment.CoachId == coach.Id)">
+                                                        @coach.DisplayName
+                                                    </option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select name="Input.MemberCoachAssignments[@i].CoachAssignments[@j].CoachRoleId"
+                                                    aria-label="Role"
+                                                    required>
+                                                <option value="">— vyberte roli —</option>
+                                                @foreach (var role in Model.Context.CoachRoles)
+                                                {
+                                                    <option value="@role.Id" selected="@(assignment.CoachRoleId == role.Id)">
+                                                        @role.Name
+                                                    </option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td class="buttons">
+                                            <button type="submit"
+                                                    class="button tertiary icon-btn"
+                                                    formnovalidate
+                                                    asp-page-handler="RemoveCoach"
+                                                    name="memberIndex"
+                                                    value="@i"
+                                                    asp-route-assignmentIndex="@j"
+                                                    title="Odebrat trenéra">
+                                                <i class="fa-solid fa-trash fa-fw"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <button type="submit"
+                                class="button secondary"
+                                formnovalidate
+                                asp-page-handler="AddCoach"
+                                name="memberIndex"
+                                value="@i">
+                            <i class="fa-solid fa-plus fa-fw"></i> Přidat trenéra
+                        </button>
+                    </section>
+                }
             </div>
         }
 
@@ -93,13 +139,69 @@
 
         @if (!Model.Context.IsGrouped)
         {
-            <div class="field">
-                <span class="schedule-filter-label" id="CoachesLabel">Trenéři</span>
-                <search-multiselect asp-for="Input.SelectedCoachIds"
-                                     asp-items="Model.Context.AvailableCoachItems"
-                                     placeholder="Vyber trenéry..."
-                                     aria-labelledby="CoachesLabel" />
-            </div>
+            <section aria-labelledby="coach-assignments-heading">
+                <h2 id="coach-assignments-heading">Trenéři</h2>
+                <table class="details">
+                    <thead>
+                        <tr>
+                            <th scope="col">Trenér</th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Akce</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Input.CoachAssignments.Count; i++)
+                        {
+                            var assignment = Model.Input.CoachAssignments[i];
+                            <tr>
+                                <td>
+                                    <select name="Input.CoachAssignments[@i].CoachId"
+                                            aria-label="Trenér"
+                                            required>
+                                        <option value="">— vyberte trenéra —</option>
+                                        @foreach (var coach in Model.Context.AvailableCoaches)
+                                        {
+                                            <option value="@coach.Id" selected="@(assignment.CoachId == coach.Id)">
+                                                @coach.DisplayName
+                                            </option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="Input.CoachAssignments[@i].CoachRoleId"
+                                            aria-label="Role"
+                                            required>
+                                        <option value="">— vyberte roli —</option>
+                                        @foreach (var role in Model.Context.CoachRoles)
+                                        {
+                                            <option value="@role.Id" selected="@(assignment.CoachRoleId == role.Id)">
+                                                @role.Name
+                                            </option>
+                                        }
+                                    </select>
+                                </td>
+                                <td class="buttons">
+                                    <button type="submit"
+                                            class="button tertiary icon-btn"
+                                            formnovalidate
+                                            asp-page-handler="RemoveCoach"
+                                            name="assignmentIndex"
+                                            value="@i"
+                                            title="Odebrat trenéra">
+                                        <i class="fa-solid fa-trash fa-fw"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <button type="submit"
+                        class="button secondary"
+                        formnovalidate
+                        asp-page-handler="AddCoach">
+                    <i class="fa-solid fa-plus fa-fw"></i> Přidat trenéra
+                </button>
+            </section>
         }
 
         <footer>

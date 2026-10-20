@@ -35,7 +35,7 @@ public class EditTrainingModel : PageModel
 
     public async Task<IActionResult> OnPostAddCoachAsync(CancellationToken ct)
     {
-        Input.CoachAssignments.Add(new RequirementCoachAssignmentInput());
+        Input.CoachAssignments.Add(new RequirementCoachAssignmentInput { Hours = 0m });
         ModelState.Clear();
         return await ReloadAsync(ct);
     }
@@ -62,7 +62,7 @@ public class EditTrainingModel : PageModel
             case RequirementEditStatus.NotFound:
                 return NotFound();
             case RequirementEditStatus.DuplicateCoach:
-                ModelState.AddModelError(string.Empty, result.Message ?? "Trenér je již přiřazen.");
+                ModelState.AddModelError(string.Empty, result.Message ?? "Trenér je již přiřazen v této roli.");
                 return await ReloadAsync(ct);
             default:
                 ModelState.AddModelError(string.Empty, "Zadané údaje požadavku nejsou platné.");

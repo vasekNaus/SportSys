@@ -26,7 +26,16 @@ Skutečnou účast trenéra evidují `sport.CoachTraining` a
 `sport.CoachMatch`. Obě vazby obsahují trenéra, konkrétní událost, stav z
 `sport.ParticipationType` a poznámku do 50 znaků. Složený databázový klíč
 obsahuje i stav účasti; aplikační služby proto vynucují invariant nejvýše
-jednoho stavu jednoho trenéra pro jednu událost.
+jednoho stavu jednoho trenéra pro jednu událost. `CoachTraining` navíc
+obsahuje `CoachRoleId` odkazující na `dbo.CoachRole`; stejný trenér nesmí být
+v jednom tréninku přiřazen pod více rolemi. Změna docházky zachová roli.
+
+Přiřazení trenéra k obecnému plánu eviduje `sport.CoachTrainingPlan`,
+včetně povinného `CoachRoleId` a intervalu platnosti. Trenér má v rámci
+jednoho plánu nejvýše jedno přiřazení; u spojeného plánu se role přiřazuje
+samostatně pro každého jeho člena. Požadavková vazba
+`sport.CoachTrainingRequirement` eviduje vedle trenéra a role také jeho
+plánované `Hours decimal(5,2)`.
 
 `TrainingGroup` a `TrainingPlanGroup` jsou nezávislé; jejich ID se mezi
 reálnými tréninky a plány nekopíruje.
@@ -72,6 +81,18 @@ Prázdný výběr kategorií, typů nebo fází znamená všechny hodnoty. Nepla
 hodnoty z URL se před načtením dat odstraní. Obě tabulky mají samostatný
 prázdný stav. Stránka data pouze čte a nemění databázové schéma ani obsah
 tabulek. Požadavky na zápasy načítá `MatchRequirementService`.
+
+Editace konkrétního požadavku na tréninky je na
+`/sport/Training/Requirement/EditTraining/{id}`. U každého přiřazení
+trenér-role lze upravit plánovaný počet hodin v rozsahu `0,00–999,99` s
+přesností nejvýše na dvě desetinná místa. Editace požadavku na zápasy
+nepracuje s hodinami.
+
+V požadavcích na tréninky i zápasy může být stejný trenér přiřazen vícekrát,
+ale pokaždé s jinou rolí. Jedinečná je dvojice trenér–role v rámci požadavku;
+u tréninkového požadavku se hodiny evidují samostatně pro každou roli.
+Toto pravidlo nemění omezení přiřazení trenérů u konkrétních tréninků
+a obecných týdenních plánů.
 
 ### Společné datové kontrakty
 

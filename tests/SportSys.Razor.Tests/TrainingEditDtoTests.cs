@@ -68,6 +68,7 @@ public class TrainingEditDtoTests
         dto.CoachAssignments.Add(new TrainingCoachAssignmentInputDto
         {
             ParticipationTypeId = (int)EParticipationType.Absent,
+            CoachRoleId = 1,
         });
 
         var results = Validate(dto);
@@ -87,6 +88,7 @@ public class TrainingEditDtoTests
             ExistingTrainingId = 2,
             ExistingParticipationTypeId = (int)EParticipationType.NoResponse,
             ParticipationTypeId = (int)EParticipationType.Attended,
+            CoachRoleId = 1,
             Note = "Dorazí",
         });
 
@@ -108,6 +110,7 @@ public class TrainingEditDtoTests
             CoachId = 1,
             TrainingId = 2,
             ParticipationTypeId = participationTypeId,
+            CoachRoleId = 1,
         });
 
         var results = Validate(dto);
@@ -126,6 +129,7 @@ public class TrainingEditDtoTests
             CoachId = 1,
             TrainingId = 2,
             ParticipationTypeId = (int)EParticipationType.Absent,
+            CoachRoleId = 1,
             Note = new string('x', 51),
         });
 
@@ -134,6 +138,22 @@ public class TrainingEditDtoTests
         Assert.Contains(
             results,
             result => result.ErrorMessage == "Poznámka trenéra nesmí přesáhnout 50 znaků.");
+    }
+
+    [Fact]
+    public void Validate_RejectsCoachAssignmentWithoutRole()
+    {
+        var dto = CreateDto(new TimeOnly(17, 0), new TimeOnly(18, 0));
+        dto.CoachAssignments.Add(new TrainingCoachAssignmentInputDto
+        {
+            CoachId = 1,
+            TrainingId = 2,
+            ParticipationTypeId = (int)EParticipationType.Absent,
+        });
+
+        var results = Validate(dto);
+
+        Assert.Contains(results, result => result.ErrorMessage == "Vyberte roli trenéra.");
     }
 
     private static TrainingEditDto CreateDto(TimeOnly timeFrom, TimeOnly timeTo)

@@ -231,6 +231,21 @@ vylepší knihovnou flatpickr (CDN, verze `4.6.13`) s českou lokalizací.
   vstup. Bez načteného JavaScriptu zůstává textové pole použitelné a server
   stále validuje hodnotu.
 
+## Desetinná čísla ve formulářích
+
+Desetinná pole vykresluj přes `Pages/Shared/EditorTemplates/Decimal.cshtml`,
+případně ji použij explicitně přes `@Html.EditorFor(..., "Decimal")`.
+EditorTemplate vytváří textové pole s `inputmode="decimal"` a hodnotu formátuje
+v kultuře `cs-CZ` s desetinnou čárkou.
+
+- `CzechDecimalModelBinder` přijímá desetinnou čárku i tečku bez ohledu na
+  kulturu value provideru. Mezery, NBSP a úzké NBSP se odstraňují jako
+  oddělovače tisíců.
+- Nejednoznačné nebo neplatné hodnoty se odmítnou českou validační chybou
+  a zadaný text zůstane ve formuláři.
+- Desetinná pole nenechávej jako `<input type="number">`: prohlížeč očekává
+  tečku a českou čárku může ignorovat. Použij Decimal EditorTemplate.
+
 ---
 
 ## Fulltextový multiselect (`<search-multiselect>`)

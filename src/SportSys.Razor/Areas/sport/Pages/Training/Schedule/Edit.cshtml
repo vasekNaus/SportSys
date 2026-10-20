@@ -94,6 +94,7 @@
                         <tr>
                             <th scope="col">Trenér</th>
                             <th scope="col">Kategorie</th>
+                            <th scope="col">Role</th>
                             <th scope="col">Docházka</th>
                             <th scope="col">Poznámka</th>
                         </tr>
@@ -143,6 +144,14 @@
                                         <span asp-validation-for="Input.CoachAssignments[i].TrainingId"
                                               class="field-validation-error"></span>
                                     }
+                                </td>
+                                <td>
+                                    <select asp-for="Input.CoachAssignments[i].CoachRoleId"
+                                            asp-items="Model.CoachRoleItems"
+                                            aria-label="Role"
+                                            required></select>
+                                    <span asp-validation-for="Input.CoachAssignments[i].CoachRoleId"
+                                          class="field-validation-error"></span>
                                 </td>
                                 <td>
                                     <select asp-for="Input.CoachAssignments[i].ParticipationTypeId"
@@ -212,6 +221,18 @@ else
                     @foreach (var category in Model.TrainingItems)
                     {
                         <option value="@category.Value">@category.Text</option>
+                    }
+                </select>
+            </td>
+            <td>
+                <select name="Input.CoachAssignments[__index__].CoachRoleId"
+                        id="Input_CoachAssignments___index___CoachRoleId"
+                        aria-label="Role"
+                        required>
+                    <option value="" selected>— vyberte roli —</option>
+                    @foreach (var role in Model.Context.CoachRoles)
+                    {
+                        <option value="@role.Id">@role.Name</option>
                     }
                 </select>
             </td>

@@ -10,6 +10,13 @@ public class RequirementCoachAssignmentInput
     public int? CoachId { get; set; }
 
     public int? CoachRoleId { get; set; }
+
+    [Range(typeof(decimal), "0", "999.99",
+        ParseLimitsInInvariantCulture = true,
+        ConvertValueInInvariantCulture = true,
+        ErrorMessage = "Hodiny musí být v intervalu 0,00 až 999,99.")]
+    [Display(Name = "Hodiny")]
+    public decimal? Hours { get; set; }
 }
 
 public abstract class RequirementEditDtoBase : IValidatableObject
@@ -29,6 +36,14 @@ public abstract class RequirementEditDtoBase : IValidatableObject
 
     public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (CoachAssignments is null)
+        {
+            yield return new ValidationResult(
+                "Seznam trenérů je povinný.",
+                [nameof(CoachAssignments)]);
+            yield break;
+        }
+
         if (From > To)
         {
             yield return new ValidationResult(
@@ -37,7 +52,9 @@ public abstract class RequirementEditDtoBase : IValidatableObject
         }
 
         if (CoachAssignments.Any(assignment =>
-                !assignment.CoachId.HasValue || !assignment.CoachRoleId.HasValue))
+                assignment is null ||
+                !assignment.CoachId.HasValue ||
+                !assignment.CoachRoleId.HasValue))
         {
             yield return new ValidationResult(
                 "Každý řádek trenérů musí mít vyplněného trenéra i roli.",
@@ -54,6 +71,37 @@ public class TrainingRequirementEditDto : RequirementEditDtoBase
         ErrorMessage = "Rozsah v hodinách musí být v intervalu 0,01 až 999,99.")]
     [Display(Name = "Rozsah v hodinách")]
     public decimal DurationHours { get; set; }
+
+    public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        foreach (var result in base.Validate(validationContext))
+            yield return result;
+
+        if (decimal.Round(DurationHours, 2) != DurationHours)
+        {
+            yield return new ValidationResult(
+                "Rozsah v hodinách může mít nejvýše dvě desetinná místa.",
+                [nameof(DurationHours)]);
+        }
+
+        if (CoachAssignments is null)
+            yield break;
+
+        for (var index = 0; index < CoachAssignments.Count; index++)
+        {
+            var assignment = CoachAssignments[index];
+            if (assignment is null ||
+                assignment.Hours is null ||
+                assignment.Hours < 0 ||
+                assignment.Hours > 999.99m ||
+                decimal.Round(assignment.Hours.Value, 2) != assignment.Hours.Value)
+            {
+                yield return new ValidationResult(
+                    "Hodiny trenéra musí být v intervalu 0,00 až 999,99 a mohou mít nejvýše dvě desetinná místa.",
+                    [$"{nameof(CoachAssignments)}[{index}].{nameof(RequirementCoachAssignmentInput.Hours)}"]);
+            }
+        }
+    }
 }
 
 public class MatchRequirementEditDto : RequirementEditDtoBase

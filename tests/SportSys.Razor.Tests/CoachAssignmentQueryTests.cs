@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Services;
 using SportSys.Database.Context;
+using SportSys.Database.Models.dboSchema;
 using SportSys.Database.Models.sport;
 
 namespace SportSys.Razor.Tests;
@@ -150,6 +151,35 @@ public class CoachAssignmentQueryTests
             Assert.Contains("CoachId", query, StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void CoachRoleRelationships_AreRequiredAndHaveExplicitIndexes()
+    {
+        using var db = CreateDbContext();
+
+        AssertRequiredRoleForeignKey<CoachTrainingPlan>(db);
+        AssertRequiredRoleForeignKey<CoachTraining>(db);
+
+        var requirement = db.Model.FindEntityType(typeof(CoachTrainingRequirement))!;
+        var hours = requirement.FindProperty(nameof(CoachTrainingRequirement.Hours))!;
+        Assert.Equal(5, hours.GetPrecision());
+        Assert.Equal(2, hours.GetScale());
+    }
+
+    [Fact]
+    public void RequirementAssignmentKeys_IncludeCoachAndRole()
+    {
+        using var db = CreateDbContext();
+
+        Assert.Equal(
+            ["CoachId", "TrainingRequirementId", "CoachRoleId"],
+            db.Model.FindEntityType(typeof(CoachTrainingRequirement))!
+                .FindPrimaryKey()!.Properties.Select(property => property.Name));
+        Assert.Equal(
+            ["CoachId", "MatchRequirementId", "CoachRoleId"],
+            db.Model.FindEntityType(typeof(CoachMatchRequirement))!
+                .FindPrimaryKey()!.Properties.Select(property => property.Name));
+    }
+
     private static Training CreateTraining(int id, params int[] coachIds)
         => new()
         {
@@ -157,7 +187,12 @@ public class CoachAssignmentQueryTests
             SeasonCategoryCode = "U12",
             Note = string.Empty,
             CoachTrainings = coachIds
-                .Select(coachId => new CoachTraining { CoachId = coachId, Note = string.Empty })
+                .Select(coachId => new CoachTraining
+                {
+                    CoachId = coachId,
+                    CoachRoleId = 1,
+                    Note = string.Empty,
+                })
                 .ToList(),
         };
 
@@ -176,6 +211,7 @@ public class CoachAssignmentQueryTests
                 .Select(assignment => new CoachTrainingPlan
                 {
                     CoachId = assignment.CoachId,
+                    CoachRoleId = 1,
                     ValidFrom = assignment.ValidFrom,
                     ValidTo = assignment.ValidTo,
                 })
@@ -222,5 +258,20 @@ public class CoachAssignmentQueryTests
             .Options;
 
         return new SportSysDbContext(options);
+    }
+
+    private static void AssertRequiredRoleForeignKey<TEntity>(SportSysDbContext db)
+        where TEntity : class
+    {
+        var entityType = db.Model.FindEntityType(typeof(TEntity))!;
+        var foreignKey = entityType.GetForeignKeys()
+            .Single(key => key.Properties.Any(property => property.Name == "CoachRoleId"));
+
+        Assert.Equal(typeof(CoachRole), foreignKey.PrincipalEntityType.ClrType);
+        Assert.All(foreignKey.Properties, property => Assert.False(property.IsNullable));
+        Assert.Contains(
+            entityType.GetIndexes(),
+            index => index.Properties.Select(property => property.Name)
+                .SequenceEqual(["CoachRoleId"]));
     }
 }

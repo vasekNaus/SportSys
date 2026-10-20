@@ -37,7 +37,7 @@
     </div>
     <div class="field">
         <label asp-for="Input.DurationHours"></label>
-        <input asp-for="Input.DurationHours" type="number" step="0.01" min="0.01" max="999.99" class="textbox" />
+        @Html.EditorFor(m => m.Input.DurationHours, "Decimal", new { InputCssClass = "textbox" })
         <span asp-validation-for="Input.DurationHours"></span>
     </div>
 
@@ -48,6 +48,7 @@
                  Assignments = Model.Input.CoachAssignments,
                  CoachItems = Model.Context.CoachItems,
                  RoleItems = Model.Context.RoleItems,
+                 ShowHours = true,
              }" />
 
     <footer>

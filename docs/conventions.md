@@ -216,6 +216,9 @@ neupravuje.
 Datumová a časová pole v Razor formulářích vykresluj přes EditorTemplates
 `Date` / `Time`; hodnoty mají český formát a parsuje je
 `CzechDateTimeModelBinder` stejně pro GET i POST.
+Desetinná pole vykresluj přes `Decimal` EditorTemplate (textový vstup,
+`inputmode="decimal"`, česká desetinná čárka); nepoužívej pro ně
+`type="number"`. `CzechDecimalModelBinder` přijímá čárku i tečku pro GET i POST.
 
 ---
 

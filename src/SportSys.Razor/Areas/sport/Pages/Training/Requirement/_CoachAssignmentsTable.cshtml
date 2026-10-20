@@ -5,6 +5,10 @@
         <tr>
             <th>Trenér</th>
             <th>Role</th>
+            @if (Model.ShowHours)
+            {
+                <th>Hodiny</th>
+            }
             <th>Akce</th>
         </tr>
     </thead>
@@ -31,6 +35,27 @@
                         }
                     </select>
                 </td>
+                @if (Model.ShowHours)
+                {
+                    <td>
+                        @Html.EditorFor(
+                            _ => assignment.Hours,
+                            "Decimal",
+                            $"Input.CoachAssignments[{i}].Hours",
+                            new
+                            {
+                                InputCssClass = "textbox",
+                                InputAttributes = new Dictionary<string, object>
+                                {
+                                    ["aria-label"] = "Hodiny",
+                                    ["required"] = "required",
+                                },
+                            })
+                        <span class="field-validation-error"
+                              data-valmsg-for="Input.CoachAssignments[@i].Hours"
+                              data-valmsg-replace="true"></span>
+                    </td>
+                }
                 <td class="buttons">
                     <button type="submit"
                             class="button secondary icon-btn"

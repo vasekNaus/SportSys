@@ -91,6 +91,9 @@ atomickém importu všech řádků do `sport.CoachTraining` a `sport.CoachMatch`
    částečně importovaná účast.
 7. Seznamové dotazy binární obsah neprojektují; načítá se až při stažení.
 
+Při zápisu nové účasti do `sport.CoachTraining` import nastaví roli `Head`.
+Při změně stavu účasti u existujícího přiřazení zachová již evidovanou roli.
+
 ## Klíčové komponenty
 
 | Komponenta | Cesta |

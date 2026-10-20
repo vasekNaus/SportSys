@@ -164,6 +164,7 @@ public class TrainingRequirementService
                         CoachRoleName = assignment.CoachRole.Name,
                         CoachRoleCode = assignment.CoachRole.Code,
                         CoachRoleOrder = assignment.CoachRole.Order,
+                        Hours = assignment.Hours,
                     })
                     .ToList(),
             })
@@ -188,7 +189,7 @@ public class TrainingRequirementService
                 TrainingTypeName = item.TrainingType.Name,
                 TrainingPhaseName = item.TrainingPhase.Name,
                 Assignments = item.CoachTrainingRequirements
-                    .Select(a => new { a.CoachId, a.CoachRoleId })
+                    .Select(a => new { a.CoachId, a.CoachRoleId, a.Hours })
                     .ToList(),
             })
             .SingleOrDefaultAsync(ct);
@@ -209,6 +210,7 @@ public class TrainingRequirementService
                     {
                         CoachId = a.CoachId,
                         CoachRoleId = a.CoachRoleId,
+                        Hours = a.Hours,
                     })
                     .ToList(),
             },
@@ -225,7 +227,16 @@ public class TrainingRequirementService
         TrainingRequirementEditDto dto,
         CancellationToken ct = default)
     {
-        if (dto.From > dto.To || dto.DurationHours <= 0 || dto.DurationHours > 999.99m)
+        if (dto.From > dto.To ||
+            dto.DurationHours <= 0 ||
+            dto.DurationHours > 999.99m ||
+            dto.CoachAssignments is null ||
+            dto.CoachAssignments.Any(assignment =>
+                assignment is null ||
+                assignment.Hours is null ||
+                assignment.Hours < 0 ||
+                assignment.Hours > 999.99m ||
+                decimal.Round(assignment.Hours.Value, 2) != assignment.Hours.Value))
             return new RequirementEditResult(RequirementEditStatus.InvalidInput);
 
         var invalid = await RequirementEditHelper.ValidateAssignmentsAsync(
@@ -244,21 +255,30 @@ public class TrainingRequirementService
         requirement.DurationHours = dto.DurationHours;
 
         var wanted = dto.CoachAssignments
-            .Select(a => (CoachId: a.CoachId!.Value, RoleId: a.CoachRoleId!.Value))
-            .ToHashSet();
+            .ToDictionary(
+                assignment => (CoachId: assignment.CoachId!.Value, RoleId: assignment.CoachRoleId!.Value),
+                assignment => assignment.Hours!.Value);
         var existing = requirement.CoachTrainingRequirements
             .ToDictionary(a => (a.CoachId, RoleId: a.CoachRoleId));
 
         _db.CoachTrainingRequirements.RemoveRange(
-            existing.Where(pair => !wanted.Contains(pair.Key)).Select(pair => pair.Value));
-        foreach (var key in wanted.Where(key => !existing.ContainsKey(key)))
+            existing.Where(pair => !wanted.ContainsKey(pair.Key)).Select(pair => pair.Value));
+        foreach (var (key, hours) in wanted)
         {
-            _db.CoachTrainingRequirements.Add(new CoachTrainingRequirement
+            if (existing.TryGetValue(key, out var current))
             {
-                CoachId = key.CoachId,
-                CoachRoleId = key.RoleId,
-                TrainingRequirementId = requirement.Id,
-            });
+                current.Hours = hours;
+            }
+            else
+            {
+                _db.CoachTrainingRequirements.Add(new CoachTrainingRequirement
+                {
+                    CoachId = key.CoachId,
+                    CoachRoleId = key.RoleId,
+                    TrainingRequirementId = requirement.Id,
+                    Hours = hours,
+                });
+            }
         }
 
         await _db.SaveChangesAsync(ct);

@@ -24,6 +24,10 @@ public partial class CoachTrainingRequirement
     [Key]
     public int CoachRoleId { get; set; }
 
+    [Precision(5, 2)]
+    [Column(TypeName = "decimal(5,2)")]
+    public decimal Hours { get; set; }
+
     [DeleteBehavior(DeleteBehavior.ClientSetNull)]
     public virtual Coach Coach { get; set; } = null!;
 

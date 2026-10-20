@@ -68,9 +68,11 @@ public class TrainingService
                 CoachId = row.CoachId,
                 TrainingId = row.TrainingId,
                 ParticipationTypeId = row.ParticipationTypeId,
+                CoachRoleId = row.CoachRoleId,
                 CoachDisplayName = row.CoachDisplayName,
                 SeasonCategoryCode = row.SeasonCategoryCode,
                 ParticipationTypeName = ((EParticipationType)row.ParticipationTypeId).GetDisplayName(),
+                CoachRoleName = row.CoachRoleName,
                 Note = row.Note,
             })
             .ToList();
@@ -103,6 +105,7 @@ public class TrainingService
                         ExistingTrainingId = assignment.TrainingId,
                         ExistingParticipationTypeId = assignment.ParticipationTypeId,
                         ParticipationTypeId = assignment.ParticipationTypeId,
+                        CoachRoleId = assignment.CoachRoleId,
                         Note = assignment.Note,
                     })
                     .ToList(),
@@ -125,6 +128,12 @@ public class TrainingService
                     IsDefault = participationType == EParticipationType.Absent,
                 })
                 .ToList(),
+            CoachRoles = await _db.CoachRoles
+                .AsNoTracking()
+                .OrderBy(role => role.Order)
+                .ThenBy(role => role.Id)
+                .Select(role => new LookupSelectItem { Id = role.Id, Name = role.Name })
+                .ToListAsync(ct),
             IsGrouped = target.GroupId.HasValue,
             CanEdit = HaveConsistentEditableValues(members),
         };
@@ -201,9 +210,11 @@ public class TrainingService
                 CoachId = row.CoachId,
                 TrainingId = row.TrainingId,
                 ParticipationTypeId = row.ParticipationTypeId,
+                CoachRoleId = row.CoachRoleId,
                 CoachDisplayName = row.CoachDisplayName,
                 SeasonCategoryCode = row.SeasonCategoryCode,
                 ParticipationTypeName = ((EParticipationType)row.ParticipationTypeId).GetDisplayName(),
+                CoachRoleName = row.CoachRoleName,
                 Note = row.Note,
             })
             .ToList();
@@ -230,6 +241,9 @@ public class TrainingService
         var availableCoachIds = await _db.Coaches
             .Select(coach => coach.Id)
             .ToListAsync(ct);
+        var availableCoachRoleIds = await _db.CoachRoles
+            .Select(role => role.Id)
+            .ToHashSetAsync(ct);
         var assignmentValidation = ValidateCoachAssignments(
             dto.CoachAssignments,
             existingCoachAssignments
@@ -239,7 +253,8 @@ public class TrainingService
                     assignment.ParticipationTypeId))
                 .ToList(),
             memberIds.ToHashSet(),
-            availableCoachIds.ToHashSet());
+            availableCoachIds.ToHashSet(),
+            availableCoachRoleIds);
 
         if (assignmentValidation.Result != TrainingUpdateResult.Success)
             return assignmentValidation.Result;
@@ -270,6 +285,7 @@ public class TrainingService
                 if (existing.ParticipationTypeId == assignment.ParticipationTypeId)
                 {
                     existing.Note = assignment.Note;
+                    existing.CoachRoleId = assignment.CoachRoleId;
                 }
                 else
                 {
@@ -279,6 +295,7 @@ public class TrainingService
                         CoachId = assignment.CoachId,
                         TrainingId = assignment.TrainingId,
                         ParticipationTypeId = assignment.ParticipationTypeId,
+                        CoachRoleId = assignment.CoachRoleId,
                         Note = assignment.Note,
                     });
                 }
@@ -290,6 +307,7 @@ public class TrainingService
                     CoachId = assignment.CoachId,
                     TrainingId = assignment.TrainingId,
                     ParticipationTypeId = assignment.ParticipationTypeId,
+                    CoachRoleId = assignment.CoachRoleId,
                     Note = assignment.Note,
                 });
             }
@@ -317,11 +335,13 @@ public class TrainingService
                 assignment.CoachId,
                 assignment.TrainingId,
                 assignment.ParticipationTypeId,
+                assignment.CoachRoleId,
                 assignment.Coach.DisplayName ??
                     assignment.Coach.UserName ??
                     assignment.Coach.Email ??
                     assignment.Coach.Id.ToString(),
                 assignment.Training.SeasonCategoryCode,
+                assignment.CoachRole.Name,
                 assignment.Note))
             .ToListAsync(ct);
 
@@ -329,7 +349,8 @@ public class TrainingService
         IReadOnlyCollection<TrainingCoachAssignmentInputDto>? requestedAssignments,
         IReadOnlyCollection<CoachTrainingAssignmentKey> existingAssignmentKeys,
         IReadOnlySet<int> memberIds,
-        IReadOnlySet<int> availableCoachIds)
+        IReadOnlySet<int> availableCoachIds,
+        IReadOnlySet<int> availableCoachRoleIds)
     {
         if (requestedAssignments is null)
         {
@@ -348,6 +369,8 @@ public class TrainingService
             if (assignment is null ||
                 assignment.ParticipationTypeId is null ||
                 !Enum.IsDefined((EParticipationType)assignment.ParticipationTypeId.Value) ||
+                assignment.CoachRoleId is null or <= 0 ||
+                !availableCoachRoleIds.Contains(assignment.CoachRoleId.Value) ||
                 (assignment.Note?.Length ?? 0) > 50)
             {
                 return new CoachTrainingAssignmentValidation(
@@ -426,6 +449,7 @@ public class TrainingService
                 coachId,
                 trainingId,
                 assignment.ParticipationTypeId.Value,
+                assignment.CoachRoleId.Value,
                 assignment.Note ?? string.Empty,
                 existingParticipationTypeId));
         }
@@ -506,6 +530,7 @@ public class TrainingService
                     assignment.CoachId,
                     assignment.TrainingId,
                     assignment.ParticipationTypeId,
+                    assignment.CoachRoleId,
                     assignment.Note))
                 .ToList());
 
@@ -519,8 +544,10 @@ public class TrainingService
         int CoachId,
         int TrainingId,
         int ParticipationTypeId,
+        int CoachRoleId,
         string CoachDisplayName,
         string SeasonCategoryCode,
+        string CoachRoleName,
         string Note);
     private sealed record TrainingVersionSnapshot(
         Guid? GroupId,
@@ -538,5 +565,6 @@ public class TrainingService
         int CoachId,
         int TrainingId,
         int ParticipationTypeId,
+        int CoachRoleId,
         string Note);
 }

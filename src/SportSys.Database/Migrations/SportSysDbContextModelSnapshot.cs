@@ -1191,6 +1191,9 @@ namespace SportSys.Database.Migrations
                     b.Property<int>("ParticipationTypeId")
                         .HasColumnType("int");
 
+                    b.Property<int>("CoachRoleId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Note")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1200,6 +1203,8 @@ namespace SportSys.Database.Migrations
                         .HasDefaultValue("", "DF_CoachTraining_Note");
 
                     b.HasKey("CoachId", "TrainingId", "ParticipationTypeId");
+
+                    b.HasIndex(new[] { "CoachRoleId" }, "IX_CoachTraining_CoachRoleId");
 
                     b.ToTable("CoachTraining", "sport", t =>
                         {
@@ -1211,6 +1216,9 @@ namespace SportSys.Database.Migrations
 
                             t.Property("ParticipationTypeId")
                                 .HasColumnName("ParticipationType_Id");
+
+                            t.Property("CoachRoleId")
+                                .HasColumnName("CoachRole_Id");
                         });
                 });
 
@@ -1228,7 +1236,12 @@ namespace SportSys.Database.Migrations
                     b.Property<DateOnly>("ValidTo")
                         .HasColumnType("date");
 
+                    b.Property<int>("CoachRoleId")
+                        .HasColumnType("int");
+
                     b.HasKey("CoachId", "TrainingPlanId", "ValidFrom", "ValidTo");
+
+                    b.HasIndex(new[] { "CoachRoleId" }, "IX_CoachTrainingPlan_CoachRoleId");
 
                     b.HasIndex(new[] { "CoachId", "ValidFrom", "ValidTo" }, "IX_CoachTraining_Coach_Date");
 
@@ -1241,6 +1254,9 @@ namespace SportSys.Database.Migrations
 
                             t.Property("TrainingPlanId")
                                 .HasColumnName("TrainingPlan_Id");
+
+                            t.Property("CoachRoleId")
+                                .HasColumnName("CoachRole_Id");
                         });
                 });
 
@@ -1254,6 +1270,10 @@ namespace SportSys.Database.Migrations
 
                     b.Property<int>("CoachRoleId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("Hours")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.HasKey("CoachId", "TrainingRequirementId", "CoachRoleId");
 
@@ -2413,6 +2433,11 @@ namespace SportSys.Database.Migrations
                         .HasForeignKey("CoachId")
                         .IsRequired();
 
+                    b.HasOne("SportSys.Database.Models.dboSchema.CoachRole", "CoachRole")
+                        .WithMany("CoachTrainings")
+                        .HasForeignKey("CoachRoleId")
+                        .IsRequired();
+
                     b.HasOne("SportSys.Database.Models.sportSchema.ParticipationType", "ParticipationType")
                         .WithMany("CoachTrainings")
                         .HasForeignKey("ParticipationTypeId")
@@ -2426,6 +2451,8 @@ namespace SportSys.Database.Migrations
 
                     b.Navigation("Coach");
 
+                    b.Navigation("CoachRole");
+
                     b.Navigation("ParticipationType");
 
                     b.Navigation("Training");
@@ -2438,12 +2465,19 @@ namespace SportSys.Database.Migrations
                         .HasForeignKey("CoachId")
                         .IsRequired();
 
+                    b.HasOne("SportSys.Database.Models.dboSchema.CoachRole", "CoachRole")
+                        .WithMany("CoachTrainingPlans")
+                        .HasForeignKey("CoachRoleId")
+                        .IsRequired();
+
                     b.HasOne("SportSys.Database.Models.sport.TrainingPlan", "TrainingPlan")
                         .WithMany("CoachTrainingPlans")
                         .HasForeignKey("TrainingPlanId")
                         .IsRequired();
 
                     b.Navigation("Coach");
+
+                    b.Navigation("CoachRole");
 
                     b.Navigation("TrainingPlan");
                 });
@@ -2702,7 +2736,11 @@ namespace SportSys.Database.Migrations
                 {
                     b.Navigation("CoachMatchRequirements");
 
+                    b.Navigation("CoachTrainingPlans");
+
                     b.Navigation("CoachTrainingRequirementCoachRoles");
+
+                    b.Navigation("CoachTrainings");
                 });
 
             modelBuilder.Entity("SportSys.Database.Models.hr.CoachLicenseType", b =>

@@ -20,7 +20,7 @@ public class RequirementEditDtoTests
             From = new DateOnly(2026, 9, 1),
             To = new DateOnly(2026, 12, 31),
             DurationHours = 10,
-            CoachAssignments = [new() { CoachId = 1, CoachRoleId = 1 }],
+            CoachAssignments = [new() { CoachId = 1, CoachRoleId = 1, Hours = 6 }],
         };
 
         Assert.Empty(Validate(dto));
@@ -67,6 +67,21 @@ public class RequirementEditDtoTests
     }
 
     [Fact]
+    public void DurationHoursWithMoreThanTwoDecimalPlaces_IsInvalid()
+    {
+        var dto = new TrainingRequirementEditDto
+        {
+            From = new DateOnly(2026, 9, 1),
+            To = new DateOnly(2026, 12, 31),
+            DurationHours = 1.234m,
+        };
+
+        Assert.Contains(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(TrainingRequirementEditDto.DurationHours)));
+    }
+
+    [Fact]
     public void NegativeMatchCount_IsInvalid()
     {
         var dto = new MatchRequirementEditDto
@@ -78,4 +93,40 @@ public class RequirementEditDtoTests
 
         Assert.NotEmpty(Validate(dto));
     }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("0.5")]
+    [InlineData("2.25")]
+    [InlineData("999.99")]
+    public void CoachHours_AcceptsValuesInRange(string hours)
+    {
+        var dto = CreateTrainingRequirement(decimal.Parse(
+            hours,
+            System.Globalization.CultureInfo.InvariantCulture));
+
+        Assert.Empty(Validate(dto));
+    }
+
+    [Theory]
+    [InlineData("-0.01")]
+    [InlineData("1000")]
+    [InlineData("1.001")]
+    public void CoachHours_RejectsNegativeOutOfRangeOrExcessPrecision(string hours)
+    {
+        var dto = CreateTrainingRequirement(decimal.Parse(
+            hours,
+            System.Globalization.CultureInfo.InvariantCulture));
+
+        Assert.NotEmpty(Validate(dto));
+    }
+
+    private static TrainingRequirementEditDto CreateTrainingRequirement(decimal hours)
+        => new()
+        {
+            From = new DateOnly(2026, 9, 1),
+            To = new DateOnly(2026, 12, 31),
+            DurationHours = 10,
+            CoachAssignments = [new() { CoachId = 1, CoachRoleId = 1, Hours = hours }],
+        };
 }
