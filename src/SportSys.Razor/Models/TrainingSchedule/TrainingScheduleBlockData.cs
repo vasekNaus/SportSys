@@ -14,6 +14,13 @@ public sealed class TrainingScheduleCategorySegment
     public string? StateIcon { get; init; }
 }
 
+public sealed class TrainingSchedulePlanCoachAssignment
+{
+    public int SeasonCategoryOrder { get; init; }
+    public int TrainingPlanId { get; init; }
+    public required TrainingPlanCoachDto Coach { get; init; }
+}
+
 public sealed class TrainingScheduleBlockData
 {
     public required IReadOnlyList<ITrainingScheduleItem> Items { get; init; }
@@ -21,6 +28,7 @@ public sealed class TrainingScheduleBlockData
     public required IReadOnlyList<string> TrainingTypeNames { get; init; }
     public required IReadOnlyList<string> Locations { get; init; }
     public required IReadOnlyList<SimpleCoachDto> Coaches { get; init; }
+    public required IReadOnlyList<TrainingSchedulePlanCoachAssignment> PlanCoachAssignments { get; init; }
     public required IReadOnlyList<TrainingScheduleCoachParticipation> CoachParticipations { get; init; }
     public required IReadOnlyList<string> TrainingTypeLocationSummaries { get; init; }
     public required IReadOnlyList<TrainingScheduleCategorySegment> CategorySegments { get; init; }
@@ -122,6 +130,15 @@ public static class TrainingScheduleBlockFactory
                 .SelectMany(item => item.Coaches)
                 .OrderBy(coach => coach.FullName, StringComparer.Ordinal)
                 .ToList(),
+            PlanCoachAssignments = TrainingPlanCoachPresentation.Order(items
+                .OfType<TrainingPlanScheduleItemDto>()
+                .SelectMany(item => item.CoachAssignments.Select(coach =>
+                    new TrainingSchedulePlanCoachAssignment
+                    {
+                        SeasonCategoryOrder = item.SeasonCategoryOrder,
+                        TrainingPlanId = item.Id,
+                        Coach = coach,
+                    }))),
             CoachParticipations = items
                 .OfType<TrainingScheduleItemDto>()
                 .SelectMany(item => item.CoachParticipations.Select(participation =>

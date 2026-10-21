@@ -191,7 +191,8 @@ public static class EventModelFactory
             SeasonCategoryOrder = block.SeasonCategoryOrder,
             ColorKey = block.Items[0].SeasonCategoryCode,
             TitleLine = block.Title,
-            CoachSurnameSummary = block.CoachSurnameSummary,
+            CoachSurnameSummary = TrainingPlanCoachPresentation.Format(
+                block.PlanCoachAssignments),
             LocationSummary = block.LocationSummary,
             TimeFrom = block.TimeFrom,
             TimeTo = block.TimeTo,
@@ -199,10 +200,21 @@ public static class EventModelFactory
             PlanTitleSummary = planTitleSummary,
             ValidFrom = planItems.Count > 0 ? planItems.Min(item => item.From) : default,
             ValidTo = planItems.Count > 0 ? planItems.Max(item => item.To) : default,
-            Tooltip = string.Join(" | ", block.Items.Select(CreateTooltip)),
+            Tooltip = CreateTrainingPlanTooltip(block),
             EditItemId = allowEditing ? block.MinimumItemId : null,
             EditPage = allowEditing ? "/Training/Plan/Edit" : null,
         };
+    }
+
+    private static string CreateTrainingPlanTooltip(TrainingScheduleBlockData block)
+    {
+        var parts = block.Items.Select(CreateTooltip).ToList();
+        var coaches = TrainingPlanCoachPresentation.Format(block.PlanCoachAssignments);
+
+        if (coaches != "-")
+            parts.Add($"Trenéři: {coaches}");
+
+        return string.Join(" | ", parts);
     }
 
     private static string CreateTooltip(ITrainingScheduleItem item)
@@ -237,7 +249,7 @@ public static class EventModelFactory
                 $"Trenéři: {string.Join(", ", training.CoachParticipations.Select(participation =>
                     $"{participation.FullName} – {participation.ParticipationTypeName}"))}");
         }
-        else if (item.Coaches.Count > 0)
+        else if (item is not TrainingPlanScheduleItemDto && item.Coaches.Count > 0)
         {
             parts.Add($"Trenéři: {string.Join(", ", item.Coaches.Select(coach => coach.FullName))}");
         }

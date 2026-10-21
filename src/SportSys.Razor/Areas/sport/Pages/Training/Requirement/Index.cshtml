@@ -2,6 +2,10 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Požadavky";
+    var trainingCoachViewData = new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+    {
+        ["IncludeHours"] = true,
+    };
 
     var selectedTrainingTypeNames = Model.TrainingTypes
         .Where(type => Model.SelectedTrainingTypeIds.Contains(type.Id))
@@ -216,9 +220,9 @@ else
                         <th>Kategorie</th>
                         <th>Typ tréninku</th>
                         <th>Fáze</th>
-                        <th>Platnost od</th>
-                        <th>Platnost do</th>
-                        <th>Rozsah v hodinách</th>
+                        <th>Od</th>
+                        <th>Do</th>
+                        <th>Rozsah [h]</th>
                         <th>Trenéři</th>
                         <th>Akce</th>
                     </tr>
@@ -228,14 +232,14 @@ else
                     {
                         <tr>
                             <td>@requirement.SeasonName</td>
-                            <td>@requirement.SeasonCategoryCode</td>
+                            <td>@requirement.SeasonCategoryName</td>
                             <td>@requirement.TrainingTypeName</td>
                             <td>@requirement.TrainingPhaseName</td>
                             <td>@requirement.From.ToString("dd.MM.yyyy")</td>
                             <td>@requirement.To.ToString("dd.MM.yyyy")</td>
                             <td>@requirement.DurationHours.ToString("0.##")</td>
                             <td>
-                                <partial name="_CoachGroups" model="requirement.CoachAssignments" />
+                                <partial name="_CoachGroups" model="requirement.CoachAssignments" view-data="trainingCoachViewData" />
                             </td>
                             <td class="buttons">
                                 <a class="button secondary icon-btn"

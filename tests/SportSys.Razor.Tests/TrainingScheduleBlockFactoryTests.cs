@@ -124,6 +124,63 @@ public class TrainingScheduleBlockFactoryTests
     }
 
     [Fact]
+    public void CreateBlocks_OrdersPlanCoachesByCategoryRoleAndSurnameWithoutCrossPlanDeduplication()
+    {
+        var groupId = Guid.NewGuid();
+        var laterCategory = CreateTrainingPlan(
+            2,
+            "U14",
+            2,
+            groupId,
+            [
+                CreatePlanCoach(1, "Jan Beta", 1, "H", 1),
+                CreatePlanCoach(3, "Adam Alfa", 3, "A", 2),
+            ]);
+        var earlierCategory = CreateTrainingPlan(
+            1,
+            "U12",
+            1,
+            groupId,
+            [
+                CreatePlanCoach(1, "Jan Beta", 2, "A", 2),
+                CreatePlanCoach(2, "Petr Havel", 1, "H", 1),
+            ]);
+
+        var block = Assert.Single(
+            TrainingScheduleBlockFactory.CreateBlocks([laterCategory, earlierCategory]));
+
+        Assert.Equal(
+            "Havel (H), Beta (A), Beta (H), Alfa (A)",
+            TrainingPlanCoachPresentation.Format(block.PlanCoachAssignments));
+        Assert.Equal(4, block.PlanCoachAssignments.Count);
+    }
+
+    [Fact]
+    public void CreateBlocks_UsesCoachSurnameBeforeCategoryCodeWhenCategoryOrdersMatch()
+    {
+        var groupId = Guid.NewGuid();
+        var block = Assert.Single(TrainingScheduleBlockFactory.CreateBlocks(
+        [
+            CreateTrainingPlan(
+                1,
+                "U12",
+                1,
+                groupId,
+                [CreatePlanCoach(2, "Petr Zulu", 1, "A", 1)]),
+            CreateTrainingPlan(
+                2,
+                "U14",
+                1,
+                groupId,
+                [CreatePlanCoach(1, "Jan Alfa", 1, "A", 1)]),
+        ]));
+
+        Assert.Equal(
+            "Alfa (A), Zulu (A)",
+            TrainingPlanCoachPresentation.Format(block.PlanCoachAssignments));
+    }
+
+    [Fact]
     public void CreateBlocks_SingleTrainingPropagatesIsDryTraining()
     {
         var item = CreateTraining(
@@ -347,6 +404,51 @@ public class TrainingScheduleBlockFactoryTests
                 .ToList(),
             TrainingStateId = trainingStateId,
             TrainingStateName = trainingStateName,
+        };
+
+    private static TrainingPlanScheduleItemDto CreateTrainingPlan(
+        int id,
+        string category,
+        int categoryOrder,
+        Guid groupId,
+        IReadOnlyList<TrainingPlanCoachDto> coaches)
+        => new()
+        {
+            Id = id,
+            From = new DateOnly(2026, 9, 1),
+            To = new DateOnly(2026, 9, 30),
+            DayName = nameof(DayOfWeek.Monday),
+            TimeFrom = new TimeOnly(16, 0),
+            TimeTo = new TimeOnly(17, 0),
+            GroupId = groupId,
+            SeasonCategoryCode = category,
+            SeasonCategoryOrder = categoryOrder,
+            TrainingTypeName = "Led",
+            TrainingPhaseName = "Sezóna",
+            Coaches = coaches
+                .Select(coach => new SimpleCoachDto
+                {
+                    FullName = coach.FullName,
+                    LastName = coach.LastName,
+                })
+                .ToList(),
+            CoachAssignments = coaches,
+        };
+
+    private static TrainingPlanCoachDto CreatePlanCoach(
+        int coachId,
+        string fullName,
+        int roleId,
+        string roleCode,
+        int roleOrder)
+        => new()
+        {
+            CoachId = coachId,
+            FullName = fullName,
+            LastName = fullName[(fullName.LastIndexOf(' ') + 1)..],
+            CoachRoleId = roleId,
+            CoachRoleCode = roleCode,
+            CoachRoleOrder = roleOrder,
         };
 
     private static string ExtractLastName(string fullName)

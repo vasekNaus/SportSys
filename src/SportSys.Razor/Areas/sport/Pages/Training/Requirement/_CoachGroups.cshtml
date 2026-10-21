@@ -1,6 +1,6 @@
 @model IReadOnlyList<SportSys.Contract.Models.RequirementCoachListItem>
 @{
-    var groups = SportSys.Razor.Models.RequirementCoachGroups.Group(Model);
+    var groups = SportSys.Razor.Models.RequirementCoachGroups.Group(Model, ViewData["IncludeHours"] is true);
 }
 
 @if (groups.Count == 0)
@@ -14,7 +14,7 @@ else
         {
             <div class="coach-group">
                 <strong class="coach-group-role">@group.RoleName:</strong>
-                <span class="coach-group-names">@string.Join(", ", group.LastNames)</span>
+                <span class="coach-group-names">@string.Join(", ", group.CoachDisplayTexts)</span>
             </div>
         }
     </div>

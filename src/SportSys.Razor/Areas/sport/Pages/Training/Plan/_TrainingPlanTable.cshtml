@@ -36,7 +36,7 @@
                 <td>@row.TimeFrom.ToString("HH:mm")</td>
                 <td>@row.TimeTo.ToString("HH:mm")</td>
                 <td>@($"{row.DurationMinutes} min")</td>
-                <td>@string.Join(", ", row.Coaches.Select(c => c.FullName))</td>
+                <td>@TrainingPlanCoachPresentation.Format(row.CoachAssignments)</td>
                 <td class="buttons">
                     <a class="button secondary icon-btn"
                        asp-page="./Edit"

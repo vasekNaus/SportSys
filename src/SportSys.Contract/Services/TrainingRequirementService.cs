@@ -133,6 +133,7 @@ public class TrainingRequirementService
                 SeasonId = requirement.SeasonId,
                 SeasonName = requirement.SeasonCategory.Season.Name,
                 SeasonCategoryCode = requirement.SeasonCategoryCode,
+                SeasonCategoryName = requirement.SeasonCategory.Name,
                 SeasonCategoryOrder = requirement.SeasonCategory.Order,
                 TrainingTypeId = requirement.TrainingTypeId,
                 TrainingTypeName = requirement.TrainingType.Name,

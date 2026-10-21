@@ -8,6 +8,7 @@ public class TrainingRequirementListItem
     public int SeasonId { get; set; }
     public string SeasonName { get; set; } = string.Empty;
     public string SeasonCategoryCode { get; set; } = string.Empty;
+    public string SeasonCategoryName { get; set; } = string.Empty;
     public int SeasonCategoryOrder { get; set; }
     public int TrainingTypeId { get; set; }
     public string TrainingTypeName { get; set; } = string.Empty;

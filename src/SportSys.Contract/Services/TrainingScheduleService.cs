@@ -4,6 +4,7 @@ using SportSys.Contract.Models.hr;
 using SportSys.Database.Context;
 using SportSys.Database.Enums;
 using SportSys.Database.Models.sport;
+using System.Globalization;
 
 namespace SportSys.Contract.Services;
 
@@ -311,31 +312,80 @@ public class TrainingScheduleService
 
         var planIds = plans.Select(p => p.Id).ToList();
 
-        var assignments = await _db.CoachTrainingPlans
+        var assignmentRows = await _db.CoachTrainingPlans
             .Where(c => planIds.Contains(c.TrainingPlanId))
             .Select(c => new
             {
                 c.TrainingPlanId,
                 c.ValidFrom,
                 c.ValidTo,
+                c.CoachId,
                 CoachFullName = c.Coach.DisplayName ?? string.Empty,
+                c.CoachRoleId,
+                CoachRoleCode = c.CoachRole.Code,
+                CoachRoleOrder = c.CoachRole.Order,
             })
             .ToListAsync(ct);
 
-        var assignmentsByPlanId = assignments
-            .ToLookup(a => a.TrainingPlanId);
+        AssignCoachesToPlans(
+            plans,
+            assignmentRows
+                .Select(row => new TrainingPlanCoachAssignmentRow(
+                    row.TrainingPlanId,
+                    row.ValidFrom,
+                    row.ValidTo,
+                    row.CoachId,
+                    row.CoachFullName,
+                    row.CoachRoleId,
+                    row.CoachRoleCode,
+                    row.CoachRoleOrder))
+                .ToList());
+    }
+
+    internal static void AssignCoachesToPlans(
+        IReadOnlyList<TrainingPlanScheduleItemDto> plans,
+        IReadOnlyList<TrainingPlanCoachAssignmentRow> assignments)
+    {
+        var assignmentsByPlanId = assignments.ToLookup(assignment => assignment.TrainingPlanId);
+        var czechComparer = StringComparer.Create(
+            CultureInfo.GetCultureInfo("cs-CZ"),
+            ignoreCase: true);
 
         foreach (var plan in plans)
         {
-            plan.Coaches = assignmentsByPlanId[plan.Id]
-                .Where(a => a.ValidFrom <= plan.To && a.ValidTo >= plan.From)
-                .Select(a => a.CoachFullName)
-                .Distinct()
-                .OrderBy(x => x)
-                .Select(fullName => new SimpleCoachDto
+            var planAssignments = assignmentsByPlanId[plan.Id]
+                .Where(assignment =>
+                    assignment.ValidFrom <= plan.To
+                    && assignment.ValidTo >= plan.From)
+                .GroupBy(assignment => (assignment.CoachId, assignment.CoachRoleId))
+                .Select(group => group
+                    .OrderBy(assignment => assignment.ValidFrom)
+                    .ThenBy(assignment => assignment.ValidTo)
+                    .First())
+                .Select(assignment => new TrainingPlanCoachDto
                 {
-                    FullName = fullName,
-                    LastName = ExtractLastName(fullName),
+                    CoachId = assignment.CoachId,
+                    FullName = assignment.CoachFullName,
+                    LastName = ExtractLastName(assignment.CoachFullName),
+                    CoachRoleId = assignment.CoachRoleId,
+                    CoachRoleCode = assignment.CoachRoleCode,
+                    CoachRoleOrder = assignment.CoachRoleOrder,
+                })
+                .OrderBy(assignment => assignment.CoachRoleOrder)
+                .ThenBy(assignment => assignment.LastName, czechComparer)
+                .ThenBy(assignment => assignment.CoachId)
+                .ThenBy(assignment => assignment.CoachRoleId)
+                .ToList();
+
+            plan.CoachAssignments = planAssignments;
+            plan.Coaches = planAssignments
+                .GroupBy(assignment => assignment.FullName, StringComparer.Ordinal)
+                .Select(group => group.First())
+                .OrderBy(assignment => assignment.FullName, StringComparer.Ordinal)
+                .Select(assignment => new SimpleCoachDto
+                {
+                    FullName = assignment.FullName,
+                    LastName = assignment.LastName,
                 })
                 .ToList();
         }
@@ -358,6 +408,16 @@ public class TrainingScheduleService
             ? trimmed
             : trimmed[(lastSpaceIndex + 1)..];
     }
+
+    internal sealed record TrainingPlanCoachAssignmentRow(
+        int TrainingPlanId,
+        DateOnly ValidFrom,
+        DateOnly ValidTo,
+        int CoachId,
+        string CoachFullName,
+        int CoachRoleId,
+        string CoachRoleCode,
+        int CoachRoleOrder);
 
     internal static void ApplyVisualizationGrouping(
         IReadOnlyList<TrainingScheduleItemDto> items,

@@ -57,11 +57,23 @@ Původní route `/sport/Schedule` není zachována.
 Stránka `/sport/Training/Requirement` je read-only přehled požadavků pro
 plánování sezóny. První tabulka zobrazuje požadavky na tréninky: sezónu,
 kategorii, typ a fázi tréninku, interval platnosti, požadovaný rozsah v
-hodinách a přiřazené trenéry včetně jejich rolí. Druhá tabulka pod ní zobrazuje
+hodinách a přiřazené trenéry včetně jejich rolí. Kategorie se zde zobrazuje
+názvem (`SeasonCategory.Name`), zatímco filtr kategorií nadále používá kódy.
+Záhlaví tréninkové tabulky je `Sezóna`, `Kategorie`, `Typ tréninku`, `Fáze`,
+`Od`, `Do`, `Rozsah [h]`, `Trenéři`, `Akce`. Trenéři jsou seskupeni podle rolí
+v pořadí `CoachRole.Order` a uvnitř role řazeni podle příjmení s českým
+porovnáváním. Každé přiřazení zobrazuje vlastní plánované hodiny
+z `CoachTrainingRequirement.Hours` ve formátu `0.##`: nejvýše dvě desetinná
+místa s českou desetinnou čárkou, bez koncových nul, například `Novák (1,5)`,
+`Krs (2)` nebo `Nauš (1,25)`. Různí trenéři se stejným příjmením zůstávají
+samostatnými položkami.
+
+Druhá tabulka pod ní zobrazuje
 požadavky na zápasy z `sport.MatchRequirement`: sezónu, kategorii, interval
 platnosti, požadovaný počet zápasů (`MatchCount`) a trenéry z
 `sport.CoachMatchRequirement` včetně rolí. Trenér bez zobrazovaného jména je
 identifikován osobním číslem; požadavek bez trenéra zobrazuje `-`.
+Zápasová tabulka nadále používá kód kategorie a příjmení trenérů bez hodin.
 
 Přehled používá společné GET filtry pro obě tabulky:
 
@@ -161,8 +173,11 @@ celá jména trenérů i jejich stav. U bloku sloučených tréninků se zobrazu
 každá účast zvlášť, včetně opakovaného trenéra; tooltip zachovává kategorii
 každého zdrojového tréninku. Seznam se při nedostatku místa zalamuje
 (`schedule-block-coaches--wrap`); výška dráhy se přizpůsobí nejvyššímu bloku.
-U tréninkového plánu se nadále zobrazují pouze příjmení přiřazených trenérů,
-bez indikace účasti.
+Tréninkový plán zobrazuje přiřazené trenéry ve formátu `Příjmení (Role)`,
+kde role je `CoachRole.Code`. V grafickém rozvrhu, tooltipu a tabulkovém
+přehledu na `/sport/Training/Plan` jsou řazeni podle `SeasonCategory.Order`,
+`CoachRole.Order` a příjmení s českým porovnáváním. U spojených plánů se
+zachovají přiřazení každé kategorie, včetně opakovaného trenéra.
 
 U tréninkového plánu s neprázdnou
 textovou vlastností `sport.TrainingPlan.Title` zobrazuje řádek lokality
