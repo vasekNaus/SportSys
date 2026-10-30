@@ -3,17 +3,26 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SportSys.Contract.Models;
 using SportSys.Contract.Services;
+using SportSys.Razor.Models;
 using SportSys.Razor.Models.TrainingSchedule;
+using SportSys.Razor.Services;
 
 namespace SportSys.Razor.Areas.sport.Pages.Training.Plan;
 
 public class IndexModel : PageModel
 {
     private readonly TrainingScheduleService _service;
+    private readonly TrainingRequirementService _requirementService;
+    private readonly TrainingOverviewExcelExporter _excelExporter;
 
-    public IndexModel(TrainingScheduleService service)
+    public IndexModel(
+        TrainingScheduleService service,
+        TrainingRequirementService requirementService,
+        TrainingOverviewExcelExporter excelExporter)
     {
         _service = service;
+        _requirementService = requirementService;
+        _excelExporter = excelExporter;
     }
 
     public List<SeasonDto> Seasons { get; private set; } = [];
@@ -69,6 +78,11 @@ public class IndexModel : PageModel
     /// <see cref="EventModelFactory.CreateTrainingPlans"/>).
     /// </summary>
     public IReadOnlyList<TrainingPlanScheduleItemDto> PlanRows { get; private set; } = [];
+    public IReadOnlyList<TrainingRequirementListItem> CoverageRequirements { get; private set; } = [];
+    public IReadOnlyList<TrainingPlanScheduleItemDto> CoveragePlans { get; private set; } = [];
+    public IReadOnlyList<TrainingRequirementCoverageRow> CoverageRows { get; private set; } = [];
+    public IReadOnlyList<TrainingPlanProblem> TrainingPlanProblems { get; private set; } = [];
+    public string? ExportErrorMessage { get; private set; }
 
     public async Task OnGetAsync(CancellationToken ct)
     {
@@ -139,9 +153,38 @@ public class IndexModel : PageModel
             SelectedCoachIds,
             ct);
 
+        if (categoryCodes.Count > 0)
+        {
+            CoveragePlans = TrainingPhaseId is null && SelectedLocationIds.Count == 0
+                ? plans
+                : await _service.GetTrainingPlansAsync(
+                    SeasonId.Value,
+                    categoryCodes,
+                    SelectedTrainingTypeIds,
+                    [],
+                    trainingPhaseId: null,
+                    validOn: ValidOn,
+                    mergeOverlapping: false,
+                    coachIds: SelectedCoachIds,
+                    ct: ct);
+            CoverageRequirements = await _requirementService.GetAllAsync(
+                SeasonId.Value,
+                categoryCodes,
+                SelectedTrainingTypeIds,
+                [],
+                ValidOn,
+                SelectedCoachIds,
+                ct);
+        }
+
         plans = WeekDayNames.FilterByDay(plans, plan => plan.DayOfWeek, SelectedDaysOfWeek);
 
         PlanRows = plans;
+        CoverageRows = TrainingRequirementCoverageBuilder.Build(
+            CoverageRequirements,
+            CoveragePlans,
+            SelectedCoachIds);
+        TrainingPlanProblems = TrainingPlanProblemBuilder.Build(PlanRows);
 
         var byDay = plans
             .GroupBy(plan => plan.DayOfWeek)
@@ -177,6 +220,50 @@ public class IndexModel : PageModel
             rows,
             categoryOrder,
             allowEditing: !MergeTrainings);
+    }
+
+    public async Task<IActionResult> OnGetExportPlansAsync(CancellationToken ct)
+    {
+        await OnGetAsync(ct);
+        if (!ModelState.IsValid)
+        {
+            ExportErrorMessage = "Export nelze provést. Opravte neplatné hodnoty filtrů.";
+            return Page();
+        }
+
+        if (PlanRows.Count == 0)
+        {
+            ExportErrorMessage = "Pro zadané filtry nejsou k dispozici žádné tréninkové plány k exportu.";
+            return Page();
+        }
+
+        return File(
+            _excelExporter.ExportPlans(
+                PlanRows,
+                SelectedSeasonName ?? throw new InvalidOperationException("Sezóna není nastavena.")),
+            TrainingOverviewExcelExporter.ContentType,
+            "TrainingPlan.xlsx");
+    }
+
+    public async Task<IActionResult> OnGetExportCoverageAsync(CancellationToken ct)
+    {
+        await OnGetAsync(ct);
+        if (!ModelState.IsValid)
+        {
+            ExportErrorMessage = "Export nelze provést. Opravte neplatné hodnoty filtrů.";
+            return Page();
+        }
+
+        if (CoverageRows.Count == 0)
+        {
+            ExportErrorMessage = "Pro zadané filtry nejsou k dispozici žádné řádky pokrytí k exportu.";
+            return Page();
+        }
+
+        return File(
+            _excelExporter.ExportCoverage(CoverageRows),
+            TrainingOverviewExcelExporter.ContentType,
+            "TrainingRequirementCoverage.xlsx");
     }
 
     private static string FormatDayOfWeek(DayOfWeek day)

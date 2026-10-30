@@ -33,6 +33,7 @@ public class TrainingPlanCoachMappingTests
                 Assert.Equal(1, coach.CoachId);
                 Assert.Equal("Hráč", coach.LastName);
                 Assert.Equal("H", coach.CoachRoleCode);
+                Assert.Equal("H", coach.CoachRoleName);
                 Assert.Equal(1, coach.CoachRoleOrder);
             },
             coach =>
@@ -70,6 +71,7 @@ public class TrainingPlanCoachMappingTests
             coachId,
             fullName,
             roleId,
+            roleCode,
             roleCode,
             roleOrder);
 }

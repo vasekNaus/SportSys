@@ -27,6 +27,7 @@ public sealed class TrainingPlanCoachDto
     public int CoachRoleId { get; init; }
     public required string CoachRoleCode { get; init; }
     public int CoachRoleOrder { get; init; }
+    public string CoachRoleName { get; init; } = string.Empty;
 }
 
 public sealed class CoachParticipationDto
@@ -61,6 +62,8 @@ public interface ITrainingScheduleItem
 public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
 {
     public int Id { get; set; }
+    public int SeasonId { get; set; }
+    public string SeasonName { get; set; } = string.Empty;
     public DateOnly From { get; set; }
     public DateOnly To { get; set; }
     public string DayName { get; set; } = string.Empty;
@@ -72,10 +75,13 @@ public class TrainingPlanScheduleItemDto : ITrainingScheduleItem
     public Guid? VisualizationGroupId { get; set; }
     public int SeasonCategoryOrder { get; set; }
     public string SeasonCategoryCode { get; set; } = string.Empty;
+    public string SeasonCategoryName { get; set; } = string.Empty;
     public int LocationId { get; set; }
     public string LocationName { get; set; } = string.Empty;
+    public int TrainingTypeId { get; set; }
     public string TrainingTypeName { get; set; } = string.Empty;
     public bool IsDryTraining { get; set; }
+    public bool IsIceTraining { get; set; }
     public string TrainingPhaseName { get; set; } = string.Empty;
     public IReadOnlyList<SimpleCoachDto> Coaches { get; set; } = [];
     public IReadOnlyList<TrainingPlanCoachDto> CoachAssignments { get; set; } = [];

@@ -51,6 +51,7 @@ public sealed class TrainingEventModel : TrainingLikeEventModel
 
 public sealed class TrainingPlanEventModel : TrainingLikeEventModel
 {
+    public IReadOnlyList<TrainingPlanCoachDisplayItem> CoachDisplayItems { get; init; } = [];
     public DateOnly ValidFrom { get; init; }
     public DateOnly ValidTo { get; init; }
 
@@ -192,6 +193,8 @@ public static class EventModelFactory
             ColorKey = block.Items[0].SeasonCategoryCode,
             TitleLine = block.Title,
             CoachSurnameSummary = TrainingPlanCoachPresentation.Format(
+                block.PlanCoachAssignments),
+            CoachDisplayItems = TrainingPlanCoachPresentation.GetDisplayItems(
                 block.PlanCoachAssignments),
             LocationSummary = block.LocationSummary,
             TimeFrom = block.TimeFrom,

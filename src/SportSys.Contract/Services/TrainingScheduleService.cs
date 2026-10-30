@@ -214,6 +214,8 @@ public class TrainingScheduleService
             .Select(p => new TrainingPlanScheduleItemDto
             {
                 Id = p.Id,
+                SeasonId = p.SeasonId,
+                SeasonName = p.SeasonCategory.Season.Name,
                 From = p.From,
                 To = p.To,
                 DayName = p.DayName,
@@ -226,10 +228,13 @@ public class TrainingScheduleService
                     : p.GroupMembership.GroupId,
                 SeasonCategoryOrder = p.SeasonCategory.Order,
                 SeasonCategoryCode = p.SeasonCategoryCode,
+                SeasonCategoryName = p.SeasonCategory.Name,
                 LocationId = p.LocationId,
                 LocationName = p.Location.Name,
+                TrainingTypeId = p.TrainingTypeId,
                 TrainingTypeName = p.TrainingType.Name,
                 IsDryTraining = p.TrainingTypeId == (int)ETrainingType.Dry,
+                IsIceTraining = p.TrainingTypeId == (int)ETrainingType.Ice,
                 TrainingPhaseName = p.TrainingPhase.Name,
                 Coaches = new List<SimpleCoachDto>(),
                 Note = string.Empty,
@@ -323,6 +328,7 @@ public class TrainingScheduleService
                 CoachFullName = c.Coach.DisplayName ?? string.Empty,
                 c.CoachRoleId,
                 CoachRoleCode = c.CoachRole.Code,
+                CoachRoleName = c.CoachRole.Name,
                 CoachRoleOrder = c.CoachRole.Order,
             })
             .ToListAsync(ct);
@@ -338,6 +344,7 @@ public class TrainingScheduleService
                     row.CoachFullName,
                     row.CoachRoleId,
                     row.CoachRoleCode,
+                    row.CoachRoleName,
                     row.CoachRoleOrder))
                 .ToList());
     }
@@ -369,6 +376,7 @@ public class TrainingScheduleService
                     LastName = ExtractLastName(assignment.CoachFullName),
                     CoachRoleId = assignment.CoachRoleId,
                     CoachRoleCode = assignment.CoachRoleCode,
+                    CoachRoleName = assignment.CoachRoleName,
                     CoachRoleOrder = assignment.CoachRoleOrder,
                 })
                 .OrderBy(assignment => assignment.CoachRoleOrder)
@@ -417,6 +425,7 @@ public class TrainingScheduleService
         string CoachFullName,
         int CoachRoleId,
         string CoachRoleCode,
+        string CoachRoleName,
         int CoachRoleOrder);
 
     internal static void ApplyVisualizationGrouping(

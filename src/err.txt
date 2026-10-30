@@ -1,0 +1,57 @@
+
+An unhandled exception occurred while processing the request.
+FormatException: String 'value' was not recognized as a valid Boolean.
+
+bool.Parse(string value)
+FormatException: value is not a valid value for Boolean.
+
+System.ComponentModel.BooleanConverter.ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+
+    Stack Query Cookies Headers Routing 
+
+    FormatException: String 'value' was not recognized as a valid Boolean.
+        bool.Parse(string value)
+        System.ComponentModel.BooleanConverter.ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+
+    Show raw exception details
+    FormatException: value is not a valid value for Boolean.
+        System.ComponentModel.BooleanConverter.ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        Microsoft.AspNetCore.Mvc.ModelBinding.ModelBindingHelper.ConvertSimpleType(object value, Type destinationType, CultureInfo culture)
+        Microsoft.AspNetCore.Mvc.ViewFeatures.DefaultHtmlGenerator.GetModelStateValue(ViewContext viewContext, string key, Type destinationType)
+        Microsoft.AspNetCore.Mvc.ViewFeatures.DefaultHtmlGenerator.GenerateInput(ViewContext viewContext, InputType inputType, ModelExplorer modelExplorer, string expression, object value, bool useViewData, bool isChecked, bool setId, bool isExplicitValue, string format, IDictionary<string, object> htmlAttributes)
+        Microsoft.AspNetCore.Mvc.ViewFeatures.DefaultHtmlGenerator.GenerateCheckBox(ViewContext viewContext, ModelExplorer modelExplorer, string expression, Nullable<bool> isChecked, object htmlAttributes)
+        Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper.GenerateCheckBox(ModelExplorer modelExplorer, TagHelperOutput output, IDictionary<string, object> htmlAttributes)
+        Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper.Process(TagHelperContext context, TagHelperOutput output)
+        Microsoft.AspNetCore.Razor.TagHelpers.TagHelper.ProcessAsync(TagHelperContext context, TagHelperOutput output)
+        Microsoft.AspNetCore.Razor.Runtime.TagHelpers.TagHelperRunner.RunAsync(TagHelperExecutionContext executionContext)
+        SportSys.Razor.Areas.sport.Pages.Training.Requirement.Areas_sport_Pages_Training_Requirement_Index+<>c__DisplayClass30_0+<<ExecuteAsync>b__4>d.MoveNext()
+        Microsoft.AspNetCore.Razor.Runtime.TagHelpers.TagHelperExecutionContext.GetChildContentAsync(bool useCachedResult, HtmlEncoder encoder)
+        Microsoft.AspNetCore.Mvc.TagHelpers.RenderAtEndOfFormTagHelper.ProcessAsync(TagHelperContext context, TagHelperOutput output)
+        Microsoft.AspNetCore.Razor.Runtime.TagHelpers.TagHelperRunner.<RunAsync>g__Awaited|0_0(Task task, TagHelperExecutionContext executionContext, int i, int count)
+        SportSys.Razor.Areas.sport.Pages.Training.Requirement.Areas_sport_Pages_Training_Requirement_Index.ExecuteAsync() in Index.cshtml
+        +
+                var trainingPhaseSummary = selectedTrainingPhaseNames.Count switch
+        Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageCoreAsync(IRazorPage page, ViewContext context)
+        Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageAsync(IRazorPage page, ViewContext context, bool invokeViewStarts)
+        Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderAsync(ViewContext context)
+        Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, string contentType, Nullable<int> statusCode)
+        Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, string contentType, Nullable<int> statusCode)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0<TFilter, TFilterAsync>(ResourceInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext<TFilter, TFilterAsync>(ref State next, ref Scope scope, ref object state, ref bool isCompleted)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(ref State next, ref Scope scope, ref object state, ref bool isCompleted)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+        Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+        Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
+        Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+        Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+        Microsoft.AspNetCore.Localization.RequestLocalizationMiddleware.Invoke(HttpContext context)
+        Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+        Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+
+    Show raw exception details
+

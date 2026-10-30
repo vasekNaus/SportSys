@@ -1,3 +1,16 @@
+using System.Net;
+
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+
 using SportSys.Contract.Models;
 using SportSys.Razor.Models.TrainingSchedule;
 
@@ -258,8 +271,49 @@ public class TrainingScheduleComponentModelTests
         var planEvent = Assert.IsType<TrainingPlanEventModel>(block.Source);
         const string expected = "Havel (H), Beta (A), Beta (H), Alfa (A)";
         Assert.Equal(expected, planEvent.CoachSurnameSummary);
+        Assert.Equal(
+            [false, true, true, false],
+            planEvent.CoachDisplayItems.Select(item => item.IsDuplicate));
         Assert.Contains($"Trenéři: {expected}", planEvent.Tooltip);
         Assert.Equal(1, CountOccurrences(planEvent.Tooltip, "Trenéři:"));
+    }
+
+    [Fact]
+    public async Task ScheduleBlockContent_MarksDuplicatePlanCoachesWithAbsenceIcon()
+    {
+        var groupId = Guid.NewGuid();
+        var first = CreateTrainingPlan(8, "U14", 2, groupId);
+        first.CoachAssignments =
+        [
+            CreatePlanCoach(1, "Jan Beta", 1, "H", 1),
+            CreatePlanCoach(2, "Petr Alfa", 2, "A", 2),
+        ];
+        var second = CreateTrainingPlan(5, "U12", 1, groupId);
+        second.CoachAssignments =
+        [
+            CreatePlanCoach(1, "Jan Beta", 3, "A", 2),
+        ];
+        var editableBlock = GetSingleBlock(TrainingScheduleComponentModel.Create(
+            CreateViewModel(first, second)));
+        var readOnlyBlock = GetSingleBlock(TrainingScheduleComponentModel.Create(
+            CreateViewModel(allowEditing: false, first, second)));
+
+        var html = await RenderScheduleBlockContentAsync(editableBlock);
+        var readOnlyHtml = await RenderScheduleBlockContentAsync(readOnlyBlock);
+
+        Assert.Equal(2, CountOccurrences(html, "schedule-block-coach-duplicate"));
+        Assert.Equal(2, CountOccurrences(System.Net.WebUtility.HtmlDecode(html), "❌"));
+        Assert.DoesNotContain("fa-circle-exclamation", html);
+        Assert.Contains("aria-label=\"Duplicitní přiřazení trenéra\"", html);
+        Assert.Contains("Beta (A)", html);
+        Assert.Contains("Beta (H)", html);
+        Assert.DoesNotContain("<strong>", html);
+        Assert.Equal(2, CountOccurrences(readOnlyHtml, "schedule-block-coach-duplicate"));
+        Assert.Contains("aria-label=\"Duplicitní přiřazení trenéra\"", readOnlyHtml);
+        Assert.DoesNotContain("<strong>", readOnlyHtml);
+        Assert.True(
+            html.IndexOf("Beta (A)", StringComparison.Ordinal)
+            < html.IndexOf("Beta (H)", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -281,6 +335,9 @@ public class TrainingScheduleComponentModelTests
         var planEvent = Assert.IsType<TrainingPlanEventModel>(
             GetSingleBlock(model).Source);
         Assert.Equal("Beta (A), Beta (H)", planEvent.CoachSurnameSummary);
+        Assert.Equal(
+            [true, true],
+            planEvent.CoachDisplayItems.Select(item => item.IsDuplicate));
         Assert.Contains("Trenéři: Beta (A), Beta (H)", planEvent.Tooltip);
     }
 
@@ -358,6 +415,53 @@ public class TrainingScheduleComponentModelTests
     private static int CountOccurrences(string text, string value)
         => (text.Length - text.Replace(value, string.Empty, StringComparison.Ordinal).Length)
             / value.Length;
+
+    private static async Task<string> RenderScheduleBlockContentAsync(
+        TrainingScheduleBlock block)
+    {
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            ApplicationName = typeof(TrainingScheduleComponentModel).Assembly.GetName().Name,
+        });
+        builder.Services.AddRazorPages();
+        await using var app = builder.Build();
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        var actionContext = new ActionContext(
+            new DefaultHttpContext { RequestServices = services },
+            new RouteData(),
+            new ActionDescriptor());
+        actionContext.HttpContext.SetEndpoint(new Endpoint(
+            _ => Task.CompletedTask,
+            new EndpointMetadataCollection(),
+            "Training schedule test"));
+        var viewResult = services.GetRequiredService<IRazorViewEngine>().GetView(
+            null,
+            "/Pages/Shared/Components/TrainingSchedule/_ScheduleBlockContent.cshtml",
+            isMainPage: false);
+        Assert.True(viewResult.Success);
+
+        var viewData = new ViewDataDictionary<TrainingScheduleBlock>(
+            new EmptyModelMetadataProvider(),
+            new ModelStateDictionary())
+        {
+            Model = block,
+        };
+        var tempData = new TempDataDictionary(
+            actionContext.HttpContext,
+            services.GetRequiredService<ITempDataProvider>());
+        using var writer = new StringWriter();
+        var viewContext = new ViewContext(
+            actionContext,
+            viewResult.View,
+            viewData,
+            tempData,
+            writer,
+            new HtmlHelperOptions());
+
+        await viewResult.View.RenderAsync(viewContext);
+        return writer.ToString();
+    }
 
     private static TrainingScheduleViewModel CreateViewModel(
         params ITrainingScheduleItem[] items)

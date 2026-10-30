@@ -153,6 +153,11 @@ public class TrainingScheduleBlockFactoryTests
             "Havel (H), Beta (A), Beta (H), Alfa (A)",
             TrainingPlanCoachPresentation.Format(block.PlanCoachAssignments));
         Assert.Equal(4, block.PlanCoachAssignments.Count);
+        Assert.Equal(
+            [false, true, true, false],
+            TrainingPlanCoachPresentation
+                .GetDisplayItems(block.PlanCoachAssignments)
+                .Select(item => item.IsDuplicate));
     }
 
     [Fact]

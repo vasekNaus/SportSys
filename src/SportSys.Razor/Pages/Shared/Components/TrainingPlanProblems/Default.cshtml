@@ -1,0 +1,52 @@
+@using SportSys.Razor.Models.TrainingSchedule
+@model IReadOnlyList<TrainingPlanProblem>
+
+<section class="training-plan-problems">
+    <h2>Přehled problémových bloků</h2>
+
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted">V zobrazených tréninkových plánech nebyly nalezeny žádné problémové bloky.</p>
+    }
+    else
+    {
+        <div class="training-plan-problems-table-wrapper">
+            <table class="grid training-plan-problems-table">
+                <thead>
+                    <tr>
+                        <th>Závažnost</th>
+                        <th>Typ problému</th>
+                        <th>Kategorie</th>
+                        <th>Trenér</th>
+                        <th>Typ tréninku</th>
+                        <th>Čas</th>
+                        <th>Trénink 1</th>
+                        <th>Trénink 2</th>
+                        <th>Popis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var problem in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="training-plan-problem__severity @problem.SeverityCssClass">
+                                    <i class="fa-solid @problem.SeverityIconClass fa-fw" aria-hidden="true"></i>
+                                    @problem.SeverityText
+                                </span>
+                            </td>
+                            <td>@problem.TypeText</td>
+                            <td>@problem.CategoryText</td>
+                            <td>@(problem.CoachName ?? "–")</td>
+                            <td>@problem.TrainingTypeText</td>
+                            <td>@problem.TimeText</td>
+                            <td>@problem.FirstPlanTitle</td>
+                            <td>@problem.SecondPlanTitle</td>
+                            <td>@problem.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

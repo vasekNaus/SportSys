@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SportSys.Contract.Models;
 using SportSys.Contract.Services;
+using SportSys.Razor.Models;
+using SportSys.Razor.Services;
 
 namespace SportSys.Razor.Areas.sport.Pages.Training.Requirement;
 
@@ -10,13 +12,19 @@ public class IndexModel : PageModel
 {
     private readonly TrainingRequirementService _service;
     private readonly MatchRequirementService _matchService;
+    private readonly TrainingScheduleService _scheduleService;
+    private readonly TrainingOverviewExcelExporter _excelExporter;
 
     public IndexModel(
         TrainingRequirementService service,
-        MatchRequirementService matchService)
+        MatchRequirementService matchService,
+        TrainingScheduleService scheduleService,
+        TrainingOverviewExcelExporter excelExporter)
     {
         _service = service;
         _matchService = matchService;
+        _scheduleService = scheduleService;
+        _excelExporter = excelExporter;
     }
 
     public List<SeasonDto> Seasons { get; private set; } = [];
@@ -26,6 +34,10 @@ public class IndexModel : PageModel
     public List<SelectListItem> CoachSelectList { get; private set; } = [];
     public List<TrainingRequirementListItem> Requirements { get; private set; } = [];
     public List<MatchRequirementListItem> MatchRequirements { get; private set; } = [];
+    public IReadOnlyList<TrainingRequirementListItem> CoverageRequirements { get; private set; } = [];
+    public IReadOnlyList<TrainingPlanScheduleItemDto> CoveragePlans { get; private set; } = [];
+    public IReadOnlyList<TrainingRequirementCoverageRow> CoverageRows { get; private set; } = [];
+    public string? ExportErrorMessage { get; private set; }
 
     [BindProperty(SupportsGet = true)]
     public int? SeasonId { get; set; }
@@ -102,6 +114,35 @@ public class IndexModel : PageModel
                 ct)
             : [];
 
+        if (ShowTrainings)
+        {
+            var categoryCodes = SelectedCategoryCodes.Count > 0
+                ? SelectedCategoryCodes
+                : SeasonCategories.Select(category => category.Code).ToList();
+
+            CoverageRequirements = categoryCodes.Count == 0
+                ? []
+                : await _service.GetAllAsync(
+                    SeasonId.Value,
+                    categoryCodes,
+                    SelectedTrainingTypeIds,
+                    [],
+                    ValidOn,
+                    SelectedCoachIds,
+                    ct);
+
+            CoveragePlans = await _scheduleService.GetTrainingPlansAsync(
+                SeasonId.Value,
+                categoryCodes,
+                SelectedTrainingTypeIds,
+                [],
+                trainingPhaseId: null,
+                validOn: ValidOn,
+                mergeOverlapping: false,
+                coachIds: SelectedCoachIds,
+                ct: ct);
+        }
+
         MatchRequirements = ShowMatches
             ? await _matchService.GetAllAsync(
                 SeasonId.Value,
@@ -110,6 +151,53 @@ public class IndexModel : PageModel
                 SelectedCoachIds,
                 ct)
             : [];
+
+        CoverageRows = TrainingRequirementCoverageBuilder.Build(
+            CoverageRequirements,
+            CoveragePlans,
+            SelectedCoachIds);
+    }
+
+    public async Task<IActionResult> OnGetExportRequirementsAsync(CancellationToken ct)
+    {
+        await OnGetAsync(ct);
+        if (!ModelState.IsValid)
+        {
+            ExportErrorMessage = "Export nelze provést. Opravte neplatné hodnoty filtrů.";
+            return Page();
+        }
+
+        if (Requirements.Count == 0)
+        {
+            ExportErrorMessage = "Pro zadané filtry nejsou k dispozici žádné požadavky na tréninky k exportu.";
+            return Page();
+        }
+
+        return File(
+            _excelExporter.ExportRequirements(Requirements),
+            TrainingOverviewExcelExporter.ContentType,
+            "TrainingRequirement.xlsx");
+    }
+
+    public async Task<IActionResult> OnGetExportCoverageAsync(CancellationToken ct)
+    {
+        await OnGetAsync(ct);
+        if (!ModelState.IsValid)
+        {
+            ExportErrorMessage = "Export nelze provést. Opravte neplatné hodnoty filtrů.";
+            return Page();
+        }
+
+        if (CoverageRows.Count == 0)
+        {
+            ExportErrorMessage = "Pro zadané filtry nejsou k dispozici žádné řádky pokrytí k exportu.";
+            return Page();
+        }
+
+        return File(
+            _excelExporter.ExportCoverage(CoverageRows),
+            TrainingOverviewExcelExporter.ContentType,
+            "TrainingRequirementCoverage.xlsx");
     }
 
     internal static List<int> NormalizeIds(

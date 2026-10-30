@@ -1,0 +1,32 @@
+.training-plan-problems {
+  margin-block: 2rem;
+}
+
+.training-plan-problems-table-wrapper {
+  overflow-x: auto;
+}
+
+.training-plan-problems-table {
+  min-width: 1100px;
+}
+
+.training-plan-problem__severity {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .5rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.training-plan-problem__severity--error {
+  color: var(--color-error-text);
+  background-color: var(--color-error-subtle);
+}
+
+.training-plan-problem__severity--warning {
+  color: var(--color-warning-icon);
+  background-color: var(--color-warning-subtle);
+}

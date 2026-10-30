@@ -60,13 +60,20 @@ kategorii, typ a fázi tréninku, interval platnosti, požadovaný rozsah v
 hodinách a přiřazené trenéry včetně jejich rolí. Kategorie se zde zobrazuje
 názvem (`SeasonCategory.Name`), zatímco filtr kategorií nadále používá kódy.
 Záhlaví tréninkové tabulky je `Sezóna`, `Kategorie`, `Typ tréninku`, `Fáze`,
-`Od`, `Do`, `Rozsah [h]`, `Trenéři`, `Akce`. Trenéři jsou seskupeni podle rolí
-v pořadí `CoachRole.Order` a uvnitř role řazeni podle příjmení s českým
-porovnáváním. Každé přiřazení zobrazuje vlastní plánované hodiny
-z `CoachTrainingRequirement.Hours` ve formátu `0.##`: nejvýše dvě desetinná
-místa s českou desetinnou čárkou, bez koncových nul, například `Novák (1,5)`,
-`Krs (2)` nebo `Nauš (1,25)`. Různí trenéři se stejným příjmením zůstávají
-samostatnými položkami.
+`Od`, `Do`, `Rozsah [h]`, `Hlavní`, `Asistent`, `Brankáři`, `Obránci`,
+`Trenéři`, `Akce`. Role `H`, `A`, `B` a `O` mají samostatné sloupce; všechny
+ostatní role zůstávají seskupeny ve sloupci `Trenéři`. Přiřazení se řadí podle
+`CoachRole.Order` a uvnitř role podle příjmení s českým porovnáváním.
+Každé přiřazení zobrazuje vlastní plánované hodiny z
+`CoachTrainingRequirement.Hours` ve formátu `0.##`: desetinná část se zobrazí
+jen tehdy, když je potřeba, a bez koncových nul. Používá se česká desetinná
+čárka, například `Novák (1,5)`, `Krs (2)` nebo `Nauš (1,25)`. Různí trenéři
+se stejným příjmením zůstávají samostatnými položkami.
+
+Všechna záhlaví tréninkové tabulky jsou zarovnána na střed. Hodnoty sezóny,
+fáze, obou dat a akcí jsou na střed, rozsah hodin doprava a kategorie,
+typ tréninku a trenéři vlevo. Zarovnání využívá stávající utility `c` a `r`
+a nemění zápasovou tabulku ani globální styl gridu.
 
 Druhá tabulka pod ní zobrazuje
 požadavky na zápasy z `sport.MatchRequirement`: sezónu, kategorii, interval
@@ -105,6 +112,67 @@ ale pokaždé s jinou rolí. Jedinečná je dvojice trenér–role v rámci pož
 u tréninkového požadavku se hodiny evidují samostatně pro každou roli.
 Toto pravidlo nemění omezení přiřazení trenérů u konkrétních tréninků
 a obecných týdenních plánů.
+
+### Porovnání požadavků a plánů trenérů
+
+Stránky `/sport/Training/Requirement` a `/sport/Training/Plan` zobrazují
+stejnou sdílenou tabulku pokrytí požadavků plánovanými hodinami. Přehled
+agreguje `CoachTrainingRequirement.Hours` i délky plánů podle sezóny,
+kategorie, typu tréninku, trenéra a role. Fáze, den týdne a lokalita nejsou
+součástí klíče, takže porovnávací data zahrnují všechny jejich hodnoty;
+aktivní filtry těchto dimenzí nadále omezují pouze hlavní přehled stránky.
+Výběr trenéra se aplikuje také na jednotlivá přiřazení uvnitř výsledných
+požadavků a plánů.
+
+Plánované hodiny se počítají ze součtu databázové computed hodnoty
+`TrainingPlan.DurationMinutes`, převedeného na hodiny a zaokrouhleného na dvě
+desetinná místa. Hodiny jsou zobrazeny s českou desetinnou čárkou. Chybějící
+požadavek nebo plán se doplní nulou. Status rozlišuje „Shoda“, „Nad plán“
+(oranžový vykřičník) a „Nesplňuje plán“ ikonou, textem i tooltipem; barva
+není jediným nositelem informace. Překročení požadavku je varováním,
+nikoli úspěšným stavem se zelenou fajfkou.
+
+Komponenta `TrainingRequirementCoverageViewComponent` přijímá Contract DTO
+předaná stránkami a sama neprovádí databázové dotazy. Pro její renderovací
+model a výpočty nejsou potřeba změny databázového schématu ani migrace.
+
+### Excel exporty požadavků a tréninkových plánů
+
+Stránky `/sport/Training/Requirement` a `/sport/Training/Plan` umožňují
+samostatně exportovat XLSX tabulku požadavků, přehled plánů a sdílené
+porovnání pokrytí. Exportní handlery znovu načtou stránku přes Contract služby
+a použijí normalizované filtry; tabulka pokrytí zachovává své současné
+dimenzionální chování a není dodatečně filtrována fází, dnem ani lokalitou.
+
+Soubory se stahují jako `TrainingRequirement.xlsx`,
+`TrainingPlan.xlsx` a `TrainingRequirementCoverage.xlsx`. Požadavky
+exportují sezónu, kategorii, typ a fázi, interval, hodiny, čtyři běžné role
+trenérů a zbývající trenéry; přehled plánů kopíruje své viditelné sloupce
+bez akce a pokrytí zahrnuje sezónu, kategorii, typ, trenéra, roli,
+požadované a plánované hodiny i status. Datumové sloupce a hodinové hodnoty
+jsou skutečné Excel datumy a čísla. Všechny listy mají tučné záhlaví,
+autofilter, zamrznutý první řádek a šířky přizpůsobené obsahu.
+
+Export grafického rozvrhu stránky Plan do PDF není součástí aktuální
+implementace.
+
+### Problémové bloky tréninkových plánů
+
+Stránka `/sport/Training/Plan` zobrazuje pod rozvrhem a přehledy také
+`TrainingPlanProblemsViewComponent`. `TrainingPlanProblemBuilder` vytváří
+kontroly z jednotlivých `PlanRows` po aplikaci všech filtrů stránky včetně
+dne; nepřistupuje k databázi. Překryv vyžaduje stejný den týdne, společný
+výskyt v průniku intervalů `From–To` a neprázdný průnik polootevřených
+časových intervalů `[TimeFrom, TimeTo)`. V přehledu se uvádí právě průnik časů.
+
+Stejný neprázdný databázový `GroupId` označuje společnou aktivitu, a proto se
+její členové navzájem nehlásí jako konflikt. Naproti tomu `VisualizationGroupId`
+vzniká pouze pro vykreslení a konflikty nijak nepotlačuje. Překryv trenéra se
+určuje podle ID, nezávisle na roli, a má závažnost `Error`. Překryv stejné
+kategorie má závažnost `Error`, pokud je alespoň jeden plán na ledě, jinak
+`Warning`. Typ ledu se předává přes `TrainingPlanScheduleItemDto.IsIceTraining`;
+Razor vrstva proto nepotřebuje referenci na Database. Přehled nevyžaduje
+změnu databázového schématu ani migraci.
 
 ### Společné datové kontrakty
 
@@ -178,6 +246,11 @@ kde role je `CoachRole.Code`. V grafickém rozvrhu, tooltipu a tabulkovém
 přehledu na `/sport/Training/Plan` jsou řazeni podle `SeasonCategory.Order`,
 `CoachRole.Order` a příjmení s českým porovnáváním. U spojených plánů se
 zachovají přiřazení každé kategorie, včetně opakovaného trenéra.
+V grafickém rozvrhu se opakovaný `CoachId` v rámci výsledného bloku označí
+ikonou ❌ za jménem, stejnou jako neúčast trenéra v docházce
+(`CoachParticipationVisual.AbsenceIcon`). Ikona má přístupný popis,
+jméno zůstává normálním řezem písma a každé přiřazení zůstává vypsané ve
+stejném pořadí. Textový tooltip a tabulkový přehled se nemění.
 
 U tréninkového plánu s neprázdnou
 textovou vlastností `sport.TrainingPlan.Title` zobrazuje řádek lokality

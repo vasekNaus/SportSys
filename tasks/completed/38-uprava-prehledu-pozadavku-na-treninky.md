@@ -2,8 +2,8 @@
 
 **Issue:** [#38 — Úprava přehledu požadavků na tréninky](https://github.com/vasekNaus/SportSys/issues/38)
 
-**Stav:** Implementováno. Původní automatické ověření dokončeno; následná
-změna formátu hodin na `0.##` nebyla znovu otestována. Manuální akceptace
+**Stav:** Implementováno včetně zarovnání podle komentáře z 21. 10. 2026.
+Testy formátu `0.##` a zarovnání prošly. Manuální akceptace
 proti vývojové databázi neprovedena. Podrobnosti jsou v
 `38-uprava-prehledu-pozadavku-na-treninky-IMPL.md`.
 
@@ -17,7 +17,9 @@ požadavků na zápasy.
 ## Výchozí stav
 
 Ověřeno proti aktuálnímu kódu a issue včetně komentářů dne 21. 10. 2026.
-Issue nemá komentáře s doplňujícími rozhodnutími.
+Původní návrh vznikl bez doplňujících komentářů. Nový komentář
+z 21. 10. 2026 doplňuje zarovnání první tabulky:
+[požadavek na zarovnání](https://github.com/vasekNaus/SportSys/issues/38#issuecomment-6309561032).
 
 - `Index.cshtml` v `src\SportSys.Razor\Areas\sport\Pages\Training\Requirement\`
   vykresluje dvě tabulky: tréninkové a zápasové požadavky.
@@ -67,6 +69,9 @@ desetinná místa:
 5. Zůstane seskupení podle rolí, jejich pořadí podle `CoachRole.Order`
    a stávající řazení trenérů uvnitř role.
 6. Požadavek bez trenérů bude nadále zobrazovat `-`.
+7. Všech devět záhlaví tréninkové tabulky bude zarovnáno na střed.
+   Hodnoty sezóny, fáze, `Od`, `Do` a akcí budou na střed, `Rozsah [h]`
+   doprava; kategorie, typ tréninku a trenéři zůstanou vlevo.
 
 Technická rozhodnutí návrhu:
 
@@ -145,6 +150,16 @@ Jde o read-only změnu bez nového vstupu, handleru nebo validace.
 Zachovat existující validaci GET filtrů a průchod databázových chyb;
 nepřidávat catch ani náhradní úspěšný výsledek při selhání načtení.
 
+### Doplnění podle komentáře: zarovnání
+
+V první tabulce použít existující utility z `Styles\_utilities.scss`:
+`class="c"` pro všechna `th` a buňky sezóny, fáze a dat;
+`class="r"` pro rozsah hodin. Akční buňce ponechat `buttons` a přidat `c`,
+která díky existujícímu `!important` překryje obecné pravé zarovnání akcí.
+Ostatní buňky nepřepisovat; obecné `table.grid` již používá levé zarovnání.
+Zápasová tabulka ani globální pravidla gridu se nemění.
+Nové SCSS, ruční úpravy CSS, datové změny ani závislosti nejsou potřeba.
+
 ## Implementační kroky
 
 ### Fáze 1: Doplnění datového kontraktu
@@ -167,6 +182,14 @@ nepřidávat catch ani náhradní úspěšný výsledek při selhání načtení
    „Požadavky na tréninky a zápasy“ v `docs\modules\sport.md`:
    název kategorie, zkrácená záhlaví a plánované hodiny u trenérů.
 3. Provést cílené testy, build a manuální akceptaci.
+
+### Fáze 4: Doplnění zarovnání z komentáře
+
+1. Doplnit utility `c` a `r` pouze první tabulce podle matice výše.
+2. Ověřit třídy na skutečně vykresleném Razor výstupu obou tabulek.
+3. Aktualizovat očekávání testů již schváleného formátu `0.##`, včetně
+   vykreslení partialu, a znovu spustit cílené testy.
+4. Doplnit dokumentaci modulu a existující implementační záznam.
 
 ## Soubory ke změně
 
@@ -202,6 +225,9 @@ V existujícím `TrainingRequirementTests.cs`:
 7. Ověřit fallback na osobní číslo při prázdném jméně a prázdnou kolekci.
 8. Ověřit, že výchozí režim pro zápasy nadále zobrazuje jen příjmení
    bez závorek a hodin a zachovává dosavadní deduplikaci.
+9. Na vykreslené stránce ověřit všech devět záhlaví `c` a buňky podle
+   matice `c, left, left, c, c, c, r, left, buttons c`.
+   Druhá tabulka musí zachovat původní třídy bez doplněného zarovnání.
 
 Použít stávající xUnit projekt bez přidávání testovacího provideru
 nebo jiné závislosti. Formátovací helper je již samostatně testovaný;
@@ -237,6 +263,9 @@ Samotný test inicializace DTO by správnost databázové projekce neprokázal.
    Filtrování trenérem nemá skrýt ostatní přiřazení vyhovujícího požadavku.
 7. Ověřit prázdný výsledek a editovací odkazy. Na užší obrazovce
    zkontrolovat zalamování jmen bez úpravy stylů nebo struktury tabulky.
+8. Ověřit všechna záhlaví na střed, sezónu, fázi, data a akce na střed,
+   rozsah doprava a kategorii, typ tréninku a trenéry vlevo.
+   Porovnat se zápasovou tabulkou, jejíž zarovnání se nezměnilo.
 
 Pro scénáře použít existující nebo standardně připravená testovací data;
 implementace nesmí automaticky upravovat produkční záznamy.
@@ -267,7 +296,8 @@ implementace nesmí automaticky upravovat produkční záznamy.
 - [x] Prázdná přiřazení zobrazují `-` a zápasový přehled zůstává beze změny.
 - [x] Logika filtrů, akcí a prázdných stavů je ponechána beze změny.
 - [x] Původní cílené testy a build prošly před změnou formátu hodin.
-- [ ] Očekávání testů odpovídají formátu `0.##` a cílené testy po této změně projdou.
+- [x] Očekávání testů odpovídají formátu `0.##` a cílené testy po této změně projdou.
+- [x] Tréninková tabulka má zarovnání podle nového komentáře; zápasová se nezměnila.
 - [ ] Manuální scénáře proti vývojové databázi jsou ověřeny.
 - [x] Dokumentace modulu odpovídá výslednému zobrazení.
 - [x] Nezměnil se databázový model ani nevznikla migrace.

@@ -6,6 +6,13 @@
     {
         ["IncludeHours"] = true,
     };
+    var trainingCoachColumns = new[]
+    {
+        (Code: "H", Header: "Hlavní"),
+        (Code: "A", Header: "Asistent"),
+        (Code: "B", Header: "Brankáři"),
+        (Code: "O", Header: "Obránci"),
+    };
 
     var selectedTrainingTypeNames = Model.TrainingTypes
         .Where(type => Model.SelectedTrainingTypeIds.Contains(type.Id))
@@ -31,15 +38,18 @@
 }
 
 <form method="get" class="schedule-filter">
+    <div asp-validation-summary="All" class="validation-summary-errors" role="alert"></div>
     <fieldset class="schedule-filter-categories">
         <legend>Zobrazit</legend>
         <div class="schedule-filter-checkboxes">
             <label class="checkbox-label">
-                <input asp-for="ShowTrainings" />
+                <input type="checkbox" id="ShowTrainings" name="ShowTrainings" value="true" checked="@Model.ShowTrainings" />
+                <input type="hidden" name="ShowTrainings" value="false" />
                 Tréninky
             </label>
             <label class="checkbox-label">
-                <input asp-for="ShowMatches" />
+                <input type="checkbox" id="ShowMatches" name="ShowMatches" value="true" checked="@Model.ShowMatches" />
+                <input type="hidden" name="ShowMatches" value="false" />
                 Zápasy
             </label>
         </div>
@@ -197,6 +207,11 @@
     }
 </form>
 
+@if (Model.ExportErrorMessage is not null)
+{
+    <p class="text-danger">@Model.ExportErrorMessage</p>
+}
+
 @if (Model.Seasons.Count == 0)
 {
     <p class="text-muted">Neexistuje žádná aktivní sezóna.</p>
@@ -213,35 +228,68 @@ else
         }
         else
         {
+            <form method="get" asp-page="./Index" class="schedule-filter-actions">
+                <input type="hidden" name="handler" value="ExportRequirements" />
+                <input type="hidden" name="SeasonId" value="@Model.SeasonId" />
+                @foreach (var code in Model.SelectedCategoryCodes)
+                {
+                    <input type="hidden" name="SelectedCategoryCodes" value="@code" />
+                }
+                @foreach (var id in Model.SelectedTrainingTypeIds)
+                {
+                    <input type="hidden" name="SelectedTrainingTypeIds" value="@id" />
+                }
+                @foreach (var id in Model.SelectedTrainingPhaseIds)
+                {
+                    <input type="hidden" name="SelectedTrainingPhaseIds" value="@id" />
+                }
+                @foreach (var id in Model.SelectedCoachIds)
+                {
+                    <input type="hidden" name="SelectedCoachIds" value="@id" />
+                }
+                <input type="hidden" name="ValidOn" value="@Model.ValidOn?.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="ShowTrainings" value="@Model.ShowTrainings.ToString().ToLowerInvariant()" />
+                <input type="hidden" name="ShowMatches" value="@Model.ShowMatches.ToString().ToLowerInvariant()" />
+                <button type="submit" class="button secondary">Excel</button>
+            </form>
+
             <table class="grid">
                 <thead>
                     <tr>
-                        <th>Sezóna</th>
-                        <th>Kategorie</th>
-                        <th>Typ tréninku</th>
-                        <th>Fáze</th>
-                        <th>Od</th>
-                        <th>Do</th>
-                        <th>Rozsah [h]</th>
-                        <th>Trenéři</th>
-                        <th>Akce</th>
+                        <th class="c">Sezóna</th>
+                        <th class="c">Kategorie</th>
+                        <th class="c">Typ tréninku</th>
+                        <th class="c">Fáze</th>
+                        <th class="c">Od</th>
+                        <th class="c">Do</th>
+                        <th class="c">Rozsah [h]</th>
+                        @foreach (var role in trainingCoachColumns)
+                        {
+                            <th class="c">@role.Header</th>
+                        }
+                        <th class="c">Trenéři</th>
+                        <th class="c">Akce</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var requirement in Model.Requirements)
                     {
+                        var otherRoleAssignments = SportSys.Razor.Models.RequirementCoachGroups.OtherRoles(requirement.CoachAssignments);
                         <tr>
-                            <td>@requirement.SeasonName</td>
+                            <td class="c">@requirement.SeasonName</td>
                             <td>@requirement.SeasonCategoryName</td>
                             <td>@requirement.TrainingTypeName</td>
-                            <td>@requirement.TrainingPhaseName</td>
-                            <td>@requirement.From.ToString("dd.MM.yyyy")</td>
-                            <td>@requirement.To.ToString("dd.MM.yyyy")</td>
-                            <td>@requirement.DurationHours.ToString("0.##")</td>
-                            <td>
-                                <partial name="_CoachGroups" model="requirement.CoachAssignments" view-data="trainingCoachViewData" />
-                            </td>
-                            <td class="buttons">
+                            <td class="c">@requirement.TrainingPhaseName</td>
+                            <td class="c">@requirement.From.ToString("dd.MM.yyyy")</td>
+                            <td class="c">@requirement.To.ToString("dd.MM.yyyy")</td>
+                            <td class="r">@requirement.DurationHours.ToString("0.##")</td>
+                            @foreach (var role in trainingCoachColumns)
+                            {
+                                var coachTexts = SportSys.Razor.Models.RequirementCoachGroups.ForRole(requirement.CoachAssignments, role.Code);
+                                <td>@(coachTexts.Count == 0 ? "-" : string.Join(", ", coachTexts))</td>
+                            }
+                            <td><partial name="_CoachGroups" model="otherRoleAssignments" view-data="trainingCoachViewData" /></td>
+                            <td class="buttons c">
                                 <a class="button secondary icon-btn"
                                    asp-page="./EditTraining"
                                    asp-route-id="@requirement.Id"
@@ -303,5 +351,45 @@ else
                 </tbody>
             </table>
         }
+    }
+
+    @if (Model.ShowTrainings)
+    {
+        @if (Model.CoverageRows.Count > 0)
+        {
+            <form method="get" asp-page="./Index" class="schedule-filter-actions">
+                <input type="hidden" name="handler" value="ExportCoverage" />
+                <input type="hidden" name="SeasonId" value="@Model.SeasonId" />
+                @foreach (var code in Model.SelectedCategoryCodes)
+                {
+                    <input type="hidden" name="SelectedCategoryCodes" value="@code" />
+                }
+                @foreach (var id in Model.SelectedTrainingTypeIds)
+                {
+                    <input type="hidden" name="SelectedTrainingTypeIds" value="@id" />
+                }
+                @foreach (var id in Model.SelectedTrainingPhaseIds)
+                {
+                    <input type="hidden" name="SelectedTrainingPhaseIds" value="@id" />
+                }
+                @foreach (var id in Model.SelectedCoachIds)
+                {
+                    <input type="hidden" name="SelectedCoachIds" value="@id" />
+                }
+                <input type="hidden" name="ValidOn" value="@Model.ValidOn?.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="ShowTrainings" value="@Model.ShowTrainings.ToString().ToLowerInvariant()" />
+                <input type="hidden" name="ShowMatches" value="@Model.ShowMatches.ToString().ToLowerInvariant()" />
+                <button type="submit" class="button secondary">Excel</button>
+            </form>
+        }
+
+        @await Component.InvokeAsync(
+            "TrainingRequirementCoverage",
+            new
+            {
+                requirements = Model.CoverageRequirements,
+                plans = Model.CoveragePlans,
+                selectedCoachIds = Model.SelectedCoachIds,
+            })
     }
 }

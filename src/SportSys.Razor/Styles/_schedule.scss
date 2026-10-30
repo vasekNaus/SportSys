@@ -5,7 +5,7 @@
 // ================================================================
 
 $date-col-width:  5rem;
-$track-height:    6.25rem;
+$track-height:    8.25rem;
 $header-height:   1.75rem;
 
 // ── Filtr ────────────────────────────────────────────────────────
@@ -592,4 +592,8 @@ $header-height:   1.75rem;
 
 .schedule-block-coach-icon {
   flex-shrink: 0;
+}
+
+.schedule-block-coach-duplicate {
+  margin-inline-start: .125rem;
 }

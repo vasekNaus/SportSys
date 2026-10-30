@@ -1,0 +1,52 @@
+@using SportSys.Razor.Models
+@model IReadOnlyList<TrainingRequirementCoverageRow>
+
+<section class="training-requirement-coverage">
+    <h2>Porovnání požadavků a plánovaných tréninků trenérů</h2>
+
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted">Pro zadané filtry nejsou k dispozici žádné trenérské požadavky ani plánovaná přiřazení.</p>
+    }
+    else
+    {
+        <div class="training-requirement-coverage-table-wrapper">
+            <table class="grid training-requirement-coverage-table">
+                <thead>
+                    <tr>
+                        <th>Sezóna</th>
+                        <th>Kategorie</th>
+                        <th>Typ tréninku</th>
+                        <th>Trenér</th>
+                        <th>Role</th>
+                        <th class="r">Požadavek [h]</th>
+                        <th class="r">Plán [h]</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+                            <td>@row.SeasonName</td>
+                            <td>@row.SeasonCategoryName</td>
+                            <td>@row.TrainingTypeName</td>
+                            <td>@row.CoachName</td>
+                            <td>@row.CoachRoleName</td>
+                            <td class="r">@TrainingRequirementCoverageBuilder.FormatHours(row.RequiredHours)</td>
+                            <td class="r">@TrainingRequirementCoverageBuilder.FormatHours(row.PlannedHours)</td>
+                            <td>
+                                <span class="coverage-status @row.StatusCssClass"
+                                      title="@row.StatusTooltip"
+                                      aria-label="@($"{row.StatusText}: {row.StatusTooltip}")">
+                                    <i class="fa-solid @row.StatusIconClass fa-fw" aria-hidden="true"></i>
+                                    <span>@row.StatusText</span>
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

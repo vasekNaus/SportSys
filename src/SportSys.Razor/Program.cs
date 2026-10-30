@@ -32,6 +32,7 @@ builder.Services.AddRazorPages()  //options => options.Conventions.AuthorizeArea
 // Registrace SportSysDbContext, Identity, Claims transformation, Contract servisů a authorization policies
 builder.Services.AddSportSysServices(builder.Configuration);
 builder.Services.AddSingleton<TrainingScheduleExcelExporter>();
+builder.Services.AddSingleton<TrainingOverviewExcelExporter>();
 
 var app = builder.Build();
 

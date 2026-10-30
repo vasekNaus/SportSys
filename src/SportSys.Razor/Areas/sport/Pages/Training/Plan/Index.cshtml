@@ -21,6 +21,7 @@
 }
 
 <form method="get" class="schedule-filter">
+    <div asp-validation-summary="All" class="validation-summary-errors" role="alert"></div>
     <section class="schedule-filter-panel schedule-filter-panel--training">
         <h2 class="schedule-filter-panel-title">
             <i class="fa-solid fa-person-skating fa-fw"></i> Tréninky
@@ -171,12 +172,15 @@
                 </div>
                 <div class="schedule-filter-options">
                     <label class="checkbox-label">
-                        <input asp-for="ShowEmptyRows" />
+                        <input type="checkbox" id="ShowEmptyRows" name="ShowEmptyRows" value="true" checked="@Model.ShowEmptyRows" />
+                        <input type="hidden" name="ShowEmptyRows" value="false" />
                         Zobrazovat prázdné řádky
                     </label>
                     <label class="checkbox-label">
-                        <input asp-for="MergeTrainings"
+                        <input type="checkbox" id="MergeTrainings" name="MergeTrainings" value="true"
+                               checked="@Model.MergeTrainings"
                                onchange="this.form.submit()" />
+                        <input type="hidden" name="MergeTrainings" value="false" />
                         Spojovat tréninky
                     </label>
                 </div>
@@ -204,6 +208,11 @@
     </div>
 </form>
 
+@if (Model.ExportErrorMessage is not null)
+{
+    <p class="text-danger">@Model.ExportErrorMessage</p>
+}
+
 @if (Model.ScheduleView is not null)
 {
     @if (!Model.ScheduleView.HasItems)
@@ -219,4 +228,50 @@
     {
         <partial name="_TrainingPlanTable" model="Model" />
     }
+
+    @if (Model.CoverageRows.Count > 0)
+    {
+        <form method="get" asp-page="./Index" class="schedule-filter-actions">
+            <input type="hidden" name="handler" value="ExportCoverage" />
+            <input type="hidden" name="SeasonId" value="@Model.SeasonId" />
+            @foreach (var code in Model.SelectedCategoryCodes)
+            {
+                <input type="hidden" name="SelectedCategoryCodes" value="@code" />
+            }
+            @foreach (var id in Model.SelectedTrainingTypeIds)
+            {
+                <input type="hidden" name="SelectedTrainingTypeIds" value="@id" />
+            }
+            @foreach (var id in Model.SelectedLocationIds)
+            {
+                <input type="hidden" name="SelectedLocationIds" value="@id" />
+            }
+            @foreach (var id in Model.SelectedCoachIds)
+            {
+                <input type="hidden" name="SelectedCoachIds" value="@id" />
+            }
+            <input type="hidden" name="TrainingPhaseId" value="@Model.TrainingPhaseId" />
+            <input type="hidden" name="ValidOn" value="@Model.ValidOn?.ToString("yyyy-MM-dd")" />
+            @foreach (var day in Model.SelectedDaysOfWeek)
+            {
+                <input type="hidden" name="SelectedDaysOfWeek" value="@day" />
+            }
+            <input type="hidden" name="ShowEmptyRows" value="@Model.ShowEmptyRows.ToString().ToLowerInvariant()" />
+            <input type="hidden" name="MergeTrainings" value="@Model.MergeTrainings.ToString().ToLowerInvariant()" />
+            <button type="submit" class="button secondary">Excel</button>
+        </form>
+    }
+
+    @await Component.InvokeAsync(
+        "TrainingRequirementCoverage",
+        new
+        {
+            requirements = Model.CoverageRequirements,
+            plans = Model.CoveragePlans,
+            selectedCoachIds = Model.SelectedCoachIds,
+        })
+
+    @await Component.InvokeAsync(
+        "TrainingPlanProblems",
+        new { problems = Model.TrainingPlanProblems })
 }

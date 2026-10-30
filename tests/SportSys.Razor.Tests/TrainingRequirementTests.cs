@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,8 +11,12 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using SportSys.Contract.Models;
+using SportSys.Contract.Services;
+using SportSys.Database.Context;
 using SportSys.Razor.Models;
+using SportSys.Razor.Services;
 using RequirementIndexModel = SportSys.Razor.Areas.sport.Pages.Training.Requirement.IndexModel;
 
 namespace SportSys.Razor.Tests;
@@ -103,15 +108,58 @@ public class TrainingRequirementTests
         Assert.Equal([5, 1], groups.Select(g => g.RoleId));
     }
 
+    [Fact]
+    public void CoachGroups_SplitsDedicatedAndOtherRolesAndFormatsTwoDecimalPlaces()
+    {
+        TrainingRequirementCoachListItem Item(
+            string name,
+            string roleCode,
+            int roleId,
+            int roleOrder,
+            decimal hours)
+            => new()
+            {
+                DisplayName = name,
+                CoachRoleCode = roleCode,
+                CoachRoleId = roleId,
+                CoachRoleName = roleCode,
+                CoachRoleOrder = roleOrder,
+                Hours = hours,
+            };
+
+        var assignments = new[]
+        {
+            Item("Jan Novák", "H", 1, 1, 2m),
+            Item("Petr Zíma", "A", 2, 2, 1.5m),
+            Item("Karel Černý", "B", 4, 4, 0.5m),
+            Item("Václav Dvořák", "O", 3, 3, 1m),
+            Item("Pavel Kříž", "K", 6, 6, 0m),
+            Item("Petr Fišer", "F", 5, 5, 999.99m),
+        };
+
+        Assert.Equal(["Novák (2)"], RequirementCoachGroups.ForRole(assignments, "H"));
+        Assert.Equal(["Zíma (1,5)"], RequirementCoachGroups.ForRole(assignments, "A"));
+        Assert.Equal(["Černý (0,5)"], RequirementCoachGroups.ForRole(assignments, "B"));
+        Assert.Equal(["Dvořák (1)"], RequirementCoachGroups.ForRole(assignments, "O"));
+        Assert.Empty(RequirementCoachGroups.ForRole(assignments, "X"));
+
+        var others = RequirementCoachGroups.OtherRoles(assignments);
+        Assert.Equal(["K", "F"], others.Select(assignment => assignment.CoachRoleCode));
+        Assert.Equal(
+            ["F (Fišer (999,99))", "K (Kříž (0))"],
+            RequirementCoachGroups.Group(others, includeHours: true)
+                .Select(group => $"{group.RoleName} ({string.Join(", ", group.CoachDisplayTexts)})"));
+    }
+
     [Theory]
-    [InlineData("0", "0,00")]
-    [InlineData("0.5", "0,50")]
-    [InlineData("1", "1,00")]
+    [InlineData("0", "0")]
+    [InlineData("0.5", "0,5")]
+    [InlineData("1", "1")]
     [InlineData("1.25", "1,25")]
-    [InlineData("1.5", "1,50")]
-    [InlineData("2", "2,00")]
+    [InlineData("1.5", "1,5")]
+    [InlineData("2", "2")]
     [InlineData("999.99", "999,99")]
-    public void CoachGroups_WithHours_UsesTwoCzechDecimalPlacesRegardlessOfCurrentCulture(
+    public void CoachGroups_WithHours_UsesOptionalCzechDecimalsRegardlessOfCurrentCulture(
         string hours,
         string expected)
     {
@@ -158,14 +206,14 @@ public class TrainingRequirementTests
 
         Assert.Equal([5, 1], groups.Select(group => group.RoleId));
         Assert.Equal(
-            ["Černý (1,50)", "Havlíček (2,00)", "Chládek (0,00)"],
+            ["Černý (1,5)", "Havlíček (2)", "Chládek (0)"],
             groups[0].CoachDisplayTexts);
-        Assert.Equal(["Novák (0,50)"], groups[1].CoachDisplayTexts);
+        Assert.Equal(["Novák (0,5)"], groups[1].CoachDisplayTexts);
     }
 
     [Theory]
-    [InlineData("1.5", "1,50")]
-    [InlineData("2", "2,00")]
+    [InlineData("1.5", "1,5")]
+    [InlineData("2", "2")]
     public void CoachGroups_WithHours_PreservesDifferentCoachesWithSameLastName(
         string secondHours,
         string expectedSecondHours)
@@ -182,7 +230,7 @@ public class TrainingRequirementTests
         ], includeHours: true);
 
         Assert.Equal(
-            ["Novák (2,00)", $"Novák ({expectedSecondHours})"],
+            ["Novák (2)", $"Novák ({expectedSecondHours})"],
             Assert.Single(groups).CoachDisplayTexts);
     }
 
@@ -204,8 +252,8 @@ public class TrainingRequirementTests
         ], includeHours: true);
 
         Assert.Equal(["Hlavní", "Asistent"], groups.Select(group => group.RoleName));
-        Assert.Equal(["Novák (2,00)"], groups[0].CoachDisplayTexts);
-        Assert.Equal(["Novák (1,50)"], groups[1].CoachDisplayTexts);
+        Assert.Equal(["Novák (2)"], groups[0].CoachDisplayTexts);
+        Assert.Equal(["Novák (1,5)"], groups[1].CoachDisplayTexts);
     }
 
     [Fact]
@@ -216,7 +264,7 @@ public class TrainingRequirementTests
             new TrainingRequirementCoachListItem { DisplayName = " ", PersonalNumber = "123", Hours = 0.5m },
         ], includeHours: true);
 
-        Assert.Equal(["123 (0,50)"], Assert.Single(groups).CoachDisplayTexts);
+        Assert.Equal(["123 (0,5)"], Assert.Single(groups).CoachDisplayTexts);
         Assert.Empty(RequirementCoachGroups.Group([], includeHours: true));
     }
 
@@ -234,13 +282,14 @@ public class TrainingRequirementTests
     }
 
     [Fact]
-    public async Task CoachGroupsPartial_UsesLocalHoursFlagWithoutChangingMatchRendering()
+    public async Task RequirementViews_KeepTrainingFormattingAndAlignmentSeparateFromMatches()
     {
         IReadOnlyList<RequirementCoachListItem> assignments =
         [
             new TrainingRequirementCoachListItem
             {
-                DisplayName = "Jan Novák", CoachRoleName = "Hlavní", Hours = 1.5m,
+                DisplayName = "Jan Novák", CoachRoleName = "Hlavní", CoachRoleCode = "H",
+                CoachRoleId = 1, CoachRoleOrder = 1, Hours = 1.5m,
             },
         ];
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -255,6 +304,10 @@ public class TrainingRequirementTests
             new DefaultHttpContext { RequestServices = services },
             new RouteData(),
             new ActionDescriptor());
+        actionContext.HttpContext.SetEndpoint(new Endpoint(
+            _ => Task.CompletedTask,
+            new EndpointMetadataCollection(),
+            "Requirement test"));
         var viewResult = services.GetRequiredService<IRazorViewEngine>().GetView(
             null,
             "/Areas/sport/Pages/Training/Requirement/_CoachGroups.cshtml",
@@ -268,21 +321,23 @@ public class TrainingRequirementTests
         var trainingViewData = new ViewDataDictionary(viewData) { ["IncludeHours"] = true };
         var tempData = new TempDataDictionary(actionContext.HttpContext, services.GetRequiredService<ITempDataProvider>());
 
-        async Task<string> RenderAsync(ViewDataDictionary data)
+        async Task<string> RenderAsync(
+            ViewDataDictionary data,
+            Microsoft.AspNetCore.Mvc.ViewEngines.IView? view = null)
         {
             using var writer = new StringWriter();
             var context = new ViewContext(
-                actionContext, viewResult.View, data, tempData, writer, new HtmlHelperOptions());
-            await viewResult.View.RenderAsync(context);
+                actionContext, view ?? viewResult.View, data, tempData, writer, new HtmlHelperOptions());
+            await context.View.RenderAsync(context);
             return writer.ToString();
         }
 
         var trainingHtml = WebUtility.HtmlDecode(await RenderAsync(trainingViewData));
         var matchHtml = WebUtility.HtmlDecode(await RenderAsync(viewData));
         Assert.Contains("Hlavní:", trainingHtml);
-        Assert.Contains("Novák (1,50)", trainingHtml);
+        Assert.Contains("Novák (1,5)", trainingHtml);
         Assert.Contains("Novák", matchHtml);
-        Assert.DoesNotContain("(1,50)", matchHtml);
+        Assert.DoesNotContain("(1,5)", matchHtml);
         Assert.Null(viewData["IncludeHours"]);
 
         viewData.Model = Array.Empty<RequirementCoachListItem>();
@@ -296,6 +351,129 @@ public class TrainingRequirementTests
         Assert.Contains("&lt;script&gt;", encodedHtml);
         Assert.Contains("&lt;b&gt;", encodedHtml);
         Assert.DoesNotContain("<script>", encodedHtml);
+
+        actionContext.RouteData.Values["area"] = "sport";
+        actionContext.RouteData.Values["page"] = "/Training/Requirement/Index";
+        actionContext.ActionDescriptor = new Microsoft.AspNetCore.Mvc.RazorPages.PageActionDescriptor
+        {
+            ViewEnginePath = "/Training/Requirement/Index",
+            RelativePath = "/Areas/sport/Pages/Training/Requirement/Index.cshtml",
+            RouteValues = new Dictionary<string, string?>
+            {
+                ["area"] = "sport",
+                ["page"] = "/Training/Requirement/Index",
+            },
+        };
+        using var db = new SportSysDbContext(
+            new DbContextOptionsBuilder<SportSysDbContext>().Options);
+        var indexModel = new RequirementIndexModel(
+            new TrainingRequirementService(db),
+            new MatchRequirementService(db),
+            new TrainingScheduleService(db),
+            new TrainingOverviewExcelExporter());
+        indexModel.Seasons.Add(new SeasonDto { Id = 1, Name = "2026/2027" });
+        indexModel.Requirements.Add(new TrainingRequirementListItem
+        {
+            Id = 42,
+            SeasonName = "2026/2027",
+            SeasonCategoryName = "Mladší žáci",
+            TrainingTypeName = "Led",
+            TrainingPhaseName = "Sezóna",
+            From = new DateOnly(2026, 9, 1),
+            To = new DateOnly(2027, 3, 31),
+            DurationHours = 2.5m,
+            CoachAssignments =
+            [
+                new()
+                {
+                    Id = 1, DisplayName = "Jan Hlavní", CoachRoleCode = "H",
+                    CoachRoleId = 1, CoachRoleName = "Hlavní trenér", CoachRoleOrder = 1, Hours = 1.5m,
+                },
+                new()
+                {
+                    Id = 2, DisplayName = "Jan Asistent", CoachRoleCode = "A",
+                    CoachRoleId = 2, CoachRoleName = "Asistent trenéra", CoachRoleOrder = 2, Hours = 2m,
+                },
+                new()
+                {
+                    Id = 3, DisplayName = "Jan Brankář", CoachRoleCode = "B",
+                    CoachRoleId = 4, CoachRoleName = "Brankářský trenér", CoachRoleOrder = 4, Hours = 0.5m,
+                },
+                new()
+                {
+                    Id = 4, DisplayName = "Jan Obránce", CoachRoleCode = "O",
+                    CoachRoleId = 3, CoachRoleName = "Trenér obránců", CoachRoleOrder = 3, Hours = 1m,
+                },
+                new()
+                {
+                    Id = 5, DisplayName = "Jan Fyzioterapeut", CoachRoleCode = "F",
+                    CoachRoleId = 5, CoachRoleName = "Fyzioterapeut", CoachRoleOrder = 5, Hours = 0.75m,
+                },
+            ],
+        });
+        indexModel.MatchRequirements.Add(new MatchRequirementListItem
+        {
+            SeasonCategoryCode = "U12",
+        });
+        var indexView = services.GetRequiredService<IRazorViewEngine>().GetView(
+            null,
+            "/Areas/sport/Pages/Training/Requirement/Index.cshtml",
+            isMainPage: false);
+        Assert.True(indexView.Success);
+        var indexViewData = new ViewDataDictionary<RequirementIndexModel>(
+            new EmptyModelMetadataProvider(),
+            new ModelStateDictionary())
+        {
+            Model = indexModel,
+        };
+        var page = Assert.IsAssignableFrom<Microsoft.AspNetCore.Mvc.RazorPages.Page>(
+            Assert.IsType<RazorView>(indexView.View).RazorPage);
+        page.PageContext = new Microsoft.AspNetCore.Mvc.RazorPages.PageContext(actionContext)
+        {
+            ViewData = indexViewData,
+        };
+        indexModel.PageContext = page.PageContext;
+        var indexHtml = await RenderAsync(indexViewData, indexView.View);
+        var tables = Regex.Matches(indexHtml, @"<table\b[^>]*>.*?</table>", RegexOptions.Singleline);
+        Assert.Equal(2, tables.Count);
+        var trainingHeaders = Regex.Matches(tables[0].Value, @"<th\b[^>]*>(.*?)</th>", RegexOptions.Singleline)
+            .Select(header => WebUtility.HtmlDecode(Regex.Replace(header.Groups[1].Value, "<.*?>", string.Empty)).Trim());
+        Assert.Equal(
+            ["Sezóna", "Kategorie", "Typ tréninku", "Fáze", "Od", "Do", "Rozsah [h]",
+             "Hlavní", "Asistent", "Brankáři", "Obránci", "Trenéři", "Akce"],
+            trainingHeaders);
+        Assert.Equal(13, Regex.Matches(tables[0].Value, @"<th\b[^>]*>").Count);
+        Assert.All(
+            Regex.Matches(tables[0].Value, @"<th\b[^>]*>").Cast<Match>(),
+            header => Assert.Equal("<th class=\"c\">", header.Value));
+        var trainingCells = Regex.Matches(
+                tables[0].Value,
+                @"<td\b[^>]*>(.*?)</td>",
+                RegexOptions.Singleline)
+            .Select(cell => Regex.Replace(
+                WebUtility.HtmlDecode(Regex.Replace(cell.Groups[1].Value, "<.*?>", string.Empty)),
+                @"\s+",
+                " ").Trim())
+            .ToList();
+        Assert.Equal(
+            ["<td class=\"c\">", "<td>", "<td>", "<td class=\"c\">",
+             "<td class=\"c\">", "<td class=\"c\">", "<td class=\"r\">",
+             "<td>", "<td>", "<td>", "<td>", "<td>", "<td class=\"buttons c\">"],
+            Regex.Matches(tables[0].Value, @"<td\b[^>]*>").Select(cell => cell.Value));
+        Assert.Equal(13, trainingCells.Count);
+        Assert.Equal("Hlavní (1,5)", trainingCells[7]);
+        Assert.Equal("Asistent (2)", trainingCells[8]);
+        Assert.Equal("Brankář (0,5)", trainingCells[9]);
+        Assert.Equal("Obránce (1)", trainingCells[10]);
+        Assert.Equal("Fyzioterapeut: Fyzioterapeut (0,75)", trainingCells[11]);
+        Assert.Contains("<a class=\"button secondary icon-btn\"", tables[0].Value);
+        Assert.Contains("title=\"Upravit\"", tables[0].Value);
+        Assert.All(
+            Regex.Matches(tables[1].Value, @"<th\b[^>]*>").Cast<Match>(),
+            header => Assert.Equal("<th>", header.Value));
+        Assert.Equal(
+            ["<td>", "<td>", "<td>", "<td>", "<td>", "<td>", "<td class=\"buttons\">"],
+            Regex.Matches(tables[1].Value, @"<td\b[^>]*>").Select(cell => cell.Value));
     }
 
     [Fact]

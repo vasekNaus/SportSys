@@ -1,0 +1,38 @@
+.training-requirement-coverage {
+  margin-block: 2rem;
+}
+
+.training-requirement-coverage-table-wrapper {
+  overflow-x: auto;
+}
+
+.training-requirement-coverage-table {
+  min-width: 760px;
+}
+
+.coverage-status {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .2rem .5rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: 4px;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+
+  i {
+    font-size: .95em;
+  }
+}
+
+.coverage-status--match i {
+  color: var(--color-info-text);
+}
+
+.coverage-status--over i {
+  color: var(--color-warning-icon);
+}
+
+.coverage-status--under i {
+  color: var(--color-error-text);
+}

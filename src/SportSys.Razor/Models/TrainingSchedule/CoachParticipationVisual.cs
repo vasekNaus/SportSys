@@ -2,11 +2,13 @@ namespace SportSys.Razor.Models.TrainingSchedule;
 
 public static class CoachParticipationVisual
 {
+    public const string AbsenceIcon = "❌";
+
     private static readonly IReadOnlyDictionary<int, string> Icons = new Dictionary<int, string>
     {
         [1] = "✅",
         [2] = "❓",
-        [3] = "❌",
+        [3] = AbsenceIcon,
         [4] = "🔗",
         [5] = "↔",
     };

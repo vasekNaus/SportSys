@@ -4,8 +4,8 @@
 
 **Datum:** 21. 10. 2026
 
-**Stav:** Implementováno. Původní automatické ověření proběhlo před následnou
-změnou formátu hodin na `0.##`; tato změna nebyla znovu otestována.
+**Stav:** Implementováno včetně zarovnání podle komentáře z 21. 10. 2026.
+Formát hodin `0.##` i zarovnání jsou automaticky ověřené.
 Manuální akceptace proti vývojové databázi a kontrola zalamování v prohlížeči
 zůstávají neprovedené.
 
@@ -34,6 +34,12 @@ zůstávají neprovedené.
 - Zachovány jsou osobní číslo při prázdném jméně, znak `-` bez trenérů
   a standardní HTML kódování jmen i názvů rolí.
 - Aktualizována sekce požadavků v `docs\modules\sport.md`.
+- Doplněno zarovnání podle
+  [komentáře issue](https://github.com/vasekNaus/SportSys/issues/38#issuecomment-6309561032):
+  všechna záhlaví na střed; sezóna, fáze, data a akce na střed, rozsah
+  hodin doprava a ostatní hodnoty vlevo. Použity jsou existující utility
+  `c` a `r`, akční buňka má `buttons c`. Zápasová tabulka, globální grid
+  ani SCSS se nemění.
 
 ## Automatické ověření
 
@@ -44,10 +50,11 @@ dotnet test tests\SportSys.Razor.Tests\SportSys.Razor.Tests.csproj -c Release --
 dotnet build SportSys.slnx
 ```
 
-Build celého řešení prošel bez chyb. Po doplnění testu vykreslování byl
-stejný cílený výběr zopakován s `--no-restore`: **49 úspěšných testů,
-0 selhání, 0 přeskočených**. Tento výsledek pochází z doby před změnou
-formátu hodin na `0.##`, nikoli z ověření nynějšího formátu.
+Po doplnění zarovnání a aktualizaci očekávání na formát `0.##` prošel cílený
+výběr s `--no-restore`: **49 úspěšných testů, 0 selhání, 0 přeskočených**.
+Build celého řešení s `--no-restore` prošel bez chyb.
+Kompletní sada Razor testů následně prošla s `-c Release --no-build --no-restore`:
+**298 úspěšných testů, 0 selhání, 0 přeskočených**.
 
 Původní rozšíření `TrainingRequirementTests` pokrylo:
 
@@ -60,20 +67,24 @@ Původní rozšíření `TrainingRequirementTests` pokrylo:
   hodiny v tréninkovém režimu, zápasový režim bez hodin,
   izolaci lokálního přepínače, prázdný výstup `-` a HTML kódování.
 
-Po změně formátu na `0.##` testy stále obsahují očekávání s pevnými
-desetinnými místy. Je potřeba je upravit na `0`, `0,5`, `1`, `1,25`, `1,5`,
-`2` a `999,99`, včetně příkladů v testech seskupování a vykreslování,
-a cílené testy znovu spustit. Tato aktualizace dokumentace testy ani kód
-nemění.
+Očekávání testů nyní používají `0`, `0,5`, `1`, `1,25`, `1,5`, `2` a `999,99`,
+včetně příkladů seskupování a vykreslování. Produkční formátování hodin se
+při této úpravě neměnilo.
+
+Test `RequirementViews_KeepTrainingFormattingAndAlignmentSeparateFromMatches`
+vykresluje také celou kompilovanou stránku `Index.cshtml` s testovacím
+PageModelem a korektním `PageContext`, popisem stránky a endpointem.
+Ověřuje devět centrovaných záhlaví, přesnou matici tříd datových buněk
+i nezměněné třídy všech sloupců zápasové tabulky. Databáze se nepřipojuje.
 
 Kontrola diffu potvrdila propojení názvu kategorie od projekce přes DTO
 do první tabulky a nezměněnou logiku filtrů i editovacích akcí.
 `git diff --check` prošel.
 
 Build nadále hlásí existující upozornění na závislosti
-(`NU1510`, `NU1902`, `NU1903`) a nullable upozornění `CS8619` v
-`SearchMultiSelectTagHelperTests.cs`. Nesouvisející závislosti ani test
-nebyly v rámci tohoto issue měněny.
+(`NU1510`, `NU1902`, `NU1903`), upozornění `CS0618` a `EF1002` v Apollo
+a nullable upozornění `CS8619` v `SearchMultiSelectTagHelperTests.cs`.
+Nesouvisející závislosti ani tyto soubory nebyly měněny.
 
 ## Rozsah a zbývající manuální ověření
 
@@ -83,7 +94,8 @@ Formát celkového `DurationHours`, data, filtry a editace zůstávají původn�
 
 Nebylo provedeno načtení celé stránky proti skutečné vývojové databázi
 ani vizuální ověření v prohlížeči. Automatický test vykresluje skutečný
-partial s testovacími daty, nikoli celý HTTP požadavek s databázovou projekcí.
+partial i celou stránku s testovacími daty, nikoli HTTP požadavek
+s databázovou projekcí ani výsledné rozložení v prohlížeči.
 Pro úplnou manuální akceptaci zbývají scénáře z archivovaného plánu,
 zejména kontrola skutečného názvu kategorie, filtrů a zalamování na užší
 obrazovce. Žádná produkční ani testovací databázová data nebyla upravena.

@@ -63,6 +63,34 @@ else if (Model.Source is Models.TrainingSchedule.TrainingLikeEventModel training
       }
     </span>
   }
+  else if (training is Models.TrainingSchedule.TrainingPlanEventModel trainingPlan)
+  {
+    <span class="schedule-block-coaches schedule-block-coaches--wrap">
+      @if (trainingPlan.CoachDisplayItems.Count == 0)
+      {
+        @("-")
+      }
+      else
+      {
+        @for (var index = 0; index < trainingPlan.CoachDisplayItems.Count; index++)
+        {
+          var coach = trainingPlan.CoachDisplayItems[index];
+          if (index > 0)
+          {
+            <text>, </text>
+          }
+          @coach.DisplayText
+          if (coach.IsDuplicate)
+          {
+            <span class="schedule-block-coach-icon schedule-block-coach-duplicate"
+                  title="Duplicitní přiřazení trenéra"
+                  role="img"
+                  aria-label="Duplicitní přiřazení trenéra">@Models.TrainingSchedule.CoachParticipationVisual.AbsenceIcon</span>
+          }
+        }
+      }
+    </span>
+  }
   else
   {
     <span class="schedule-block-coaches schedule-block-coaches--wrap">@training.CoachSurnameSummary</span>
